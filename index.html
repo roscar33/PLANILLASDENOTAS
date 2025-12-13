@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Seguimiento Académico 2026</title>
+    
+    <!-- Estilos (Tailwind CSS) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React y ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Compilador Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { -webkit-tap-highlight-color: transparent; }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        .animate-slide-up { animation: slideUp 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        /* Personalización Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-50 touch-manipulation text-slate-800 font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- 1. DEFINICIÓN DE ÍCONOS ---
+        const Icon = ({ children, size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+        );
+        const Plus = (p) => <Icon {...p}><path d="M5 12h14"/><path d="M12 5v14"/></Icon>;
+        const Trash2 = (p) => <Icon {...p}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></Icon>;
+        const GraduationCap = (p) => <Icon {...p}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></Icon>;
+        const Save = (p) => <Icon {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></Icon>;
+        const X = (p) => <Icon {...p}><path d="M18 6 6 18"/><path d="m6 6 18 12"/></Icon>;
+        const BookOpen = (p) => <Icon {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Icon>;
+        const Layers = (p) => <Icon {...p}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></Icon>;
+        const Users = (p) => <Icon {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Icon>;
+        const FileSpreadsheet = (p) => <Icon {...p}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></Icon>;
+        const Download = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></Icon>;
+        const AlertTriangle = (p) => <Icon {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></Icon>;
+        const AlertCircle = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></Icon>;
+        const Edit2 = (p) => <Icon {...p}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></Icon>;
+        const Filter = (p) => <Icon {...p}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></Icon>;
+        const Settings = (p) => <Icon {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></Icon>;
+
+        const { useState, useEffect, useMemo } = React;
+
+        // --- HELPERS PARA FORMATO (COMA DECIMAL) ---
+        // Convierte "3.5" (storage) a "3,5" (display)
+        const formatDisplay = (val) => {
+            if (val === '' || val === null || val === undefined) return '';
+            if (typeof val === 'string' && val.includes(',')) return val;
+            const num = parseFloat(val);
+            if (isNaN(num)) return val;
+            return num.toString().replace('.', ',');
+        };
+
+        // Convierte "3,5" (input) a "3.5" (logic/storage)
+        const parseInput = (val) => {
+            return val.replace(',', '.');
+        };
+
+        const validateScoreInput = (value) => {
+            if (value === '') return true;
+            const regex = /^[0-9]*[.,]?[0-9]*$/;
+            if (!regex.test(value)) return false;
+            
+            const numVal = parseFloat(value.replace(',', '.'));
+            if (!isNaN(numVal)) {
+                return numVal >= 0 && numVal <= 5.0;
+            }
+            return true;
+        };
+
+        // --- 2. LÓGICA DE LA APP ---
+        const App = () => {
+            // Estado de Notas
+            const [students, setStudents] = useState(() => {
+                const saved = localStorage.getItem('classGradesV5');
+                return saved ? JSON.parse(saved) : [];
+            });
+
+            // Estado de Listas de Estudiantes
+            const [studentLists, setStudentLists] = useState(() => {
+                const saved = localStorage.getItem('studentListsV1');
+                return saved ? JSON.parse(saved) : {
+                    'Quinto': ['Juan', 'Rodrigo', 'Milena'],
+                    'Primero': [], 'Segundo': [], 'Tercero': [], 'Cuarto': []
+                };
+            });
+
+            // Vistas y Modales
+            const [view, setView] = useState('recent'); 
+            const [isFormOpen, setIsFormOpen] = useState(false);
+            const [isReportOpen, setIsReportOpen] = useState(false);
+            const [isConfigOpen, setIsConfigOpen] = useState(false); 
+            
+            // Filtros y Edición
+            const [topicFilter, setTopicFilter] = useState({ gradeLevel: '', area: '' });
+            const [editingTopic, setEditingTopic] = useState(null); 
+            
+            // Configuración Global
+            const gradeLevels = ['Primero', 'Segundo', 'Tercero', 'Cuarto', 'Quinto'];
+            const areas = [
+                'INGLES',
+                'CIENCIAS NATURALES',
+                'CIENCIAS SOCIALES',
+                'ARTISTICA',
+                'EDUCACION FISICA',
+                'ETICA Y VALORES',
+                'RELIGION',
+                'ESPAÑOL (LENGUAJE)',
+                'MATEMATICAS',
+                'TECNOLOGIA E INFORMATICA'
+            ];
+
+            // Formulario Nuevo Registro
+            const [batchData, setBatchData] = useState({
+                gradeLevel: '', area: '', globalConcept: '', entries: [] 
+            });
+            const [error, setError] = useState('');
+
+            // Estado para el Gestor de Estudiantes
+            const [configGrade, setConfigGrade] = useState('Quinto');
+            const [newStudentName, setNewStudentName] = useState('');
+
+            // Estado Filtro Reportes
+            const [reportFilter, setReportFilter] = useState({
+                gradeLevel: 'Quinto', area: 'MATEMATICAS'
+            });
+
+            // --- EFECTOS (PERSISTENCIA) ---
+            useEffect(() => {
+                localStorage.setItem('classGradesV5', JSON.stringify(students));
+            }, [students]);
+
+            useEffect(() => {
+                localStorage.setItem('studentListsV1', JSON.stringify(studentLists));
+            }, [studentLists]);
+
+            // --- LÓGICA DE TEMAS (AGRUPACIÓN) ---
+            const topics = useMemo(() => {
+                const grouped = {};
+                const relevantStudents = students.filter(s => {
+                    if (view === 'topics' && topicFilter.gradeLevel && topicFilter.area) {
+                        return s.gradeLevel === topicFilter.gradeLevel && s.area === topicFilter.area;
+                    }
+                    return true;
+                });
+
+                relevantStudents.forEach(s => {
+                    const key = `${s.gradeLevel}-${s.area}-${s.concept}`;
+                    if (!grouped[key]) {
+                        grouped[key] = {
+                            id: key,
+                            gradeLevel: s.gradeLevel,
+                            area: s.area,
+                            concept: s.concept,
+                            date: s.date,
+                            count: 0
+                        };
+                    }
+                    grouped[key].count++;
+                });
+                return Object.values(grouped).sort((a,b) => new Date(b.date) - new Date(a.date));
+            }, [students, view, topicFilter]);
+
+            // --- GESTIÓN DE ESTUDIANTES ---
+            const addStudentToList = (e) => {
+                e.preventDefault();
+                if (!newStudentName.trim()) return;
+                setStudentLists(prev => ({
+                    ...prev,
+                    [configGrade]: [...(prev[configGrade] || []), newStudentName.trim()]
+                }));
+                setNewStudentName('');
+            };
+
+            const removeStudentFromList = (nameToRemove) => {
+                if (confirm(`¿Eliminar a ${nameToRemove} de la lista de ${configGrade}?`)) {
+                    setStudentLists(prev => ({
+                        ...prev,
+                        [configGrade]: prev[configGrade].filter(name => name !== nameToRemove)
+                    }));
+                }
+            };
+
+            // --- GESTIÓN DE TEMAS (ELIMINAR) ---
+            const deleteTopic = (e, topic) => {
+                e.stopPropagation(); 
+                if (confirm(`¿Estás seguro de ELIMINAR el tema "${topic.concept}"?\n\nSe borrarán TODAS las notas asociadas.`)) {
+                    setStudents(prev => prev.filter(s => 
+                        !(s.gradeLevel === topic.gradeLevel && s.area === topic.area && s.concept === topic.concept)
+                    ));
+                }
+            };
+
+            // --- FORMULARIO DE NOTAS ---
+            const handleBatchConfigChange = (e) => {
+                const { name, value } = e.target;
+                setBatchData(prev => {
+                    const newData = { ...prev, [name]: value };
+                    
+                    if (name === 'gradeLevel') {
+                        const list = studentLists[value];
+                        if (list && list.length > 0) {
+                            newData.entries = list.map(n => ({ name: n, score: '', individualConcept: '', observation: '' }));
+                        } else {
+                            newData.entries = [{ name: '', score: '', individualConcept: '', observation: '' }];
+                        }
+                    }
+                    return newData;
+                });
+            };
+
+            const handleEntryChange = (index, field, value) => {
+                const newEntries = [...batchData.entries];
+                if (field === 'score') {
+                    if (validateScoreInput(value)) {
+                        newEntries[index][field] = value;
+                    }
+                } else {
+                    newEntries[index][field] = value;
+                }
+                setBatchData(prev => ({ ...prev, entries: newEntries }));
+            };
+
+            const addManualEntry = () => {
+                setBatchData(prev => ({ ...prev, entries: [...prev.entries, { name: '', score: '', individualConcept: '', observation: '' }] }));
+            };
+
+            const removeEntry = (index) => {
+                if (batchData.entries.length > 1) {
+                    setBatchData(prev => ({ ...prev, entries: prev.entries.filter((_, i) => i !== index) }));
+                }
+            };
+
+            const handleSaveBatch = (e) => {
+                e.preventDefault();
+                if (!batchData.gradeLevel || !batchData.area) { setError('Selecciona Grado y Área'); return; }
+
+                const validEntries = batchData.entries.filter(e => e.name.trim() !== '' && e.score !== '');
+                if (validEntries.length === 0) { setError('Ingresa al menos una nota válida'); return; }
+
+                const newRecords = validEntries.map(entry => {
+                    const normalizedScore = parseInput(entry.score);
+                    return createRecord(batchData.gradeLevel, batchData.area, entry.name, normalizedScore, entry.individualConcept || batchData.globalConcept, entry.observation);
+                });
+
+                setStudents([...newRecords, ...students]);
+                setIsFormOpen(false);
+                setBatchData({ gradeLevel: '', area: '', globalConcept: '', entries: [] });
+                setError('');
+            };
+
+            const createRecord = (grade, area, name, score, conceptRaw, observation) => {
+                const numScore = parseFloat(score);
+                let finalConcept = conceptRaw;
+                
+                if (!finalConcept) {
+                    if (numScore >= 4.5) finalConcept = "Excelente desempeño";
+                    else if (numScore >= 4.0) finalConcept = "Buen trabajo";
+                    else if (numScore >= 3.0) finalConcept = "Aprobado básico";
+                    else finalConcept = "Necesita refuerzo";
+                }
+
+                return {
+                    id: Date.now() + Math.random(),
+                    gradeLevel: grade,
+                    area: area,
+                    name: name,
+                    score: score,
+                    concept: finalConcept,
+                    observation: observation || '',
+                    date: new Date().toLocaleDateString('es-CO')
+                };
+            };
+
+            // --- LÓGICA DE EDICIÓN DE TEMA ---
+            const openTopicEditor = (topic) => {
+                const existingRecords = students.filter(s => 
+                    s.gradeLevel === topic.gradeLevel && 
+                    s.area === topic.area && 
+                    s.concept === topic.concept
+                );
+                
+                const currentClassList = studentLists[topic.gradeLevel] || [];
+                
+                const missingStudents = currentClassList.filter(studentName => 
+                    !existingRecords.some(r => r.name === studentName)
+                );
+
+                const placeholderRecords = missingStudents.map(name => ({
+                    id: 'temp-' + Math.random(),
+                    gradeLevel: topic.gradeLevel,
+                    area: topic.area,
+                    concept: topic.concept,
+                    name: name,
+                    score: '',
+                    observation: 'Pendiente nivelación',
+                    date: new Date().toLocaleDateString('es-CO'),
+                    isNew: true
+                }));
+
+                setEditingTopic({
+                    ...topic,
+                    records: [...JSON.parse(JSON.stringify(existingRecords)), ...placeholderRecords]
+                });
+            };
+
+            const handleTopicRecordChange = (id, field, value) => {
+                if (field === 'score') {
+                    if (!validateScoreInput(value)) return;
+                }
+                setEditingTopic(prev => ({
+                    ...prev,
+                    records: prev.records.map(r => r.id === id ? { ...r, [field]: value } : r)
+                }));
+            };
+
+            const handleAddStudentToTopic = () => {
+                const newRecord = {
+                    id: 'temp-' + Date.now(),
+                    gradeLevel: editingTopic.gradeLevel,
+                    area: editingTopic.area,
+                    concept: editingTopic.concept,
+                    name: '',
+                    score: '',
+                    observation: '',
+                    date: new Date().toLocaleDateString('es-CO'),
+                    isNew: true
+                };
+                setEditingTopic(prev => ({
+                    ...prev,
+                    records: [...prev.records, newRecord]
+                }));
+            };
+
+            const saveTopicChanges = () => {
+                const updatedRecords = editingTopic.records.filter(r => r.name && r.score !== ''); 
+                
+                const filteredStudents = students.filter(s => 
+                    !(s.gradeLevel === editingTopic.gradeLevel && s.area === editingTopic.area && s.concept === editingTopic.concept)
+                );
+
+                const cleanRecords = updatedRecords.map(r => {
+                    const { isNew, ...rest } = r;
+                    const normalizedScore = parseInput(rest.score.toString());
+                    return isNew ? { ...rest, score: normalizedScore, id: Date.now() + Math.random() } : { ...rest, score: normalizedScore };
+                });
+
+                setStudents([...cleanRecords, ...filteredStudents]);
+                setEditingTopic(null);
+            };
+
+            const deleteStudent = (id) => {
+                if (window.confirm('¿Borrar este registro?')) setStudents(students.filter(s => s.id !== id));
+            };
+
+            // --- REPORTES ---
+            const filteredStudents = students.filter(s => s.gradeLevel === reportFilter.gradeLevel && s.area === reportFilter.area);
+
+            const downloadPivotCSV = () => {
+                if (filteredStudents.length === 0) { alert("No hay datos para descargar."); return; }
+                const uniqueConcepts = [...new Set(filteredStudents.map(s => s.concept))];
+                const uniqueStudents = [...new Set(filteredStudents.map(s => s.name))];
+                let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+                csvContent += "Estudiante," + uniqueConcepts.join(",") + "\n";
+                uniqueStudents.forEach(studentName => {
+                    let row = [`"${studentName}"`];
+                    uniqueConcepts.forEach(concept => {
+                        const record = filteredStudents.find(s => s.name === studentName && s.concept === concept);
+                        row.push(record ? formatDisplay(record.score) : "");
+                    });
+                    csvContent += row.join(",") + "\n";
+                });
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `Planilla_${reportFilter.gradeLevel}_${reportFilter.area}_Horizontal.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            //Helpers
+            const getScoreColor = (s) => {
+                const n = parseFloat(parseInput(s.toString()));
+                if (n >= 4.0) return 'text-green-600 bg-green-50 border-green-200';
+                if (n >= 3.0) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+                return 'text-red-600 bg-red-50 border-red-200';
+            };
+            
+            const getAreaColor = (a) => {
+                switch(a) {
+                    case 'MATEMATICAS': return 'bg-blue-100 text-blue-700';
+                    case 'ESPAÑOL (LENGUAJE)': return 'bg-orange-100 text-orange-700';
+                    case 'CIENCIAS NATURALES': return 'bg-green-100 text-green-700';
+                    case 'CIENCIAS SOCIALES': return 'bg-emerald-100 text-emerald-700';
+                    case 'INGLES': return 'bg-indigo-100 text-indigo-700';
+                    case 'ARTISTICA': return 'bg-pink-100 text-pink-700';
+                    case 'EDUCACION FISICA': return 'bg-amber-100 text-amber-700';
+                    case 'ETICA Y VALORES': return 'bg-cyan-100 text-cyan-700';
+                    case 'RELIGION': return 'bg-purple-100 text-purple-700';
+                    case 'TECNOLOGIA E INFORMATICA': return 'bg-slate-200 text-slate-700';
+                    default: return 'bg-slate-100 text-slate-700';
+                }
+            };
+            
+            const needsObservation = (s) => { 
+                const n = parseFloat(parseInput(s.toString())); 
+                return !isNaN(n) && n < 3.0 && s !== ''; 
+            };
+            
+            const average = students.length > 0 ? (students.reduce((acc, curr) => acc + parseFloat(parseInput(curr.score.toString())), 0) / students.length).toFixed(1).replace('.', ',') : '0,0';
+
+            return (
+                <div className="min-h-screen pb-28">
+                    {/* Header Verde Manzana (Lime-600) */}
+                    <header className="bg-lime-600 text-white p-5 rounded-b-3xl shadow-lg relative overflow-hidden z-10">
+                        <div className="flex justify-between items-center relative z-10">
+                            <div>
+                                <h1 className="text-xl font-bold flex items-center gap-2 uppercase tracking-tight"><GraduationCap size={24} /> SEGUIMIENTO ACADÉMICO</h1>
+                                <p className="text-lime-100 text-xs mt-1 font-semibold tracking-wider">PRIMARIA 2026</p>
+                            </div>
+                            <div className="flex gap-2">
+                                <button onClick={() => setIsConfigOpen(true)} className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white p-2 rounded-lg border border-white/20 transition-all active:scale-95">
+                                    <Settings size={20} />
+                                </button>
+                                <button onClick={() => setIsReportOpen(true)} className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white px-3 py-2 rounded-lg flex flex-col items-center gap-1 border border-white/20 transition-all active:scale-95">
+                                    <FileSpreadsheet size={18} />
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">Planillas</span>
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Nav */}
+                    <div className="px-4 mt-4 flex gap-2 justify-center">
+                        <button onClick={() => setView('recent')} className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${view === 'recent' ? 'bg-lime-600 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200'}`}>Últimos Registros</button>
+                        <button onClick={() => setView('topics')} className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${view === 'topics' ? 'bg-lime-600 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200'}`}>Temas / Actividades</button>
+                    </div>
+
+                    <main className="p-4 max-w-md mx-auto space-y-3">
+                        {view === 'recent' && (
+                            <>
+                                <div className="flex justify-between items-center px-1">
+                                    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wide">Bitácora Reciente</h2>
+                                    <div className="bg-slate-200 px-2 py-1 rounded text-[10px] font-bold text-slate-500">Promedio: {average}</div>
+                                </div>
+                                {students.length === 0 ? (
+                                    <div className="text-center py-20 px-6 opacity-40">
+                                        <Layers size={48} className="mx-auto mb-4 text-slate-300" />
+                                        <p className="text-slate-500 font-medium">No hay notas registradas.</p>
+                                    </div>
+                                ) : (
+                                    students.slice(0, 20).map((s) => (
+                                        <div key={s.id} className="bg-white p-3 rounded-xl shadow-sm border border-slate-100 relative group animate-fade-in">
+                                            <div className="flex gap-2 mb-2">
+                                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">{s.gradeLevel}</span>
+                                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${getAreaColor(s.area)}`}>{s.area}</span>
+                                            </div>
+                                            <div className="flex justify-between items-start">
+                                                <div className="min-w-0 pr-2 flex-1">
+                                                    <h3 className="font-bold text-slate-800 capitalize leading-tight">{s.name}</h3>
+                                                    <p className="text-xs text-slate-500 mt-1 italic truncate">{s.concept}</p>
+                                                    {s.observation && <div className="mt-2 flex items-start gap-1 text-red-600 bg-red-50 p-1.5 rounded text-[11px] leading-tight border border-red-100"><AlertTriangle size={10} className="mt-0.5 shrink-0" /><span>{s.observation}</span></div>}
+                                                </div>
+                                                <div className="flex flex-col items-end gap-2 pl-2 border-l border-slate-100">
+                                                    <span className={`font-mono font-bold text-lg px-2.5 py-1 rounded-lg border ${getScoreColor(s.score)}`}>{formatDisplay(s.score)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </>
+                        )}
+
+                        {view === 'topics' && (
+                            <>
+                                <div className="bg-lime-50 p-4 rounded-xl border border-lime-100 mb-4 animate-fade-in">
+                                    <div className="flex items-center gap-2 mb-3 text-lime-700 font-bold text-sm uppercase"><Filter size={16} /> Filtro de Búsqueda</div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <select value={topicFilter.gradeLevel} onChange={(e) => setTopicFilter({...topicFilter, gradeLevel: e.target.value})} className="w-full p-2 text-xs border border-lime-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500"><option value="">Grado...</option>{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select>
+                                        <select value={topicFilter.area} onChange={(e) => setTopicFilter({...topicFilter, area: e.target.value})} className="w-full p-2 text-xs border border-lime-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500"><option value="">Área...</option>{areas.map(a => <option key={a} value={a}>{a}</option>)}</select>
+                                    </div>
+                                </div>
+                                {(!topicFilter.gradeLevel || !topicFilter.area) ? (
+                                    <div className="text-center py-10 px-4 text-slate-400 text-sm animate-fade-in"><Layers size={40} className="mx-auto mb-2 opacity-50" />Selecciona un <strong>Grado</strong> y un <strong>Área</strong> arriba.</div>
+                                ) : topics.length === 0 ? (
+                                    <div className="text-center py-10 text-slate-400 text-sm animate-fade-in">No se encontraron temas.</div>
+                                ) : (
+                                    topics.map((t) => (
+                                        <div key={t.id} onClick={() => openTopicEditor(t)} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 active:scale-95 transition-transform cursor-pointer hover:border-lime-200 animate-slide-up relative group">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <h3 className="font-bold text-slate-800 text-lg leading-tight">{t.concept}</h3>
+                                                    <div className="flex gap-2 mt-2">
+                                                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${getAreaColor(t.area)}`}>{t.area}</span>
+                                                        <span className="text-[10px] font-bold uppercase text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">{t.gradeLevel}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-2">
+                                                    <div className="bg-lime-50 text-lime-600 p-2 rounded-lg"><Edit2 size={18} /></div>
+                                                    <button onClick={(e) => deleteTopic(e, t)} className="bg-red-50 text-red-500 p-2 rounded-lg hover:bg-red-100 z-10"><Trash2 size={18} /></button>
+                                                </div>
+                                            </div>
+                                            <div className="mt-3 pt-3 border-t border-slate-50 flex items-center gap-2 text-xs text-slate-500">
+                                                <Users size={14} /> {t.count} Estudiantes evaluados
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </>
+                        )}
+                    </main>
+
+                    <div className="fixed bottom-6 right-6 z-30">
+                        <button onClick={() => setIsFormOpen(true)} className="bg-lime-600 hover:bg-lime-700 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95"><Plus size={28} strokeWidth={2.5} /></button>
+                    </div>
+
+                    {/* MODAL GESTIÓN DE ESTUDIANTES */}
+                    {isConfigOpen && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white w-full max-w-md h-[80vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-slide-up">
+                                <div className="bg-slate-800 p-4 text-white flex justify-between items-center">
+                                    <h2 className="font-bold text-lg flex items-center gap-2"><Users size={20} /> Gestión de Estudiantes</h2>
+                                    <button onClick={() => setIsConfigOpen(false)} className="text-slate-400 hover:text-white"><X size={24} /></button>
+                                </div>
+                                <div className="p-4 bg-slate-50 border-b border-slate-100">
+                                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Selecciona Grado</label>
+                                    <select value={configGrade} onChange={(e) => setConfigGrade(e.target.value)} className="w-full p-2 rounded-lg border border-slate-300">
+                                        {gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}
+                                    </select>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-4">
+                                    <div className="mb-4 flex gap-2">
+                                        <input 
+                                            type="text" 
+                                            value={newStudentName} 
+                                            onChange={(e) => setNewStudentName(e.target.value)} 
+                                            placeholder="Nombre del nuevo estudiante"
+                                            className="flex-1 p-2 border border-slate-300 rounded-lg text-sm"
+                                        />
+                                        <button onClick={addStudentToList} className="bg-lime-600 text-white p-2 rounded-lg"><Plus size={20} /></button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {(!studentLists[configGrade] || studentLists[configGrade].length === 0) ? (
+                                            <p className="text-slate-400 text-sm text-center italic mt-4">Lista vacía. Usa el modo manual o agrega estudiantes.</p>
+                                        ) : (
+                                            studentLists[configGrade].map((name, idx) => (
+                                                <div key={idx} className="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
+                                                    <span className="font-medium text-slate-700">{name}</span>
+                                                    <button onClick={() => removeStudentFromList(name)} className="text-slate-300 hover:text-red-500"><Trash2 size={18} /></button>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-slate-50 text-xs text-slate-400 text-center">
+                                    Si agregas estudiantes aquí, aparecerán automáticamente en las actividades pasadas para nivelación.
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL NUEVO REGISTRO */}
+                    {isFormOpen && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 flex items-end sm:items-center justify-center p-0 sm:p-4">
+                            <div className="bg-white w-full max-w-md h-[95vh] sm:h-auto sm:max-h-[90vh] sm:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col animate-slide-up">
+                                <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center rounded-t-2xl shrink-0">
+                                    <div><h2 className="font-bold text-lg text-slate-800">Nueva Actividad</h2><p className="text-xs text-slate-500">Notas &lt; 3,0 piden observación</p></div>
+                                    <button onClick={() => setIsFormOpen(false)} className="bg-white p-2 rounded-full text-slate-400 hover:text-slate-600 shadow-sm border border-slate-200"><X size={20} /></button>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-4 space-y-5">
+                                    {error && <div className="bg-red-50 text-red-600 text-xs font-bold p-3 rounded-lg flex items-center gap-2"><AlertCircle size={14} /> {error}</div>}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase">Grado</label><select name="gradeLevel" value={batchData.gradeLevel} onChange={handleBatchConfigChange} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-lime-500 outline-none"><option value="">Seleccionar...</option>{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
+                                        <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase">Área</label><select name="area" value={batchData.area} onChange={handleBatchConfigChange} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-lime-500 outline-none"><option value="">Seleccionar...</option>{areas.map(a => <option key={a} value={a}>{a}</option>)}</select></div>
+                                    </div>
+                                    {/* CAMBIO AQUI: Fondo más fuerte (lime-200) y placeholder oscuro */}
+                                    <div className="bg-lime-200 p-3 rounded-xl border border-lime-300 shadow-sm"><label className="text-[10px] font-bold text-lime-800 uppercase flex items-center gap-1 mb-1"><BookOpen size={10} /> Nombre de Actividad / Tema</label><input type="text" name="globalConcept" placeholder="Ej: Taller División, Quiz Tablas..." value={batchData.globalConcept} onChange={handleBatchConfigChange} className="w-full bg-white p-2 rounded-lg border border-lime-400 text-lime-900 text-sm focus:outline-none placeholder:text-slate-500" /></div>
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-end pb-1 border-b border-slate-100"><label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><Users size={12} /> Estudiantes</label>{(!studentLists[batchData.gradeLevel] || studentLists[batchData.gradeLevel].length === 0) && <button onClick={addManualEntry} className="text-xs text-lime-600 font-medium flex items-center gap-1"><Plus size={12} /> Agregar fila</button>}</div>
+                                        {batchData.entries.length === 0 ? <div className="text-center text-sm text-slate-400 py-4 italic">Selecciona un grado...</div> : batchData.entries.map((entry, idx) => {
+                                            const showObs = needsObservation(entry.score);
+                                            const isManual = !studentLists[batchData.gradeLevel] || studentLists[batchData.gradeLevel].length === 0;
+                                            return (
+                                                <div key={idx} className="bg-white border border-slate-100 rounded-xl p-3 shadow-sm animate-fade-in space-y-2">
+                                                    <div className="flex gap-2 items-center">
+                                                        <div className="flex-1"><input type="text" placeholder="Nombre" value={entry.name} readOnly={!isManual} onChange={(e) => handleEntryChange(idx, 'name', e.target.value)} className={`w-full p-2 text-sm border rounded-lg outline-none ${!isManual ? 'bg-slate-50 text-slate-600 font-bold border-transparent' : 'bg-white border-slate-200 focus:border-lime-500'}`} /></div>
+                                                        <div className="w-20"><input type="text" inputMode="decimal" placeholder="0,0" value={entry.score} onChange={(e) => handleEntryChange(idx, 'score', e.target.value)} className={`w-full p-2 text-sm text-center font-bold border rounded-lg outline-none focus:ring-2 ${showObs ? 'border-red-300 text-red-600 focus:ring-red-100' : 'border-slate-200 focus:ring-lime-100 focus:border-lime-500'}`} /></div>
+                                                        {isManual && <button onClick={() => removeEntry(idx)} className="text-slate-300 hover:text-red-500 p-1"><X size={18} /></button>}
+                                                    </div>
+                                                    {showObs && <div className="animate-slide-up"><label className="text-[10px] font-bold text-red-500 uppercase flex items-center gap-1 mb-1 ml-1"><AlertTriangle size={10} /> ¿Por qué perdió?</label><input type="text" placeholder="Escribe la razón..." value={entry.observation} onChange={(e) => handleEntryChange(idx, 'observation', e.target.value)} className="w-full bg-red-50 border border-red-200 rounded-lg p-2 text-xs text-red-800 placeholder-red-300 focus:outline-none focus:ring-1 focus:ring-red-500" autoFocus /></div>}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                                <div className="p-4 border-t border-slate-100 bg-white pb-8 sm:pb-4 rounded-b-2xl shrink-0"><button onClick={handleSaveBatch} className="w-full bg-lime-600 hover:bg-lime-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-lime-200 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"><Save size={18} /> Guardar Todo</button></div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL EDICIÓN */}
+                    {editingTopic && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+                            <div className="bg-white w-full max-w-md h-[95vh] sm:h-auto sm:max-h-[90vh] sm:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col animate-slide-up">
+                                <div className="p-4 border-b border-slate-100 bg-slate-50 rounded-t-2xl shrink-0">
+                                    <div className="flex justify-between items-start">
+                                        <div><h2 className="font-bold text-lg text-slate-800">{editingTopic.concept}</h2><p className="text-xs text-lime-600 font-semibold uppercase">{editingTopic.gradeLevel} - {editingTopic.area}</p></div>
+                                        <button onClick={() => setEditingTopic(null)} className="bg-white p-2 rounded-full text-slate-400 hover:text-slate-600 shadow-sm border border-slate-200"><X size={20} /></button>
+                                    </div>
+                                    <div className="mt-2 text-xs text-slate-500 bg-yellow-50 p-2 rounded border border-yellow-100"><span className="font-bold">Modo Edición:</span> Los estudiantes nuevos aparecen al final de la lista.</div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                    {editingTopic.records.map((rec) => {
+                                        const showObs = needsObservation(rec.score);
+                                        return (
+                                            <div key={rec.id} className="bg-white border border-slate-100 rounded-xl p-3 shadow-sm space-y-2">
+                                                <div className="flex gap-2 items-center">
+                                                    <div className="flex-1"><input type="text" value={rec.name} onChange={(e) => handleTopicRecordChange(rec.id, 'name', e.target.value)} placeholder="Nombre estudiante" className="w-full p-2 text-sm font-bold text-slate-700 border-b border-transparent focus:border-lime-300 outline-none bg-transparent" /></div>
+                                                    <div className="w-20"><input type="text" inputMode="decimal" placeholder="0,0" value={formatDisplay(rec.score)} onChange={(e) => handleTopicRecordChange(rec.id, 'score', e.target.value)} className={`w-full p-2 text-sm text-center font-bold border rounded-lg outline-none focus:ring-2 ${showObs ? 'border-red-300 text-red-600' : 'border-slate-200 focus:border-lime-500'}`} /></div>
+                                                </div>
+                                                {(showObs || rec.observation) && <div className="animate-slide-up"><label className="text-[10px] font-bold text-red-500 uppercase flex items-center gap-1 mb-1 ml-1"><AlertTriangle size={10} /> Observación / Recuperación</label><input type="text" value={rec.observation} onChange={(e) => handleTopicRecordChange(rec.id, 'observation', e.target.value)} placeholder="Ej: Recuperó el 12/05..." className="w-full bg-red-50 border border-red-200 rounded-lg p-2 text-xs text-red-800 placeholder-red-300 focus:outline-none" /></div>}
+                                            </div>
+                                        );
+                                    })}
+                                    <button onClick={handleAddStudentToTopic} className="w-full py-3 border-2 border-dashed border-lime-200 text-lime-500 rounded-xl font-bold text-sm hover:bg-lime-50 flex items-center justify-center gap-2"><Plus size={16} /> Agregar estudiante a este tema</button>
+                                </div>
+                                <div className="p-4 border-t border-slate-100 bg-white pb-8 sm:pb-4 rounded-b-2xl shrink-0"><button onClick={saveTopicChanges} className="w-full bg-lime-600 hover:bg-lime-700 text-white font-bold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all"><Save size={18} /> Actualizar Notas</button></div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL PLANILLAS */}
+                    {isReportOpen && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 flex items-center justify-center p-4">
+                            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-slide-up">
+                                <div className="bg-emerald-600 p-4 text-white flex justify-between items-center"><h2 className="font-bold text-lg flex items-center gap-2"><FileSpreadsheet size={20} /> Planillas</h2><button onClick={() => setIsReportOpen(false)} className="text-emerald-100 hover:text-white"><X size={24} /></button></div>
+                                <div className="p-4 border-b border-slate-100 bg-slate-50 grid grid-cols-2 gap-3">
+                                    <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase">Grado</label><select value={reportFilter.gradeLevel} onChange={(e) => setReportFilter({...reportFilter, gradeLevel: e.target.value})} className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm">{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
+                                    <div className="space-y-1"><label className="text-[10px] font-bold text-slate-500 uppercase">Área</label><select value={reportFilter.area} onChange={(e) => setReportFilter({...reportFilter, area: e.target.value})} className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm">{areas.map(a => <option key={a} value={a}>{a}</option>)}</select></div>
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-4 text-center">
+                                    <p className="text-slate-600 text-sm mb-4">Descarga el reporte completo organizado por columnas de actividades.</p>
+                                    <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 inline-block text-emerald-800 text-xs text-left"><strong>Formato de descarga:</strong><br/>Estudiante | Taller 1 | Quiz | Final...</div>
+                                </div>
+                                <div className="p-4 border-t border-slate-100 bg-slate-50"><button onClick={downloadPivotCSV} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all"><Download size={20} /> Descargar Planilla</button></div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
