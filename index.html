@@ -473,7 +473,7 @@
                                                 <div className="min-w-0 pr-2 flex-1">
                                                     <h3 className="font-bold text-slate-800 capitalize leading-tight">{s.name}</h3>
                                                     <p className="text-xs text-slate-500 mt-1 italic truncate">{s.concept}</p>
-                                                    {s.observation && <div className="mt-2 flex items-start gap-1 text-red-600 bg-red-50 p-1.5 rounded text-[11px] leading-tight border border-red-100"><AlertTriangle size={10} className="mt-0.5 shrink-0" /><span>{s.observation}</span></div>}
+                                                    {s.observation && <div className="mt-2 flex items-start gap-1 text-slate-600 bg-slate-50 p-1.5 rounded text-[11px] leading-tight border border-slate-200"><AlertTriangle size={10} className="mt-0.5 shrink-0 text-slate-400" /><span>{s.observation}</span></div>}
                                                 </div>
                                                 <div className="flex flex-col items-end gap-2 pl-2 border-l border-slate-100">
                                                     <span className={`font-mono font-bold text-lg px-2.5 py-1 rounded-lg border ${getScoreColor(s.score)}`}>{formatDisplay(s.score)}</span>
@@ -578,7 +578,7 @@
                         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 flex items-end sm:items-center justify-center p-0 sm:p-4">
                             <div className="bg-white w-full max-w-md h-[95vh] sm:h-auto sm:max-h-[90vh] sm:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col animate-slide-up">
                                 <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center rounded-t-2xl shrink-0">
-                                    <div><h2 className="font-bold text-lg text-slate-800">Nueva Actividad</h2><p className="text-xs text-slate-500">Notas &lt; 3,0 piden observación</p></div>
+                                    <div><h2 className="font-bold text-lg text-slate-800">Nueva Actividad</h2></div>
                                     <button onClick={() => setIsFormOpen(false)} className="bg-white p-2 rounded-full text-slate-400 hover:text-slate-600 shadow-sm border border-slate-200"><X size={20} /></button>
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-4 space-y-5">
@@ -587,7 +587,6 @@
                                         <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase">Grado</label><select name="gradeLevel" value={batchData.gradeLevel} onChange={handleBatchConfigChange} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-lime-500 outline-none"><option value="">Seleccionar...</option>{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
                                         <div className="space-y-1"><label className="text-[10px] font-bold text-slate-400 uppercase">Área</label><select name="area" value={batchData.area} onChange={handleBatchConfigChange} className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-lime-500 outline-none"><option value="">Seleccionar...</option>{areas.map(a => <option key={a} value={a}>{a}</option>)}</select></div>
                                     </div>
-                                    {/* CAMBIO AQUI: Fondo más fuerte (lime-200) y placeholder oscuro */}
                                     <div className="bg-lime-200 p-3 rounded-xl border border-lime-300 shadow-sm"><label className="text-[10px] font-bold text-lime-800 uppercase flex items-center gap-1 mb-1"><BookOpen size={10} /> Nombre de Actividad / Tema</label><input type="text" name="globalConcept" placeholder="Ej: Taller División, Quiz Tablas..." value={batchData.globalConcept} onChange={handleBatchConfigChange} className="w-full bg-white p-2 rounded-lg border border-lime-400 text-lime-900 text-sm focus:outline-none placeholder:text-slate-500" /></div>
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-end pb-1 border-b border-slate-100"><label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1"><Users size={12} /> Estudiantes</label>{(!studentLists[batchData.gradeLevel] || studentLists[batchData.gradeLevel].length === 0) && <button onClick={addManualEntry} className="text-xs text-lime-600 font-medium flex items-center gap-1"><Plus size={12} /> Agregar fila</button>}</div>
@@ -597,11 +596,11 @@
                                             return (
                                                 <div key={idx} className="bg-white border border-slate-100 rounded-xl p-3 shadow-sm animate-fade-in space-y-2">
                                                     <div className="flex gap-2 items-center">
-                                                        <div className="flex-1"><input type="text" placeholder="Nombre" value={entry.name} readOnly={!isManual} onChange={(e) => handleEntryChange(idx, 'name', e.target.value)} className={`w-full p-2 text-sm border rounded-lg outline-none ${!isManual ? 'bg-slate-50 text-slate-600 font-bold border-transparent' : 'bg-white border-slate-200 focus:border-lime-500'}`} /></div>
-                                                        <div className="w-20"><input type="text" inputMode="decimal" placeholder="0,0" value={entry.score} onChange={(e) => handleEntryChange(idx, 'score', e.target.value)} className={`w-full p-2 text-sm text-center font-bold border rounded-lg outline-none focus:ring-2 ${showObs ? 'border-red-300 text-red-600 focus:ring-red-100' : 'border-slate-200 focus:ring-lime-100 focus:border-lime-500'}`} /></div>
+                                                        <div className="w-[40%]"><input type="text" placeholder="Nombre" value={entry.name} readOnly={!isManual} onChange={(e) => handleEntryChange(idx, 'name', e.target.value)} className={`w-full p-2 text-sm border rounded-lg outline-none ${!isManual ? 'bg-slate-50 text-slate-600 font-bold border-transparent' : 'bg-white border-slate-200 focus:border-lime-500'}`} /></div>
+                                                        <div className="w-16"><input type="text" inputMode="decimal" placeholder="0,0" value={entry.score} onChange={(e) => handleEntryChange(idx, 'score', e.target.value)} className={`w-full p-2 text-sm text-center font-bold border rounded-lg outline-none focus:ring-2 ${showObs ? 'border-red-300 text-red-600 focus:ring-red-100' : 'border-slate-200 focus:ring-lime-100 focus:border-lime-500'}`} /></div>
+                                                        <div className="flex-1"><input type="text" placeholder="Obs..." value={entry.observation} onChange={(e) => handleEntryChange(idx, 'observation', e.target.value)} className="w-full p-2 text-xs border border-slate-200 bg-slate-50 focus:bg-white rounded-lg outline-none focus:border-lime-500 text-slate-600 placeholder:text-slate-400" /></div>
                                                         {isManual && <button onClick={() => removeEntry(idx)} className="text-slate-300 hover:text-red-500 p-1"><X size={18} /></button>}
                                                     </div>
-                                                    {showObs && <div className="animate-slide-up"><label className="text-[10px] font-bold text-red-500 uppercase flex items-center gap-1 mb-1 ml-1"><AlertTriangle size={10} /> ¿Por qué perdió?</label><input type="text" placeholder="Escribe la razón..." value={entry.observation} onChange={(e) => handleEntryChange(idx, 'observation', e.target.value)} className="w-full bg-red-50 border border-red-200 rounded-lg p-2 text-xs text-red-800 placeholder-red-300 focus:outline-none focus:ring-1 focus:ring-red-500" autoFocus /></div>}
                                                 </div>
                                             );
                                         })}
@@ -629,10 +628,10 @@
                                         return (
                                             <div key={rec.id} className="bg-white border border-slate-100 rounded-xl p-3 shadow-sm space-y-2">
                                                 <div className="flex gap-2 items-center">
-                                                    <div className="flex-1"><input type="text" value={rec.name} onChange={(e) => handleTopicRecordChange(rec.id, 'name', e.target.value)} placeholder="Nombre estudiante" className="w-full p-2 text-sm font-bold text-slate-700 border-b border-transparent focus:border-lime-300 outline-none bg-transparent" /></div>
-                                                    <div className="w-20"><input type="text" inputMode="decimal" placeholder="0,0" value={formatDisplay(rec.score)} onChange={(e) => handleTopicRecordChange(rec.id, 'score', e.target.value)} className={`w-full p-2 text-sm text-center font-bold border rounded-lg outline-none focus:ring-2 ${showObs ? 'border-red-300 text-red-600' : 'border-slate-200 focus:border-lime-500'}`} /></div>
+                                                    <div className="w-[40%]"><input type="text" value={rec.name} onChange={(e) => handleTopicRecordChange(rec.id, 'name', e.target.value)} placeholder="Nombre estudiante" className="w-full p-2 text-sm font-bold text-slate-700 border-b border-transparent focus:border-lime-300 outline-none bg-transparent" /></div>
+                                                    <div className="w-16"><input type="text" inputMode="decimal" placeholder="0,0" value={formatDisplay(rec.score)} onChange={(e) => handleTopicRecordChange(rec.id, 'score', e.target.value)} className={`w-full p-2 text-sm text-center font-bold border rounded-lg outline-none focus:ring-2 ${showObs ? 'border-red-300 text-red-600' : 'border-slate-200 focus:border-lime-500'}`} /></div>
+                                                    <div className="flex-1"><input type="text" value={rec.observation} onChange={(e) => handleTopicRecordChange(rec.id, 'observation', e.target.value)} placeholder="Obs..." className="w-full p-2 text-xs border border-slate-200 bg-slate-50 focus:bg-white rounded-lg outline-none focus:border-lime-500 text-slate-600 placeholder:text-slate-400" /></div>
                                                 </div>
-                                                {(showObs || rec.observation) && <div className="animate-slide-up"><label className="text-[10px] font-bold text-red-500 uppercase flex items-center gap-1 mb-1 ml-1"><AlertTriangle size={10} /> Observación / Recuperación</label><input type="text" value={rec.observation} onChange={(e) => handleTopicRecordChange(rec.id, 'observation', e.target.value)} placeholder="Ej: Recuperó el 12/05..." className="w-full bg-red-50 border border-red-200 rounded-lg p-2 text-xs text-red-800 placeholder-red-300 focus:outline-none" /></div>}
                                             </div>
                                         );
                                     })}
@@ -669,3 +668,5 @@
     </script>
 </body>
 </html>
+
+
