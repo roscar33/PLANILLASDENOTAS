@@ -3,44 +3,52 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Seguimiento Académico 2026</title>
+  <title>Seguimiento Académico - Clase 9218</title>
 
-  <!-- Estilos (Tailwind CSS) -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- React y ReactDOM -->
+  <!-- React & ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-  <!-- Compilador Babel -->
+  <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Firebase (Compat para usar en <script> normal con Babel) -->
-  <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore-compat.js"></script>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <style>
     body { -webkit-tap-highlight-color: transparent; }
-    .animate-fade-in { animation: fadeIn 0.3s ease-out; }
-    .animate-slide-up { animation: slideUp 0.3s ease-out; }
+    .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+    .animate-slide-up { animation: slideUp 0.4s ease-out; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-    /* Personalización Scrollbar */
+    /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: #f1f5f9; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
   </style>
 </head>
 
-<body class="bg-slate-50 touch-manipulation text-slate-800 font-sans">
+<body class="bg-slate-50 touch-manipulation text-slate-800 font-sans selection:bg-lime-200">
   <div id="root"></div>
 
-  <script type="text/babel">
-    /***********************
-     * 0) FIREBASE CONFIG
-     ***********************/
+  <!-- =========================
+       FIREBASE (Module)
+       ========================= -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc, setDoc, getDoc,
+      collection, query, orderBy,
+      onSnapshot,
+      deleteDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyB2MJ-jdwQeT6sOfZ21tCrFYzGiuTNOAJ8",
       authDomain: "diariodeprocesos-6f78d.firebaseapp.com",
@@ -50,25 +58,65 @@
       appId: "1:487922338632:web:5b65cbb4a1d630a2b0817d"
     };
 
-    // Init Firebase
-    let fbApp = null, fbAuth = null, fbDb = null;
-    try {
-      fbApp = firebase.initializeApp(firebaseConfig);
-      fbAuth = firebase.auth();
-      fbDb = firebase.firestore();
-    } catch (e) {
-      console.warn("Firebase init error:", e);
-    }
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    /***********************
-     * 1) ÍCONOS
-     ***********************/
+    // Puente hacia React
+    window.__fb = {
+      app, auth, db,
+      doc, setDoc, getDoc,
+      collection, query, orderBy,
+      onSnapshot,
+      deleteDoc,
+      uid: null,
+      status: "connecting", 
+      error: null,
+      _listeners: new Set(),
+      notify() {
+        for (const fn of window.__fb._listeners) {
+          try { fn({ status: window.__fb.status, error: window.__fb.error, uid: window.__fb.uid }); } catch {}
+        }
+      },
+      onStatus(fn) {
+        window.__fb._listeners.add(fn);
+        fn({ status: window.__fb.status, error: window.__fb.error, uid: window.__fb.uid });
+        return () => window.__fb._listeners.delete(fn);
+      }
+    };
+
+    // Inicialización de Auth
+    window.firebaseReady = new Promise(async (resolve) => {
+      try {
+        onAuthStateChanged(auth, async (user) => {
+          if (!user) {
+            await signInAnonymously(auth);
+            return; 
+          }
+          window.__fb.uid = user.uid;
+          window.__fb.status = "ready";
+          window.__fb.notify();
+          resolve({ uid: user.uid, db });
+        });
+      } catch (e) {
+        window.__fb.status = "error";
+        window.__fb.error = e?.message || String(e);
+        window.__fb.notify();
+        resolve({ uid: null, db });
+      }
+    });
+  </script>
+
+  <!-- =========================
+       REACT APP
+       ========================= -->
+  <script type="text/babel">
+    // --- ÍCONOS (Lucide Simplificado) ---
     const Icon = ({ children, size = 24, className = "" }) => (
-      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none"
-           stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-           className={className}>{children}</svg>
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+        className={className}>{children}</svg>
     );
-
     const Plus = (p) => <Icon {...p}><path d="M5 12h14"/><path d="M12 5v14"/></Icon>;
     const Trash2 = (p) => <Icon {...p}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></Icon>;
     const GraduationCap = (p) => <Icon {...p}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></Icon>;
@@ -84,16 +132,12 @@
     const Edit2 = (p) => <Icon {...p}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></Icon>;
     const Filter = (p) => <Icon {...p}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></Icon>;
     const Settings = (p) => <Icon {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></Icon>;
+    const Cloud = (p) => <Icon {...p}><path d="M20 17.5a4.5 4.5 0 0 0-1-8.9 6 6 0 0 0-11.7 1.6A4 4 0 0 0 8 20h10a3 3 0 0 0 2-2.5Z"/></Icon>;
+    const KeyRound = (p) => <Icon {...p}><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z"/><circle cx="16.5" cy="7.5" r=".5"/></Icon>;
 
-    // Indicador pequeñito de vínculo (no “Firebase OK” gigante, no UID)
-    const Cloud = (p) => <Icon {...p}><path d="M17.5 19a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-11.5 2A4 4 0 0 0 6 19Z"/></Icon>;
-    const CloudOff = (p) => <Icon {...p}><path d="M2 2l20 20"/><path d="M7.5 7.5A6 6 0 0 1 18 10a4.5 4.5 0 0 1-.5 9H7a4 4 0 0 1-2.9-6.7"/><path d="M6 19h1"/></Icon>;
+    const { useState, useEffect, useMemo } = React;
 
-    const { useState, useEffect, useMemo, useRef } = React;
-
-    /***********************
-     * HELPERS (COMA DECIMAL)
-     ***********************/
+    // --- HELPERS DECIMAL ---
     const formatDisplay = (val) => {
       if (val === '' || val === null || val === undefined) return '';
       if (typeof val === 'string' && val.includes(',')) return val;
@@ -101,8 +145,7 @@
       if (isNaN(num)) return val;
       return num.toString().replace('.', ',');
     };
-
-    const parseInput = (val) => (val || '').toString().replace(',', '.');
+    const parseInput = (val) => (val ?? '').toString().replace(',', '.');
 
     const validateScoreInput = (value) => {
       if (value === '') return true;
@@ -113,218 +156,141 @@
       return true;
     };
 
-    /***********************
-     * FIREBASE HELPERS (sync)
-     ***********************/
-    const LS_GRADES_KEY = 'classGradesV5';
-    const LS_LISTS_KEY  = 'studentListsV1';
-
-    const defaultLists = {
-      'Quinto': ['Juan', 'Rodrigo', 'Milena'],
-      'Primero': [], 'Segundo': [], 'Tercero': [], 'Cuarto': []
-    };
-
-    const safeJSON = (txt, fallback) => {
-      try { return JSON.parse(txt); } catch { return fallback; }
-    };
-
-    const nowISO = () => new Date().toISOString();
-
+    // --- APP PRINCIPAL ---
     const App = () => {
-      /***********************
-       * ESTADO (Local)
-       ***********************/
-      const [students, setStudents] = useState(() => {
-        const saved = localStorage.getItem(LS_GRADES_KEY);
-        return saved ? safeJSON(saved, []) : [];
+      // ----------------------------------------------------
+      // AQUÍ ESTÁ LA CLAVE 9218 CONFIGURADA FIJA
+      // ----------------------------------------------------
+      const syncId = "9218";
+      
+      const [fbStatus, setFbStatus] = useState({ status: "connecting", error: null });
+
+      return <Dashboard syncId={syncId} fbStatus={fbStatus} setFbStatus={setFbStatus} />;
+    };
+
+    // --- DASHBOARD (Lógica de notas) ---
+    const Dashboard = ({ syncId, fbStatus, setFbStatus }) => {
+      const [students, setStudents] = useState([]);
+      const [studentLists, setStudentLists] = useState({
+        'Quinto': [], 'Primero': [], 'Segundo': [], 'Tercero': [], 'Cuarto': []
       });
 
-      const [studentLists, setStudentLists] = useState(() => {
-        const saved = localStorage.getItem(LS_LISTS_KEY);
-        return saved ? safeJSON(saved, defaultLists) : defaultLists;
-      });
-
-      /***********************
-       * ESTADO (UI)
-       ***********************/
+      // Vistas
       const [view, setView] = useState('recent');
       const [isFormOpen, setIsFormOpen] = useState(false);
       const [isReportOpen, setIsReportOpen] = useState(false);
       const [isConfigOpen, setIsConfigOpen] = useState(false);
 
+      // Filtros
       const [topicFilter, setTopicFilter] = useState({ gradeLevel: '', area: '' });
       const [editingTopic, setEditingTopic] = useState(null);
 
-      const gradeLevels = ['Primero', 'Segundo', 'Tercero', 'Cuarto', 'Quinto'];
-      const areas = [
-        'INGLES',
-        'CIENCIAS NATURALES',
-        'CIENCIAS SOCIALES',
-        'ARTISTICA',
-        'EDUCACION FISICA',
-        'ETICA Y VALORES',
-        'RELIGION',
-        'ESPAÑOL (LENGUAJE)',
-        'MATEMATICAS',
-        'TECNOLOGIA E INFORMATICA'
-      ];
-
+      // Formulario
       const [batchData, setBatchData] = useState({ gradeLevel: '', area: '', globalConcept: '', entries: [] });
       const [error, setError] = useState('');
 
+      // Config estudiantes
       const [configGrade, setConfigGrade] = useState('Quinto');
       const [newStudentName, setNewStudentName] = useState('');
 
+      // Reportes
       const [reportFilter, setReportFilter] = useState({ gradeLevel: 'Quinto', area: 'MATEMATICAS' });
 
-      /***********************
-       * FIREBASE ESTADO (Sync)
-       ***********************/
-      const [syncStatus, setSyncStatus] = useState('connecting'); // connecting | ok | offline | error
-      const [lastSync, setLastSync] = useState(null);
-      const [uid, setUid] = useState(null); // NO se muestra (por pedido)
-      const bootstrappedRef = useRef(false);
-      const saveTimerRef = useRef(null);
+      // Constantes
+      const gradeLevels = ['Primero', 'Segundo', 'Tercero', 'Cuarto', 'Quinto'];
+      const areas = [
+        'INGLES', 'CIENCIAS NATURALES', 'CIENCIAS SOCIALES', 'ARTISTICA', 
+        'EDUCACION FISICA', 'ETICA Y VALORES', 'RELIGION', 'ESPAÑOL (LENGUAJE)', 
+        'MATEMATICAS', 'TECNOLOGIA E INFORMATICA'
+      ];
 
-      const isOnline = () => (typeof navigator !== 'undefined' ? navigator.onLine : true);
+      // =========================
+      // FIREBASE SYNC (CORE)
+      // =========================
+      useEffect(() => {
+        if (!window.__fb || !syncId) return;
+        const off = window.__fb.onStatus((s) => setFbStatus({ status: s.status, error: s.error }));
 
-      const getUserDocRef = (uid) => fbDb.collection('users').doc(uid).collection('appData').doc('main');
+        let unsubRecords = null;
+        let unsubLists = null;
 
-      const mergeFromCloud = (cloud) => {
-        // cloud: { students, studentLists }
-        if (cloud && Array.isArray(cloud.students)) setStudents(cloud.students);
-        if (cloud && cloud.studentLists && typeof cloud.studentLists === 'object') setStudentLists(cloud.studentLists);
-      };
+        (async () => {
+          await window.firebaseReady;
+          const { db, collection, query, orderBy, onSnapshot, doc, getDoc, setDoc } = window.__fb;
 
-      const loadFromCloud = async (uid) => {
-        const ref = getUserDocRef(uid);
-        const snap = await ref.get();
-        if (snap.exists) {
-          const data = snap.data() || {};
-          mergeFromCloud(data);
-          setLastSync(data.updatedAt || nowISO());
-          setSyncStatus('ok');
-        } else {
-          // Primera vez: sube lo que tengas local
-          await ref.set({
-            students,
-            studentLists,
-            updatedAt: nowISO(),
-            version: 1
-          }, { merge: true });
-          setLastSync(nowISO());
-          setSyncStatus('ok');
-        }
-      };
+          // 1) Escuchar RECORDS en la carpeta de la clave 9218
+          const recordsRef = collection(db, 'classes', syncId, 'records');
+          const q = query(recordsRef, orderBy('createdAt', 'desc'));
+          
+          unsubRecords = onSnapshot(q, (snap) => {
+            const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            setStudents(data);
+          }, (err) => {
+            console.error(err);
+            setFbStatus({ status: "error", error: "Error de permisos o red" });
+          });
 
-      const scheduleSaveToCloud = (uid, payload) => {
-        if (!fbDb || !uid) return;
-        if (!isOnline()) { setSyncStatus('offline'); return; }
+          // 2) Escuchar LISTAS DE ESTUDIANTES
+          const listsRef = doc(db, 'classes', syncId, 'config', 'studentLists');
+          unsubLists = onSnapshot(listsRef, (snap) => {
+            if (snap.exists()) {
+              setStudentLists(snap.data()?.lists || {});
+            }
+          });
 
-        setSyncStatus(prev => (prev === 'connecting' ? 'connecting' : 'ok'));
-
-        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-        saveTimerRef.current = setTimeout(async () => {
+          // Crear doc inicial de listas si no existe
           try {
-            setSyncStatus('connecting');
-            await getUserDocRef(uid).set({
-              ...payload,
-              updatedAt: nowISO(),
-              version: 1
-            }, { merge: true });
-            setLastSync(nowISO());
-            setSyncStatus('ok');
-          } catch (e) {
-            console.warn("Cloud save error:", e);
-            setSyncStatus(isOnline() ? 'error' : 'offline');
-          }
-        }, 700); // debounce suave
-      };
-
-      /***********************
-       * PERSISTENCIA LOCAL
-       ***********************/
-      useEffect(() => {
-        localStorage.setItem(LS_GRADES_KEY, JSON.stringify(students));
-      }, [students]);
-
-      useEffect(() => {
-        localStorage.setItem(LS_LISTS_KEY, JSON.stringify(studentLists));
-      }, [studentLists]);
-
-      /***********************
-       * FIREBASE BOOT
-       ***********************/
-      useEffect(() => {
-        const onOnline = () => {
-          if (uid) setSyncStatus('connecting');
-        };
-        window.addEventListener('online', onOnline);
-        window.addEventListener('offline', () => setSyncStatus('offline'));
+            const docSnap = await getDoc(listsRef);
+            if (!docSnap.exists()) {
+              await setDoc(listsRef, { lists: studentLists, updatedAt: Date.now() });
+            }
+          } catch(e) { console.log("Init list error", e); }
+        })();
 
         return () => {
-          window.removeEventListener('online', onOnline);
-          window.removeEventListener('offline', () => setSyncStatus('offline'));
+          try { off && off(); } catch {}
+          try { unsubRecords && unsubRecords(); } catch {}
+          try { unsubLists && unsubLists(); } catch {}
         };
-      }, [uid]);
+      }, [syncId]);
 
-      useEffect(() => {
-        // Si firebase no está disponible, no jodemos: se queda local
-        if (!fbAuth || !fbDb) {
-          setSyncStatus('error');
-          return;
+      // Guardar listas en Firebase al modificar
+      const saveListsToFirebase = async (newLists) => {
+        setStudentLists(newLists);
+        if (!window.__fb || !syncId) return;
+        try {
+          const { db, doc, setDoc } = window.__fb;
+          const listsRef = doc(db, 'classes', syncId, 'config', 'studentLists');
+          await setDoc(listsRef, { lists: newLists, updatedAt: Date.now() }, { merge: true });
+        } catch (e) {
+          console.error("Error saving lists", e);
         }
-        if (!isOnline()) {
-          setSyncStatus('offline');
-          return;
-        }
+      };
 
-        setSyncStatus('connecting');
+      // --- HELPERS CRUD ---
+      const writeRecord = async (record) => {
+        const { db, doc, setDoc } = window.__fb;
+        const ref = doc(db, 'classes', syncId, 'records', record.id);
+        await setDoc(ref, record, { merge: true });
+      };
 
-        // Auth anónimo
-        fbAuth.onAuthStateChanged(async (user) => {
-          try {
-            if (!user) {
-              await fbAuth.signInAnonymously();
-              return;
-            }
-            setUid(user.uid);
+      const removeRecord = async (recordId) => {
+        const { db, doc, deleteDoc } = window.__fb;
+        const ref = doc(db, 'classes', syncId, 'records', recordId);
+        await deleteDoc(ref);
+      };
 
-            // Cargar de nube SOLO una vez al arrancar
-            if (!bootstrappedRef.current) {
-              bootstrappedRef.current = true;
-              await loadFromCloud(user.uid);
-            } else {
-              setSyncStatus('ok');
-            }
-          } catch (e) {
-            console.warn("Auth/boot error:", e);
-            setSyncStatus(isOnline() ? 'error' : 'offline');
-          }
-        });
-      }, []);
-
-      // Cada cambio local, lo empujamos a la nube (si hay uid)
-      useEffect(() => {
-        if (!uid) return;
-        if (!fbDb) return;
-        scheduleSaveToCloud(uid, { students, studentLists });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-      }, [students, studentLists, uid]);
-
-      /***********************
-       * TEMAS (AGRUPACIÓN)
-       ***********************/
+      // --- LOGICA DE NEGOCIO ---
+      
       const topics = useMemo(() => {
         const grouped = {};
-        const relevantStudents = students.filter(s => {
+        const relevant = students.filter(s => {
           if (view === 'topics' && topicFilter.gradeLevel && topicFilter.area) {
             return s.gradeLevel === topicFilter.gradeLevel && s.area === topicFilter.area;
           }
           return true;
         });
-
-        relevantStudents.forEach(s => {
+        relevant.forEach(s => {
           const key = `${s.gradeLevel}-${s.area}-${s.concept}`;
           if (!grouped[key]) {
             grouped[key] = {
@@ -332,59 +298,53 @@
               gradeLevel: s.gradeLevel,
               area: s.area,
               concept: s.concept,
-              date: s.date,
+              date: s.date || '',
               count: 0
             };
           }
           grouped[key].count++;
         });
-        return Object.values(grouped).sort((a, b) => new Date(b.date) - new Date(a.date));
+        return Object.values(grouped).sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
       }, [students, view, topicFilter]);
 
-      /***********************
-       * GESTIÓN DE ESTUDIANTES
-       ***********************/
+      // Gestión estudiantes
       const addStudentToList = (e) => {
         e.preventDefault();
         if (!newStudentName.trim()) return;
-        setStudentLists(prev => ({
-          ...prev,
-          [configGrade]: [...(prev[configGrade] || []), newStudentName.trim()]
-        }));
+        const updated = {
+          ...studentLists,
+          [configGrade]: [...(studentLists[configGrade] || []), newStudentName.trim()]
+        };
+        saveListsToFirebase(updated);
         setNewStudentName('');
       };
 
       const removeStudentFromList = (nameToRemove) => {
-        if (confirm(`¿Eliminar a ${nameToRemove} de la lista de ${configGrade}?`)) {
-          setStudentLists(prev => ({
-            ...prev,
-            [configGrade]: prev[configGrade].filter(name => name !== nameToRemove)
-          }));
+        if (confirm(`¿Eliminar a ${nameToRemove}?`)) {
+          const updated = {
+            ...studentLists,
+            [configGrade]: studentLists[configGrade].filter(name => name !== nameToRemove)
+          };
+          saveListsToFirebase(updated);
         }
       };
 
-      /***********************
-       * GESTIÓN DE TEMAS (ELIMINAR)
-       ***********************/
-      const deleteTopic = (e, topic) => {
+      // Borrar Tema
+      const deleteTopic = async (e, topic) => {
         e.stopPropagation();
-        if (confirm(`¿Estás seguro de ELIMINAR el tema "${topic.concept}"?\n\nSe borrarán TODAS las notas asociadas.`)) {
-          setStudents(prev => prev.filter(s =>
-            !(s.gradeLevel === topic.gradeLevel && s.area === topic.area && s.concept === topic.concept)
-          ));
-        }
+        if (!confirm(`¿Borrar TODAS las notas de "${topic.concept}"?`)) return;
+        const toDelete = students.filter(s => s.gradeLevel === topic.gradeLevel && s.area === topic.area && s.concept === topic.concept);
+        for (const r of toDelete) await removeRecord(r.id);
       };
 
-      /***********************
-       * FORMULARIO DE NOTAS
-       ***********************/
+      // Guardar Lote
       const handleBatchConfigChange = (e) => {
         const { name, value } = e.target;
         setBatchData(prev => {
           const newData = { ...prev, [name]: value };
           if (name === 'gradeLevel') {
-            const list = studentLists[value];
-            if (list && list.length > 0) {
+            const list = studentLists[value] || [];
+            if (list.length > 0) {
               newData.entries = list.map(n => ({ name: n, score: '', individualConcept: '', observation: '' }));
             } else {
               newData.entries = [{ name: '', score: '', individualConcept: '', observation: '' }];
@@ -404,763 +364,310 @@
         setBatchData(prev => ({ ...prev, entries: newEntries }));
       };
 
-      const addManualEntry = () => {
-        setBatchData(prev => ({
-          ...prev,
-          entries: [...prev.entries, { name: '', score: '', individualConcept: '', observation: '' }]
-        }));
-      };
-
-      const removeEntry = (index) => {
-        if (batchData.entries.length > 1) {
-          setBatchData(prev => ({ ...prev, entries: prev.entries.filter((_, i) => i !== index) }));
-        }
-      };
-
       const createRecord = (grade, area, name, score, conceptRaw, observation) => {
         const numScore = parseFloat(score);
         let finalConcept = conceptRaw;
-
         if (!finalConcept) {
           if (numScore >= 4.5) finalConcept = "Excelente desempeño";
           else if (numScore >= 4.0) finalConcept = "Buen trabajo";
           else if (numScore >= 3.0) finalConcept = "Aprobado básico";
           else finalConcept = "Necesita refuerzo";
         }
-
         return {
-          id: Date.now() + Math.random(),
-          gradeLevel: grade,
-          area: area,
-          name: name,
-          score: score,
-          concept: finalConcept,
-          observation: observation || '',
-          date: new Date().toLocaleDateString('es-CO')
+          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          gradeLevel: grade, area, name, score, 
+          concept: finalConcept, observation: observation || '',
+          date: new Date().toLocaleDateString('es-CO'), createdAt: Date.now()
         };
       };
 
-      const handleSaveBatch = (e) => {
-        e.preventDefault();
-        if (!batchData.gradeLevel || !batchData.area) { setError('Selecciona Grado y Área'); return; }
+      const handleSaveBatch = async () => {
+        if (!batchData.gradeLevel || !batchData.area) { setError('Faltan datos básicos'); return; }
+        const validEntries = batchData.entries.filter(en => en.name.trim() !== '' && en.score !== '');
+        if (validEntries.length === 0) { setError('No hay notas válidas'); return; }
 
-        const validEntries = batchData.entries.filter(e => e.name.trim() !== '' && e.score !== '');
-        if (validEntries.length === 0) { setError('Ingresa al menos una nota válida'); return; }
-
-        const newRecords = validEntries.map(entry => {
-          const normalizedScore = parseInput(entry.score);
-          return createRecord(
-            batchData.gradeLevel,
-            batchData.area,
-            entry.name,
-            normalizedScore,
-            entry.individualConcept || batchData.globalConcept,
-            entry.observation
-          );
-        });
-
-        setStudents([...newRecords, ...students]);
-        setIsFormOpen(false);
-        setBatchData({ gradeLevel: '', area: '', globalConcept: '', entries: [] });
-        setError('');
+        try {
+          for (const entry of validEntries) {
+            const r = createRecord(batchData.gradeLevel, batchData.area, entry.name, parseInput(entry.score), entry.individualConcept || batchData.globalConcept, entry.observation);
+            await writeRecord(r);
+          }
+          setIsFormOpen(false);
+          setBatchData({ gradeLevel: '', area: '', globalConcept: '', entries: [] });
+          setError('');
+          Swal.fire({ icon: 'success', title: 'Guardado', timer: 1500, showConfirmButton: false });
+        } catch (e) {
+          alert("Error guardando: " + e.message);
+        }
       };
 
-      /***********************
-       * EDICIÓN DE TEMA
-       ***********************/
+      // Edición Tema
       const openTopicEditor = (topic) => {
-        const existingRecords = students.filter(s =>
-          s.gradeLevel === topic.gradeLevel &&
-          s.area === topic.area &&
-          s.concept === topic.concept
-        );
-
-        const currentClassList = studentLists[topic.gradeLevel] || [];
-        const missingStudents = currentClassList.filter(studentName =>
-          !existingRecords.some(r => r.name === studentName)
-        );
-
-        const placeholderRecords = missingStudents.map(name => ({
-          id: 'temp-' + Math.random(),
-          gradeLevel: topic.gradeLevel,
-          area: topic.area,
-          concept: topic.concept,
-          name: name,
-          score: '',
-          observation: 'Pendiente nivelación',
-          date: new Date().toLocaleDateString('es-CO'),
-          isNew: true
+        const existing = students.filter(s => s.gradeLevel === topic.gradeLevel && s.area === topic.area && s.concept === topic.concept);
+        const currentList = studentLists[topic.gradeLevel] || [];
+        const missing = currentList.filter(name => !existing.some(r => r.name === name));
+        
+        const placeholders = missing.map(name => ({
+          id: 'temp-' + Math.random(), gradeLevel: topic.gradeLevel, area: topic.area, concept: topic.concept,
+          name, score: '', observation: 'Pendiente', date: new Date().toLocaleDateString(), createdAt: Date.now(), isNew: true
         }));
 
-        setEditingTopic({
-          ...topic,
-          records: [...JSON.parse(JSON.stringify(existingRecords)), ...placeholderRecords]
-        });
+        setEditingTopic({ ...topic, records: [...existing, ...placeholders] });
       };
 
-      const handleTopicRecordChange = (id, field, value) => {
-        if (field === 'score' && !validateScoreInput(value)) return;
-        setEditingTopic(prev => ({
-          ...prev,
-          records: prev.records.map(r => r.id === id ? { ...r, [field]: value } : r)
-        }));
-      };
-
-      const handleAddStudentToTopic = () => {
-        const newRecord = {
-          id: 'temp-' + Date.now(),
-          gradeLevel: editingTopic.gradeLevel,
-          area: editingTopic.area,
-          concept: editingTopic.concept,
-          name: '',
-          score: '',
-          observation: '',
-          date: new Date().toLocaleDateString('es-CO'),
-          isNew: true
-        };
-        setEditingTopic(prev => ({ ...prev, records: [...prev.records, newRecord] }));
-      };
-
-      const saveTopicChanges = () => {
-        const updatedRecords = editingTopic.records.filter(r => r.name && r.score !== '');
-        const filteredStudents = students.filter(s =>
-          !(s.gradeLevel === editingTopic.gradeLevel && s.area === editingTopic.area && s.concept === editingTopic.concept)
-        );
-
-        const cleanRecords = updatedRecords.map(r => {
-          const { isNew, ...rest } = r;
-          const normalizedScore = parseInput(rest.score.toString());
-          return isNew
-            ? { ...rest, score: normalizedScore, id: Date.now() + Math.random() }
-            : { ...rest, score: normalizedScore };
-        });
-
-        setStudents([...cleanRecords, ...filteredStudents]);
+      const saveTopicChanges = async () => {
+        const toSave = editingTopic.records.filter(r => r.name && r.score !== '');
+        for (const r of toSave) {
+          const normScore = parseInput((r.score ?? '').toString());
+          if (r.isNew) {
+            await writeRecord(createRecord(r.gradeLevel, r.area, r.name, normScore, r.concept, r.observation));
+          } else {
+            await writeRecord({ ...r, score: normScore, updatedAt: Date.now() });
+          }
+        }
         setEditingTopic(null);
+        Swal.fire({ icon: 'success', title: 'Actualizado', timer: 1000, showConfirmButton: false });
       };
 
-      /***********************
-       * REPORTES
-       ***********************/
-      const filteredStudents = students.filter(s => s.gradeLevel === reportFilter.gradeLevel && s.area === reportFilter.area);
-
+      // Reporte
       const downloadPivotCSV = () => {
-        if (filteredStudents.length === 0) { alert("No hay datos para descargar."); return; }
-        const uniqueConcepts = [...new Set(filteredStudents.map(s => s.concept))];
-        const uniqueStudents = [...new Set(filteredStudents.map(s => s.name))];
-        let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-        csvContent += "Estudiante," + uniqueConcepts.join(",") + "\n";
-        uniqueStudents.forEach(studentName => {
-          let row = [`"${studentName}"`];
-          uniqueConcepts.forEach(concept => {
-            const record = filteredStudents.find(s => s.name === studentName && s.concept === concept);
-            row.push(record ? formatDisplay(record.score) : "");
+        const filtered = students.filter(s => s.gradeLevel === reportFilter.gradeLevel && s.area === reportFilter.area);
+        if (filtered.length === 0) { Swal.fire('Sin datos', 'No hay registros para este filtro', 'info'); return; }
+        
+        const concepts = [...new Set(filtered.map(s => s.concept))];
+        const names = [...new Set(filtered.map(s => s.name))];
+        
+        let csv = "data:text/csv;charset=utf-8,\uFEFFEstudiante," + concepts.join(",") + "\n";
+        names.forEach(name => {
+          let row = [`"${name}"`];
+          concepts.forEach(c => {
+            const r = filtered.find(s => s.name === name && s.concept === c);
+            row.push(r ? formatDisplay(r.score) : "");
           });
-          csvContent += row.join(",") + "\n";
+          csv += row.join(",") + "\n";
         });
-        const encodedUri = encodeURI(csvContent);
+        
         const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `Planilla_${reportFilter.gradeLevel}_${reportFilter.area}_Horizontal.csv`);
-        document.body.appendChild(link);
+        link.href = encodeURI(csv);
+        link.download = `Planilla_${reportFilter.gradeLevel}_${reportFilter.area}.csv`;
         link.click();
-        document.body.removeChild(link);
       };
 
-      /***********************
-       * UI HELPERS
-       ***********************/
+      // Colores UI
       const getScoreColor = (s) => {
         const n = parseFloat(parseInput(s.toString()));
         if (n >= 4.0) return 'text-green-600 bg-green-50 border-green-200';
         if (n >= 3.0) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
         return 'text-red-600 bg-red-50 border-red-200';
       };
-
-      const getAreaColor = (a) => {
-        switch (a) {
-          case 'MATEMATICAS': return 'bg-blue-100 text-blue-700';
-          case 'ESPAÑOL (LENGUAJE)': return 'bg-orange-100 text-orange-700';
-          case 'CIENCIAS NATURALES': return 'bg-green-100 text-green-700';
-          case 'CIENCIAS SOCIALES': return 'bg-emerald-100 text-emerald-700';
-          case 'INGLES': return 'bg-indigo-100 text-indigo-700';
-          case 'ARTISTICA': return 'bg-pink-100 text-pink-700';
-          case 'EDUCACION FISICA': return 'bg-amber-100 text-amber-700';
-          case 'ETICA Y VALORES': return 'bg-cyan-100 text-cyan-700';
-          case 'RELIGION': return 'bg-purple-100 text-purple-700';
-          case 'TECNOLOGIA E INFORMATICA': return 'bg-slate-200 text-slate-700';
-          default: return 'bg-slate-100 text-slate-700';
-        }
-      };
-
-      const needsObservation = (s) => {
-        const n = parseFloat(parseInput(s.toString()));
-        return !isNaN(n) && n < 3.0 && s !== '';
-      };
-
+      
       const average = students.length > 0
-        ? (students.reduce((acc, curr) => acc + parseFloat(parseInput(curr.score.toString())), 0) / students.length)
-            .toFixed(1).replace('.', ',')
+        ? (students.reduce((acc, curr) => acc + parseFloat(parseInput(curr.score.toString()) || 0), 0) / students.length).toFixed(1).replace('.', ',')
         : '0,0';
 
-      const SyncDot = () => {
-        // Botoncito pequeño: solo icono + tooltip
-        const styleByStatus = {
-          ok:         "bg-white/20 border-white/25 text-white",
-          connecting: "bg-white/15 border-white/20 text-white/90 animate-pulse",
-          offline:    "bg-black/10 border-white/15 text-white/80",
-          error:      "bg-red-500/20 border-white/20 text-white"
-        };
-
-        const labelByStatus = {
-          ok:         "Vinculado y sincronizando",
-          connecting: "Conectando / sincronizando…",
-          offline:    "Sin internet (guardando local)",
-          error:      "Error de vínculo (guardando local)"
-        };
-
-        const cls = styleByStatus[syncStatus] || styleByStatus.connecting;
-        const title = labelByStatus[syncStatus] || "Estado de vínculo";
-
-        return (
-          <button
-            title={lastSync ? `${title}\nÚltima sync: ${new Date(lastSync).toLocaleString('es-CO')}` : title}
-            onClick={() => {
-              // mini acción: si hay internet, forzamos un guardado rápido
-              if (!uid || !fbDb) return;
-              if (!isOnline()) { alert("Sin internet: se guarda local y luego se sincroniza."); return; }
-              scheduleSaveToCloud(uid, { students, studentLists });
-            }}
-            className={`p-2 rounded-lg border backdrop-blur-md transition-all active:scale-95 ${cls}`}
-            aria-label="Estado de vínculo"
-          >
-            {syncStatus === 'ok' || syncStatus === 'connecting'
-              ? <Cloud size={18} />
-              : <CloudOff size={18} />
-            }
-          </button>
-        );
-      };
-
-      /***********************
-       * RENDER
-       ***********************/
       return (
         <div className="min-h-screen pb-28">
-          {/* Header */}
-          <header className="bg-lime-600 text-white p-5 rounded-b-3xl shadow-lg relative overflow-hidden z-10">
-            <div className="flex justify-between items-center relative z-10">
+          <header className="bg-lime-600 text-white p-5 rounded-b-3xl shadow-lg z-10 sticky top-0">
+            <div className="flex justify-between items-center">
               <div>
-                <h1 className="text-xl font-bold flex items-center gap-2 uppercase tracking-tight">
-                  <GraduationCap size={24} /> SEGUIMIENTO ACADÉMICO
+                <h1 className="text-lg font-bold flex items-center gap-2 uppercase">
+                  <GraduationCap size={24} /> Seguimiento
                 </h1>
-                <p className="text-lime-100 text-xs mt-1 font-semibold tracking-wider">PRIMARIA 2026</p>
-                {/* ✅ Eliminado: Firebase OK grande + UID */}
+                <p className="text-lime-100 text-[10px] font-bold tracking-widest uppercase flex items-center gap-1">
+                  <KeyRound size={10} /> ID: {syncId}
+                </p>
               </div>
-
-              <div className="flex gap-2 items-center">
-                {/* ✅ Botoncito pequeño de vínculo */}
-                <SyncDot />
-
-                <button
-                  onClick={() => setIsConfigOpen(true)}
-                  className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white p-2 rounded-lg border border-white/20 transition-all active:scale-95"
-                  title="Gestión de estudiantes"
-                >
-                  <Settings size={20} />
-                </button>
-
-                <button
-                  onClick={() => setIsReportOpen(true)}
-                  className="bg-white/20 backdrop-blur-md hover:bg-white/30 text-white px-3 py-2 rounded-lg flex flex-col items-center gap-1 border border-white/20 transition-all active:scale-95"
-                  title="Planillas"
-                >
-                  <FileSpreadsheet size={18} />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">Planillas</span>
-                </button>
+              <div className="flex gap-2">
+                <button onClick={() => setIsConfigOpen(true)} className="bg-white/20 p-2 rounded-lg backdrop-blur-sm"><Settings size={18} /></button>
+                <button onClick={() => setIsReportOpen(true)} className="bg-white/20 p-2 rounded-lg backdrop-blur-sm"><FileSpreadsheet size={18} /></button>
               </div>
             </div>
           </header>
 
-          {/* Nav */}
           <div className="px-4 mt-4 flex gap-2 justify-center">
-            <button
-              onClick={() => setView('recent')}
-              className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
-                view === 'recent' ? 'bg-lime-600 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200'
-              }`}
-            >
-              Últimos Registros
-            </button>
-
-            <button
-              onClick={() => setView('topics')}
-              className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
-                view === 'topics' ? 'bg-lime-600 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200'
-              }`}
-            >
-              Temas / Actividades
-            </button>
+            <button onClick={() => setView('recent')} className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${view === 'recent' ? 'bg-lime-600 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200'}`}>Últimos</button>
+            <button onClick={() => setView('topics')} className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${view === 'topics' ? 'bg-lime-600 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200'}`}>Por Temas</button>
           </div>
 
           <main className="p-4 max-w-md mx-auto space-y-3">
             {view === 'recent' && (
               <>
                 <div className="flex justify-between items-center px-1">
-                  <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wide">Bitácora Reciente</h2>
-                  <div className="bg-slate-200 px-2 py-1 rounded text-[10px] font-bold text-slate-500">
-                    Promedio: {average}
-                  </div>
+                  <h2 className="text-xs font-bold text-slate-400 uppercase">Historial General</h2>
+                  <span className="text-[10px] font-bold bg-slate-200 text-slate-600 px-2 py-1 rounded">Promedio: {average}</span>
                 </div>
-
-                {students.length === 0 ? (
-                  <div className="text-center py-20 px-6 opacity-40">
-                    <Layers size={48} className="mx-auto mb-4 text-slate-300" />
-                    <p className="text-slate-500 font-medium">No hay notas registradas.</p>
-                  </div>
-                ) : (
-                  students.slice(0, 20).map((s) => (
-                    <div key={s.id} className="bg-white p-3 rounded-xl shadow-sm border border-slate-100 relative group animate-fade-in">
-                      <div className="flex gap-2 mb-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
-                          {s.gradeLevel}
-                        </span>
-                        <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${getAreaColor(s.area)}`}>
-                          {s.area}
-                        </span>
+                {students.length === 0 ? <p className="text-center text-slate-400 text-sm py-10">Sin registros en la clase {syncId}</p> : 
+                  students.slice(0, 30).map(s => (
+                    <div key={s.id} className="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex justify-between items-start animate-fade-in">
+                      <div className="min-w-0 pr-2">
+                        <div className="flex gap-1 mb-1">
+                          <span className="text-[9px] uppercase font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">{s.gradeLevel}</span>
+                          <span className="text-[9px] uppercase font-black bg-lime-100 text-lime-700 px-1.5 py-0.5 rounded truncate max-w-[100px]">{s.area}</span>
+                        </div>
+                        <h3 className="font-bold text-slate-800 text-sm">{s.name}</h3>
+                        <p className="text-xs text-slate-500 truncate">{s.concept}</p>
                       </div>
-
-                      <div className="flex justify-between items-start">
-                        <div className="min-w-0 pr-2 flex-1">
-                          <h3 className="font-bold text-slate-800 capitalize leading-tight">{s.name}</h3>
-                          <p className="text-xs text-slate-500 mt-1 italic truncate">{s.concept}</p>
-                          {s.observation && (
-                            <div className="mt-2 flex items-start gap-1 text-slate-600 bg-slate-50 p-1.5 rounded text-[11px] leading-tight border border-slate-200">
-                              <AlertTriangle size={10} className="mt-0.5 shrink-0 text-slate-400" />
-                              <span>{s.observation}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex flex-col items-end gap-2 pl-2 border-l border-slate-100">
-                          <span className={`font-mono font-bold text-lg px-2.5 py-1 rounded-lg border ${getScoreColor(s.score)}`}>
-                            {formatDisplay(s.score)}
-                          </span>
-                        </div>
+                      <div className="text-right">
+                        <span className={`block font-mono font-bold text-lg px-2 py-0.5 rounded border ${getScoreColor(s.score)}`}>{formatDisplay(s.score)}</span>
+                        <button onClick={() => removeRecord(s.id)} className="text-[10px] text-slate-300 hover:text-red-500 mt-1 uppercase font-bold">Borrar</button>
                       </div>
                     </div>
                   ))
-                )}
+                }
               </>
             )}
 
             {view === 'topics' && (
               <>
-                <div className="bg-lime-50 p-4 rounded-xl border border-lime-100 mb-4 animate-fade-in">
-                  <div className="flex items-center gap-2 mb-3 text-lime-700 font-bold text-sm uppercase">
-                    <Filter size={16} /> Filtro de Búsqueda
-                  </div>
-
+                <div className="bg-lime-50 p-4 rounded-xl border border-lime-100 mb-4">
                   <div className="grid grid-cols-2 gap-3">
-                    <select
-                      value={topicFilter.gradeLevel}
-                      onChange={(e) => setTopicFilter({ ...topicFilter, gradeLevel: e.target.value })}
-                      className="w-full p-2 text-xs border border-lime-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500"
-                    >
-                      <option value="">Grado...</option>
-                      {gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}
+                    <select value={topicFilter.gradeLevel} onChange={(e) => setTopicFilter({...topicFilter, gradeLevel: e.target.value})} className="p-2 text-xs border border-lime-200 rounded-lg">
+                      <option value="">Grado...</option>{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}
                     </select>
-
-                    <select
-                      value={topicFilter.area}
-                      onChange={(e) => setTopicFilter({ ...topicFilter, area: e.target.value })}
-                      className="w-full p-2 text-xs border border-lime-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500"
-                    >
-                      <option value="">Área...</option>
-                      {areas.map(a => <option key={a} value={a}>{a}</option>)}
+                    <select value={topicFilter.area} onChange={(e) => setTopicFilter({...topicFilter, area: e.target.value})} className="p-2 text-xs border border-lime-200 rounded-lg">
+                      <option value="">Área...</option>{areas.map(a => <option key={a} value={a}>{a}</option>)}
                     </select>
                   </div>
                 </div>
-
-                {(!topicFilter.gradeLevel || !topicFilter.area) ? (
-                  <div className="text-center py-10 px-4 text-slate-400 text-sm animate-fade-in">
-                    <Layers size={40} className="mx-auto mb-2 opacity-50" />
-                    Selecciona un <strong>Grado</strong> y un <strong>Área</strong> arriba.
-                  </div>
-                ) : topics.length === 0 ? (
-                  <div className="text-center py-10 text-slate-400 text-sm animate-fade-in">No se encontraron temas.</div>
-                ) : (
-                  topics.map((t) => (
-                    <div
-                      key={t.id}
-                      onClick={() => openTopicEditor(t)}
-                      className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 active:scale-95 transition-transform cursor-pointer hover:border-lime-200 animate-slide-up relative group"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-bold text-slate-800 text-lg leading-tight">{t.concept}</h3>
-                          <div className="flex gap-2 mt-2">
-                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${getAreaColor(t.area)}`}>{t.area}</span>
-                            <span className="text-[10px] font-bold uppercase text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">{t.gradeLevel}</span>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <div className="bg-lime-50 text-lime-600 p-2 rounded-lg"><Edit2 size={18} /></div>
-                          <button onClick={(e) => deleteTopic(e, t)} className="bg-red-50 text-red-500 p-2 rounded-lg hover:bg-red-100 z-10">
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
+                {(!topicFilter.gradeLevel || !topicFilter.area) ? <div className="text-center text-slate-400 text-sm py-8">Selecciona filtros para ver temas.</div> :
+                  topics.map(t => (
+                    <div key={t.id} onClick={() => openTopicEditor(t)} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 active:scale-95 transition-transform flex justify-between items-center cursor-pointer animate-slide-up">
+                      <div>
+                        <h3 className="font-bold text-slate-800 leading-tight">{t.concept}</h3>
+                        <p className="text-xs text-slate-500 mt-1">{t.count} Evaluados</p>
                       </div>
-
-                      <div className="mt-3 pt-3 border-t border-slate-50 flex items-center gap-2 text-xs text-slate-500">
-                        <Users size={14} /> {t.count} Estudiantes evaluados
+                      <div className="flex gap-2">
+                         <div className="bg-lime-50 text-lime-600 p-2 rounded-lg"><Edit2 size={16} /></div>
+                         <button onClick={(e) => deleteTopic(e, t)} className="bg-red-50 text-red-500 p-2 rounded-lg"><Trash2 size={16} /></button>
                       </div>
                     </div>
                   ))
-                )}
+                }
               </>
             )}
           </main>
 
-          <div className="fixed bottom-6 right-6 z-30">
-            <button
-              onClick={() => setIsFormOpen(true)}
-              className="bg-lime-600 hover:bg-lime-700 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
-              title="Nuevo registro"
-            >
-              <Plus size={28} strokeWidth={2.5} />
-            </button>
-          </div>
+          <button onClick={() => setIsFormOpen(true)} className="fixed bottom-6 right-6 bg-lime-600 hover:bg-lime-700 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95 z-40">
+            <Plus size={28} />
+          </button>
 
-          {/* MODAL GESTIÓN DE ESTUDIANTES */}
+          {/* MODAL CONFIG */}
           {isConfigOpen && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <div className="bg-white w-full max-w-md h-[80vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-slide-up">
-                <div className="bg-slate-800 p-4 text-white flex justify-between items-center">
-                  <h2 className="font-bold text-lg flex items-center gap-2"><Users size={20} /> Gestión de Estudiantes</h2>
-                  <button onClick={() => setIsConfigOpen(false)} className="text-slate-400 hover:text-white"><X size={24} /></button>
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white w-full max-w-sm h-[70vh] rounded-2xl flex flex-col shadow-2xl animate-slide-up">
+                <div className="p-4 bg-slate-800 text-white flex justify-between items-center rounded-t-2xl">
+                  <h3 className="font-bold flex gap-2"><Users size={18}/> Estudiantes</h3>
+                  <button onClick={() => setIsConfigOpen(false)}><X size={20}/></button>
                 </div>
-
-                <div className="p-4 bg-slate-50 border-b border-slate-100">
-                  <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Selecciona Grado</label>
-                  <select value={configGrade} onChange={(e) => setConfigGrade(e.target.value)} className="w-full p-2 rounded-lg border border-slate-300">
-                    {gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}
-                  </select>
+                <div className="p-4 border-b">
+                   <select value={configGrade} onChange={e => setConfigGrade(e.target.value)} className="w-full p-2 border rounded-lg">{gradeLevels.map(g=><option key={g} value={g}>{g}</option>)}</select>
                 </div>
-
                 <div className="flex-1 overflow-y-auto p-4">
-                  <div className="mb-4 flex gap-2">
-                    <input
-                      type="text"
-                      value={newStudentName}
-                      onChange={(e) => setNewStudentName(e.target.value)}
-                      placeholder="Nombre del nuevo estudiante"
-                      className="flex-1 p-2 border border-slate-300 rounded-lg text-sm"
-                    />
-                    <button onClick={addStudentToList} className="bg-lime-600 text-white p-2 rounded-lg">
-                      <Plus size={20} />
-                    </button>
+                  <div className="flex gap-2 mb-4">
+                    <input type="text" value={newStudentName} onChange={e => setNewStudentName(e.target.value)} placeholder="Nuevo Estudiante" className="flex-1 p-2 border rounded-lg text-sm" />
+                    <button onClick={addStudentToList} className="bg-lime-600 text-white p-2 rounded-lg"><Plus/></button>
                   </div>
-
                   <div className="space-y-2">
-                    {(!studentLists[configGrade] || studentLists[configGrade].length === 0) ? (
-                      <p className="text-slate-400 text-sm text-center italic mt-4">
-                        Lista vacía. Usa el modo manual o agrega estudiantes.
-                      </p>
-                    ) : (
-                      studentLists[configGrade].map((name, idx) => (
-                        <div key={idx} className="flex justify-between items-center bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
-                          <span className="font-medium text-slate-700">{name}</span>
-                          <button onClick={() => removeStudentFromList(name)} className="text-slate-300 hover:text-red-500">
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                <div className="p-4 bg-slate-50 text-xs text-slate-400 text-center">
-                  Si agregas estudiantes aquí, aparecerán automáticamente en las actividades pasadas para nivelación.
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* MODAL NUEVO REGISTRO */}
-          {isFormOpen && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 flex items-end sm:items-center justify-center p-0 sm:p-4">
-              <div className="bg-white w-full max-w-md h-[95vh] sm:h-auto sm:max-h-[90vh] sm:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col animate-slide-up">
-                <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center rounded-t-2xl shrink-0">
-                  <div><h2 className="font-bold text-lg text-slate-800">Nueva Actividad</h2></div>
-                  <button onClick={() => setIsFormOpen(false)} className="bg-white p-2 rounded-full text-slate-400 hover:text-slate-600 shadow-sm border border-slate-200">
-                    <X size={20} />
-                  </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-4 space-y-5">
-                  {error && (
-                    <div className="bg-red-50 text-red-600 text-xs font-bold p-3 rounded-lg flex items-center gap-2">
-                      <AlertCircle size={14} /> {error}
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase">Grado</label>
-                      <select
-                        name="gradeLevel"
-                        value={batchData.gradeLevel}
-                        onChange={handleBatchConfigChange}
-                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-lime-500 outline-none"
-                      >
-                        <option value="">Seleccionar...</option>
-                        {gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}
-                      </select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase">Área</label>
-                      <select
-                        name="area"
-                        value={batchData.area}
-                        onChange={handleBatchConfigChange}
-                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-lime-500 outline-none"
-                      >
-                        <option value="">Seleccionar...</option>
-                        {areas.map(a => <option key={a} value={a}>{a}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="bg-lime-200 p-3 rounded-xl border border-lime-300 shadow-sm">
-                    <label className="text-[10px] font-bold text-lime-800 uppercase flex items-center gap-1 mb-1">
-                      <BookOpen size={10} /> Nombre de Actividad / Tema
-                    </label>
-                    <input
-                      type="text"
-                      name="globalConcept"
-                      placeholder="Ej: Taller División, Quiz Tablas..."
-                      value={batchData.globalConcept}
-                      onChange={handleBatchConfigChange}
-                      className="w-full bg-white p-2 rounded-lg border border-lime-400 text-lime-900 text-sm focus:outline-none placeholder:text-slate-500"
-                    />
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-end pb-1 border-b border-slate-100">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
-                        <Users size={12} /> Estudiantes
-                      </label>
-                      {(!studentLists[batchData.gradeLevel] || studentLists[batchData.gradeLevel].length === 0) && (
-                        <button onClick={addManualEntry} className="text-xs text-lime-600 font-medium flex items-center gap-1">
-                          <Plus size={12} /> Agregar fila
-                        </button>
-                      )}
-                    </div>
-
-                    {batchData.entries.length === 0 ? (
-                      <div className="text-center text-sm text-slate-400 py-4 italic">Selecciona un grado...</div>
-                    ) : batchData.entries.map((entry, idx) => {
-                      const showObs = needsObservation(entry.score);
-                      const isManual = !studentLists[batchData.gradeLevel] || studentLists[batchData.gradeLevel].length === 0;
-
-                      return (
-                        <div key={idx} className="bg-white border border-slate-100 rounded-xl p-3 shadow-sm animate-fade-in space-y-2">
-                          <div className="flex gap-2 items-center">
-                            <div className="w-[40%]">
-                              <input
-                                type="text"
-                                placeholder="Nombre"
-                                value={entry.name}
-                                readOnly={!isManual}
-                                onChange={(e) => handleEntryChange(idx, 'name', e.target.value)}
-                                className={`w-full p-2 text-sm border rounded-lg outline-none ${
-                                  !isManual ? 'bg-slate-50 text-slate-600 font-bold border-transparent' : 'bg-white border-slate-200 focus:border-lime-500'
-                                }`}
-                              />
-                            </div>
-
-                            <div className="w-16">
-                              <input
-                                type="text"
-                                inputMode="decimal"
-                                placeholder="0,0"
-                                value={entry.score}
-                                onChange={(e) => handleEntryChange(idx, 'score', e.target.value)}
-                                className={`w-full p-2 text-sm text-center font-bold border rounded-lg outline-none focus:ring-2 ${
-                                  showObs ? 'border-red-300 text-red-600 focus:ring-red-100' : 'border-slate-200 focus:ring-lime-100 focus:border-lime-500'
-                                }`}
-                              />
-                            </div>
-
-                            <div className="flex-1">
-                              <input
-                                type="text"
-                                placeholder="Obs..."
-                                value={entry.observation}
-                                onChange={(e) => handleEntryChange(idx, 'observation', e.target.value)}
-                                className="w-full p-2 text-xs border border-slate-200 bg-slate-50 focus:bg-white rounded-lg outline-none focus:border-lime-500 text-slate-600 placeholder:text-slate-400"
-                              />
-                            </div>
-
-                            {isManual && (
-                              <button onClick={() => removeEntry(idx)} className="text-slate-300 hover:text-red-500 p-1">
-                                <X size={18} />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="p-4 border-t border-slate-100 bg-white pb-8 sm:pb-4 rounded-b-2xl shrink-0">
-                  <button
-                    onClick={handleSaveBatch}
-                    className="w-full bg-lime-600 hover:bg-lime-700 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-lime-200 flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
-                  >
-                    <Save size={18} /> Guardar Todo
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* MODAL EDICIÓN */}
-          {editingTopic && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-              <div className="bg-white w-full max-w-md h-[95vh] sm:h-auto sm:max-h-[90vh] sm:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col animate-slide-up">
-                <div className="p-4 border-b border-slate-100 bg-slate-50 rounded-t-2xl shrink-0">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h2 className="font-bold text-lg text-slate-800">{editingTopic.concept}</h2>
-                      <p className="text-xs text-lime-600 font-semibold uppercase">{editingTopic.gradeLevel} - {editingTopic.area}</p>
-                    </div>
-                    <button onClick={() => setEditingTopic(null)} className="bg-white p-2 rounded-full text-slate-400 hover:text-slate-600 shadow-sm border border-slate-200">
-                      <X size={20} />
-                    </button>
-                  </div>
-                  <div className="mt-2 text-xs text-slate-500 bg-yellow-50 p-2 rounded border border-yellow-100">
-                    <span className="font-bold">Modo Edición:</span> Los estudiantes nuevos aparecen al final de la lista.
-                  </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {editingTopic.records.map((rec) => {
-                    const showObs = needsObservation(rec.score);
-                    return (
-                      <div key={rec.id} className="bg-white border border-slate-100 rounded-xl p-3 shadow-sm space-y-2">
-                        <div className="flex gap-2 items-center">
-                          <div className="w-[40%]">
-                            <input
-                              type="text"
-                              value={rec.name}
-                              onChange={(e) => handleTopicRecordChange(rec.id, 'name', e.target.value)}
-                              placeholder="Nombre estudiante"
-                              className="w-full p-2 text-sm font-bold text-slate-700 border-b border-transparent focus:border-lime-300 outline-none bg-transparent"
-                            />
-                          </div>
-
-                          <div className="w-16">
-                            <input
-                              type="text"
-                              inputMode="decimal"
-                              placeholder="0,0"
-                              value={formatDisplay(rec.score)}
-                              onChange={(e) => handleTopicRecordChange(rec.id, 'score', e.target.value)}
-                              className={`w-full p-2 text-sm text-center font-bold border rounded-lg outline-none focus:ring-2 ${
-                                showObs ? 'border-red-300 text-red-600' : 'border-slate-200 focus:border-lime-500'
-                              }`}
-                            />
-                          </div>
-
-                          <div className="flex-1">
-                            <input
-                              type="text"
-                              value={rec.observation}
-                              onChange={(e) => handleTopicRecordChange(rec.id, 'observation', e.target.value)}
-                              placeholder="Obs..."
-                              className="w-full p-2 text-xs border border-slate-200 bg-slate-50 focus:bg-white rounded-lg outline-none focus:border-lime-500 text-slate-600 placeholder:text-slate-400"
-                            />
-                          </div>
-                        </div>
+                    {(studentLists[configGrade] || []).map((name, i) => (
+                      <div key={i} className="flex justify-between p-2 bg-slate-50 rounded border text-sm">
+                        <span>{name}</span>
+                        <button onClick={() => removeStudentFromList(name)} className="text-red-400"><Trash2 size={14}/></button>
                       </div>
-                    );
-                  })}
-
-                  <button
-                    onClick={handleAddStudentToTopic}
-                    className="w-full py-3 border-2 border-dashed border-lime-200 text-lime-500 rounded-xl font-bold text-sm hover:bg-lime-50 flex items-center justify-center gap-2"
-                  >
-                    <Plus size={16} /> Agregar estudiante a este tema
-                  </button>
-                </div>
-
-                <div className="p-4 border-t border-slate-100 bg-white pb-8 sm:pb-4 rounded-b-2xl shrink-0">
-                  <button
-                    onClick={saveTopicChanges}
-                    className="w-full bg-lime-600 hover:bg-lime-700 text-white font-bold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-all"
-                  >
-                    <Save size={18} /> Actualizar Notas
-                  </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* MODAL PLANILLAS */}
+          {/* MODAL NUEVA NOTA */}
+          {isFormOpen && (
+            <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+              <div className="bg-white w-full max-w-lg h-[90vh] sm:h-auto rounded-t-2xl sm:rounded-2xl flex flex-col animate-slide-up">
+                <div className="p-4 border-b flex justify-between items-center">
+                  <h3 className="font-bold text-lg">Nueva Actividad</h3>
+                  <button onClick={() => setIsFormOpen(false)} className="bg-slate-100 p-2 rounded-full"><X size={20}/></button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {error && <div className="bg-red-50 text-red-600 p-2 rounded text-xs font-bold text-center">{error}</div>}
+                  <div className="grid grid-cols-2 gap-2">
+                    <select name="gradeLevel" value={batchData.gradeLevel} onChange={handleBatchConfigChange} className="p-2 border rounded-lg bg-slate-50 text-sm font-bold">
+                      <option value="">Grado...</option>{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                    <select name="area" value={batchData.area} onChange={handleBatchConfigChange} className="p-2 border rounded-lg bg-slate-50 text-sm font-bold">
+                      <option value="">Área...</option>{areas.map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                  </div>
+                  <input type="text" name="globalConcept" placeholder="Título de la Actividad (Ej: Taller Sumas)" value={batchData.globalConcept} onChange={handleBatchConfigChange} className="w-full p-3 border-2 border-lime-200 rounded-xl focus:outline-none focus:border-lime-500 font-bold text-lime-900 placeholder:font-normal" />
+                  
+                  <div className="space-y-2">
+                     {batchData.entries.map((entry, idx) => (
+                       <div key={idx} className="flex items-center gap-2 p-2 border rounded-lg">
+                         <input type="text" value={entry.name} onChange={e => handleEntryChange(idx, 'name', e.target.value)} className="w-[40%] text-sm font-bold bg-transparent outline-none" placeholder="Estudiante" readOnly={!!studentLists[batchData.gradeLevel]?.length} />
+                         <input type="text" inputMode="decimal" value={entry.score} onChange={e => handleEntryChange(idx, 'score', e.target.value)} className="w-14 text-center p-1 border rounded font-bold" placeholder="0,0" />
+                         <input type="text" value={entry.observation} onChange={e => handleEntryChange(idx, 'observation', e.target.value)} className="flex-1 text-xs p-1 bg-slate-50 rounded outline-none" placeholder="Obs..." />
+                       </div>
+                     ))}
+                     {(!batchData.gradeLevel || !studentLists[batchData.gradeLevel]?.length) && (
+                        <button onClick={() => setBatchData(p => ({...p, entries: [...p.entries, {name:'', score:'', observation:''}]}))} className="text-xs text-lime-600 font-bold flex items-center gap-1"><Plus size={12}/> Agregar fila manual</button>
+                     )}
+                  </div>
+                </div>
+                <div className="p-4 border-t">
+                  <button onClick={handleSaveBatch} className="w-full bg-lime-600 text-white font-bold py-3 rounded-xl shadow-lg flex justify-center gap-2"><Save size={20}/> Guardar Notas</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL EDITOR TEMA */}
+          {editingTopic && (
+            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+              <div className="bg-white w-full max-w-lg max-h-[90vh] rounded-2xl flex flex-col shadow-2xl animate-slide-up">
+                 <div className="p-4 border-b flex justify-between items-center bg-slate-50 rounded-t-2xl">
+                   <div>
+                     <h3 className="font-bold">{editingTopic.concept}</h3>
+                     <p className="text-xs uppercase text-slate-500">{editingTopic.gradeLevel}</p>
+                   </div>
+                   <button onClick={() => setEditingTopic(null)}><X size={20}/></button>
+                 </div>
+                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                    {editingTopic.records.map(r => (
+                      <div key={r.id} className="flex items-center gap-2 p-2 border rounded bg-white">
+                        <span className="w-[40%] text-sm font-bold truncate">{r.name}</span>
+                        <input type="text" inputMode="decimal" value={formatDisplay(r.score)} onChange={e => {
+                           const val = e.target.value;
+                           if(validateScoreInput(val)) {
+                             setEditingTopic(prev => ({...prev, records: prev.records.map(rec => rec.id===r.id ? {...rec, score: val} : rec)}))
+                           }
+                        }} className="w-14 text-center border rounded font-bold p-1" />
+                        <input type="text" value={r.observation} onChange={e => setEditingTopic(prev => ({...prev, records: prev.records.map(rec => rec.id===r.id ? {...rec, observation: e.target.value} : rec)}))} className="flex-1 text-xs bg-slate-50 p-1 rounded" placeholder="Obs..." />
+                      </div>
+                    ))}
+                 </div>
+                 <div className="p-4 border-t">
+                   <button onClick={saveTopicChanges} className="w-full bg-lime-600 text-white font-bold py-3 rounded-xl"><Save size={18} className="inline mr-2"/> Actualizar</button>
+                 </div>
+              </div>
+            </div>
+          )}
+          
+          {/* MODAL REPORTE */}
           {isReportOpen && (
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 flex items-center justify-center p-4">
-              <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] animate-slide-up">
-                <div className="bg-emerald-600 p-4 text-white flex justify-between items-center">
-                  <h2 className="font-bold text-lg flex items-center gap-2"><FileSpreadsheet size={20} /> Planillas</h2>
-                  <button onClick={() => setIsReportOpen(false)} className="text-emerald-100 hover:text-white"><X size={24} /></button>
-                </div>
-
-                <div className="p-4 border-b border-slate-100 bg-slate-50 grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Grado</label>
-                    <select
-                      value={reportFilter.gradeLevel}
-                      onChange={(e) => setReportFilter({ ...reportFilter, gradeLevel: e.target.value })}
-                      className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm"
-                    >
-                      {gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}
-                    </select>
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+               <div className="bg-white p-6 rounded-2xl w-full max-w-sm animate-slide-up">
+                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><FileSpreadsheet/> Descargar Planilla</h3>
+                  <div className="space-y-3 mb-6">
+                    <select value={reportFilter.gradeLevel} onChange={e => setReportFilter({...reportFilter, gradeLevel: e.target.value})} className="w-full p-2 border rounded-lg">{gradeLevels.map(g=><option key={g} value={g}>{g}</option>)}</select>
+                    <select value={reportFilter.area} onChange={e => setReportFilter({...reportFilter, area: e.target.value})} className="w-full p-2 border rounded-lg">{areas.map(a=><option key={a} value={a}>{a}</option>)}</select>
                   </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase">Área</label>
-                    <select
-                      value={reportFilter.area}
-                      onChange={(e) => setReportFilter({ ...reportFilter, area: e.target.value })}
-                      className="w-full p-2 bg-white border border-slate-200 rounded-lg text-sm"
-                    >
-                      {areas.map(a => <option key={a} value={a}>{a}</option>)}
-                    </select>
+                  <div className="flex gap-2">
+                    <button onClick={() => setIsReportOpen(false)} className="flex-1 border border-slate-300 p-3 rounded-xl font-bold text-slate-500">Cancelar</button>
+                    <button onClick={downloadPivotCSV} className="flex-1 bg-emerald-600 text-white p-3 rounded-xl font-bold shadow-lg flex justify-center gap-2"><Download/> CSV</button>
                   </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-4 text-center">
-                  <p className="text-slate-600 text-sm mb-4">Descarga el reporte completo organizado por columnas de actividades.</p>
-                  <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 inline-block text-emerald-800 text-xs text-left">
-                    <strong>Formato de descarga:</strong><br />Estudiante | Taller 1 | Quiz | Final...
-                  </div>
-                </div>
-
-                <div className="p-4 border-t border-slate-100 bg-slate-50">
-                  <button
-                    onClick={downloadPivotCSV}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all"
-                  >
-                    <Download size={20} /> Descargar Planilla
-                  </button>
-                </div>
-              </div>
+               </div>
             </div>
           )}
+
         </div>
       );
     };
