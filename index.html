@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Seguimiento Académico - Clase 9218</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Seguimiento Premium</title>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -18,262 +18,225 @@
   <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-  <style>
-    body { -webkit-tap-highlight-color: transparent; }
-    .animate-fade-in { animation: fadeIn 0.4s ease-out; }
-    .animate-slide-up { animation: slideUp 0.4s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  <!-- Firebase compat -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
 
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: #f1f5f9; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  <!-- Google Fonts (Inter) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+  <style>
+    body { 
+      font-family: 'Inter', sans-serif; 
+      -webkit-tap-highlight-color: transparent; 
+      background-color: #f8fafc;
+    }
+    
+    /* Animaciones Suaves */
+    .animate-in { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    .animate-slide-up { animation: slideUpPanel 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideUpPanel { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    /* Ocultar scrollbar pero permitir scroll */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Ajustes para inputs iOS */
+    input, select, textarea { font-size: 16px !important; } 
   </style>
 </head>
 
-<body class="bg-slate-50 touch-manipulation text-slate-800 font-sans selection:bg-lime-200">
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-emerald-200 selection:text-emerald-900">
   <div id="root"></div>
 
-  <!-- =========================
-       FIREBASE (Module)
-       ========================= -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import {
-      getFirestore,
-      doc, setDoc, getDoc,
-      collection, query, orderBy,
-      onSnapshot,
-      deleteDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
+  <script type="text/babel">
+    // ==========================================================
+    // FIREBASE SETUP
+    // ==========================================================
     const firebaseConfig = {
       apiKey: "AIzaSyB2MJ-jdwQeT6sOfZ21tCrFYzGiuTNOAJ8",
       authDomain: "diariodeprocesos-6f78d.firebaseapp.com",
-      projectId: "diariodeprocesos-6f78d",
-      storageBucket: "diariodeprocesos-6f78d.firebasestorage.app",
-      messagingSenderId: "487922338632",
-      appId: "1:487922338632:web:5b65cbb4a1d630a2b0817d"
+      projectId: "diariodeprocesos-6f78d"
     };
+    
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    const CFG_DOC = db.collection("configuracionGlobal").doc("notas");            
+    const LISTS_DOC = db.collection("configuracionGlobal").doc("listasEstudiantes"); 
+    const NOTAS_COL = db.collection("notasAcademicas"); 
 
-    // Puente hacia React
-    window.__fb = {
-      app, auth, db,
-      doc, setDoc, getDoc,
-      collection, query, orderBy,
-      onSnapshot,
-      deleteDoc,
-      uid: null,
-      status: "connecting", 
-      error: null,
-      _listeners: new Set(),
-      notify() {
-        for (const fn of window.__fb._listeners) {
-          try { fn({ status: window.__fb.status, error: window.__fb.error, uid: window.__fb.uid }); } catch {}
-        }
-      },
-      onStatus(fn) {
-        window.__fb._listeners.add(fn);
-        fn({ status: window.__fb.status, error: window.__fb.error, uid: window.__fb.uid });
-        return () => window.__fb._listeners.delete(fn);
-      }
-    };
-
-    // Inicialización de Auth
-    window.firebaseReady = new Promise(async (resolve) => {
-      try {
-        onAuthStateChanged(auth, async (user) => {
-          if (!user) {
-            await signInAnonymously(auth);
-            return; 
-          }
-          window.__fb.uid = user.uid;
-          window.__fb.status = "ready";
-          window.__fb.notify();
-          resolve({ uid: user.uid, db });
-        });
-      } catch (e) {
-        window.__fb.status = "error";
-        window.__fb.error = e?.message || String(e);
-        window.__fb.notify();
-        resolve({ uid: null, db });
-      }
-    });
-  </script>
-
-  <!-- =========================
-       REACT APP
-       ========================= -->
-  <script type="text/babel">
-    // --- ÍCONOS ---
+    // ==========================================================
+    // ICONS (Lucide Style)
+    // ==========================================================
     const Icon = ({ children, size = 24, className = "" }) => (
       <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24"
         fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
         className={className}>{children}</svg>
     );
-    const Plus = (p) => <Icon {...p}><path d="M5 12h14"/><path d="M12 5v14"/></Icon>;
-    const Trash2 = (p) => <Icon {...p}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></Icon>;
-    const GraduationCap = (p) => <Icon {...p}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></Icon>;
+    // Nuevos iconos más limpios
+    const Home = (p) => <Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
+    const Layers = (p) => <Icon {...p}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></Icon>;
+    const Plus = (p) => <Icon {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Icon>;
+    const Trash2 = (p) => <Icon {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></Icon>;
     const Save = (p) => <Icon {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></Icon>;
-    const X = (p) => <Icon {...p}><path d="M18 6 6 18"/><path d="m6 6 18 12"/></Icon>;
-    const Users = (p) => <Icon {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Icon>;
-    const FileSpreadsheet = (p) => <Icon {...p}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></Icon>;
-    const Download = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></Icon>;
-    const Edit2 = (p) => <Icon {...p}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></Icon>;
+    const X = (p) => <Icon {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></Icon>;
+    const Users = (p) => <Icon {...p}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Icon>;
+    const FileText = (p) => <Icon {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14 2z"/><polyline points="14 2 14 8 20 8"/></Icon>;
+    const Download = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></Icon>;
+    const Edit3 = (p) => <Icon {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></Icon>;
     const Settings = (p) => <Icon {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></Icon>;
-    const KeyRound = (p) => <Icon {...p}><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z"/><circle cx="16.5" cy="7.5" r=".5"/></Icon>;
+    const ChevronRight = (p) => <Icon {...p}><polyline points="9 18 15 12 9 6"/></Icon>;
 
     const { useState, useEffect, useMemo } = React;
 
-    // --- HELPERS DECIMAL ---
-    // Visualmente siempre coma (3,8)
+    // ==========================================================
+    // HELPERS
+    // ==========================================================
     const formatDisplay = (val) => {
       if (val === '' || val === null || val === undefined) return '';
       return val.toString().replace('.', ',');
     };
-    
-    // Internamente punto (3.8) para la DB
     const parseInput = (val) => (val ?? '').toString().replace(',', '.');
 
     const validateScoreInput = (value) => {
       if (value === '') return true;
-      const regex = /^[0-9]*[.,]?[0-9]*$/; 
+      const regex = /^[0-9]*[.,]?[0-9]*$/;
       if (!regex.test(value)) return false;
       const numVal = parseFloat(value.replace(',', '.'));
       if (!isNaN(numVal)) return numVal >= 0 && numVal <= 5.0;
       return true;
     };
 
-    const App = () => {
-      // CLAVE FIJA: 9218
-      const syncId = "9218";
-      const [fbStatus, setFbStatus] = useState({ status: "connecting", error: null });
-      return <Dashboard syncId={syncId} fbStatus={fbStatus} setFbStatus={setFbStatus} />;
+    const splitNameDoc = (str) => {
+      const s = (str || "").trim();
+      const idx = s.lastIndexOf(" - ");
+      if (idx === -1) return { nombre: s, doc: "" };
+      return {
+        nombre: s.slice(0, idx).trim(),
+        doc: s.slice(idx + 3).trim()
+      };
     };
 
-    const Dashboard = ({ syncId, fbStatus, setFbStatus }) => {
+    const gradeLevels = ['Primero', 'Segundo', 'Tercero', 'Cuarto', 'Quinto'];
+    const areas = [
+      'INGLES', 'CIENCIAS NATURALES', 'CIENCIAS SOCIALES', 'ARTISTICA',
+      'EDUCACION FISICA', 'ETICA Y VALORES', 'RELIGION', 'ESPAÑOL (LENGUAJE)',
+      'MATEMATICAS', 'TECNOLOGIA E INFORMATICA'
+    ];
+
+    const Dashboard = () => {
       const [students, setStudents] = useState([]);
       const [studentLists, setStudentLists] = useState({
-        'Quinto': [], 'Primero': [], 'Segundo': [], 'Tercero': [], 'Cuarto': []
+        'Primero': ["MARTINEZ ARANGO AYLYN - 1042155626", "OSORIO MUÑOZ JERONIMO - 1041636979"],
+        'Segundo': ["GONZALEZ BETANCUR MARIA JOSE - 1041636870", "GUTIERREZ CHAVARRIA JOSE LEANDRO - 1042155380", "LOPERA CADAVID LUCIANA - 1032328826", "MARTINEZ MARTINEZ SEBASTIAN - 1041636641", "VARELAS BARRIENTOS LUCIANA - 1041636841"],
+        'Tercero': ["MOLINA OCHOA BELEN - 1035922719", "PACHECO BARRERA JOSE DANIEL - 1067959648"],
+        'Cuarto': ["CASAS FERNANDEZ ANTONELLA - 1042155250", "RESTREPO VILLA DILMER FELIPE - 1035801483"],
+        'Quinto': ["BERRIO CORREA VALENTINA - 1157463842", "GUZMAN CORREA DYLAN - 1038213324", "VARELAS BARRIENTOS MAXIMILIANO - 1041636021"]
       });
 
-      const [view, setView] = useState('recent');
+      const [periodoActual, setPeriodoActual] = useState(1);
+      const [view, setView] = useState('recent'); // 'recent' | 'topics'
       const [isFormOpen, setIsFormOpen] = useState(false);
       const [isReportOpen, setIsReportOpen] = useState(false);
       const [isConfigOpen, setIsConfigOpen] = useState(false);
-
       const [topicFilter, setTopicFilter] = useState({ gradeLevel: '', area: '' });
       const [editingTopic, setEditingTopic] = useState(null);
-
-      const [batchData, setBatchData] = useState({ gradeLevel: '', area: '', globalConcept: '', entries: [] });
+      const [batchData, setBatchData] = useState({ gradeLevel: '', area: '', actividad: '', entries: [] });
       const [error, setError] = useState('');
       const [configGrade, setConfigGrade] = useState('Quinto');
       const [newStudentName, setNewStudentName] = useState('');
       const [reportFilter, setReportFilter] = useState({ gradeLevel: 'Quinto', area: 'MATEMATICAS' });
 
-      const gradeLevels = ['Primero', 'Segundo', 'Tercero', 'Cuarto', 'Quinto'];
-      const areas = [
-        'INGLES', 'CIENCIAS NATURALES', 'CIENCIAS SOCIALES', 'ARTISTICA', 
-        'EDUCACION FISICA', 'ETICA Y VALORES', 'RELIGION', 'ESPAÑOL (LENGUAJE)', 
-        'MATEMATICAS', 'TECNOLOGIA E INFORMATICA'
-      ];
-
       // FIREBASE SYNC
       useEffect(() => {
-        if (!window.__fb || !syncId) return;
-        const off = window.__fb.onStatus((s) => setFbStatus({ status: s.status, error: s.error }));
-        let unsubRecords = null;
-        let unsubLists = null;
+        const unsub = CFG_DOC.onSnapshot(async (snap) => {
+          if (snap.exists) setPeriodoActual(snap.data().periodoActual || 1);
+          else await CFG_DOC.set({ periodoActual: 1 });
+        });
+        return () => unsub();
+      }, []);
 
-        (async () => {
-          await window.firebaseReady;
-          const { db, collection, query, orderBy, onSnapshot, doc, getDoc, setDoc } = window.__fb;
-          
-          const recordsRef = collection(db, 'classes', syncId, 'records');
-          const q = query(recordsRef, orderBy('createdAt', 'desc'));
-          unsubRecords = onSnapshot(q, (snap) => setStudents(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+      useEffect(() => {
+        const unsub = LISTS_DOC.onSnapshot(async (snap) => {
+          if (snap.exists) setStudentLists(prev => ({ ...prev, ...snap.data() }));
+          else await LISTS_DOC.set(studentLists);
+        });
+        return () => unsub();
+      }, []);
 
-          const listsRef = doc(db, 'classes', syncId, 'config', 'studentLists');
-          unsubLists = onSnapshot(listsRef, (snap) => {
-            if (snap.exists()) setStudentLists(snap.data()?.lists || {});
-          });
+      useEffect(() => {
+        const unsub = NOTAS_COL.where("periodo", "==", periodoActual).onSnapshot((snap) => {
+          const arr = [];
+          snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+          arr.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+          setStudents(arr);
+        });
+        return () => unsub();
+      }, [periodoActual]);
 
-          try {
-            const docSnap = await getDoc(listsRef);
-            if (!docSnap.exists()) await setDoc(listsRef, { lists: studentLists, updatedAt: Date.now() });
-          } catch(e) {}
-        })();
-        return () => { try { off && off(); } catch {} try { unsubRecords && unsubRecords(); } catch {} try { unsubLists && unsubLists(); } catch {} };
-      }, [syncId]);
-
-      const saveListsToFirebase = async (newLists) => {
-        setStudentLists(newLists);
-        if (!window.__fb || !syncId) return;
-        try {
-          const { db, doc, setDoc } = window.__fb;
-          await setDoc(doc(db, 'classes', syncId, 'config', 'studentLists'), { lists: newLists, updatedAt: Date.now() }, { merge: true });
-        } catch (e) {}
-      };
-
-      const writeRecord = async (record) => {
-        const { db, doc, setDoc } = window.__fb;
-        await setDoc(doc(db, 'classes', syncId, 'records', record.id), record, { merge: true });
-      };
-      const removeRecord = async (id) => {
-        const { db, doc, deleteDoc } = window.__fb;
-        await deleteDoc(doc(db, 'classes', syncId, 'records', id));
-      };
-
+      // LOGIC
       const topics = useMemo(() => {
         const grouped = {};
         const relevant = students.filter(s => {
-          if (view === 'topics' && topicFilter.gradeLevel && topicFilter.area) return s.gradeLevel === topicFilter.gradeLevel && s.area === topicFilter.area;
+          if (view === 'topics' && topicFilter.gradeLevel && topicFilter.area) {
+            return s.gradeLevel === topicFilter.gradeLevel && s.area === topicFilter.area;
+          }
           return true;
         });
         relevant.forEach(s => {
-          const key = `${s.gradeLevel}-${s.area}-${s.concept}`;
-          if (!grouped[key]) grouped[key] = { id: key, gradeLevel: s.gradeLevel, area: s.area, concept: s.concept, count: 0, createdAt: s.createdAt || 0 };
+          const key = `${s.gradeLevel}-${s.area}-${s.actividad}`;
+          if (!grouped[key]) {
+            grouped[key] = { id: key, gradeLevel: s.gradeLevel, area: s.area, actividad: s.actividad, count: 0, createdAt: s.createdAt || 0 };
+          }
           grouped[key].count++;
         });
         return Object.values(grouped).sort((a,b) => b.createdAt - a.createdAt);
       }, [students, view, topicFilter]);
 
-      const addStudentToList = (e) => {
+      const changePeriod = async (p) => {
+        try {
+          await CFG_DOC.set({ periodoActual: p }, { merge: true });
+          setPeriodoActual(p);
+          Swal.fire({ icon: 'success', title: `Periodo ${p} Activo`, toast: true, position: 'top', showConfirmButton: false, timer: 1500, background: '#10b981', color: '#fff' });
+        } catch (err) { }
+      };
+
+      const addStudentToList = async (e) => {
         e.preventDefault();
         if (!newStudentName.trim()) return;
         const updated = { ...studentLists, [configGrade]: [...(studentLists[configGrade] || []), newStudentName.trim()] };
-        saveListsToFirebase(updated);
+        setStudentLists(updated);
         setNewStudentName('');
+        try { await LISTS_DOC.set(updated, { merge: true }); } catch (err) {}
       };
 
-      const removeStudentFromList = (name) => {
-        if (confirm(`¿Eliminar a ${name}?`)) {
-          const updated = { ...studentLists, [configGrade]: studentLists[configGrade].filter(n => n !== name) };
-          saveListsToFirebase(updated);
-        }
-      };
-
+      // CRUD
       const deleteTopic = async (e, topic) => {
         e.stopPropagation();
-        if (!confirm(`¿Borrar TODAS las notas de "${topic.concept}"?`)) return;
-        const toDelete = students.filter(s => s.gradeLevel === topic.gradeLevel && s.area === topic.area && s.concept === topic.concept);
-        for (const r of toDelete) await removeRecord(r.id);
+        if (!confirm(`¿Borrar "${topic.actividad}"?`)) return;
+        try {
+          const q = await NOTAS_COL.where("periodo", "==", periodoActual).where("gradeLevel", "==", topic.gradeLevel).where("area", "==", topic.area).where("actividad", "==", topic.actividad).get();
+          const batch = db.batch();
+          q.forEach(docu => batch.delete(docu.ref));
+          await batch.commit();
+          Swal.fire({ icon: 'success', title: 'Tema borrado', timer: 1200, showConfirmButton: false });
+        } catch (err) {}
       };
 
-      // Manejo de formulario
       const handleBatchConfigChange = (e) => {
         const { name, value } = e.target;
         setBatchData(prev => {
           const newData = { ...prev, [name]: value };
           if (name === 'gradeLevel') {
             const list = studentLists[value] || [];
-            newData.entries = list.length > 0 ? list.map(n => ({ name: n, score: '', individualConcept: '', observation: '' })) : [{ name: '', score: '', individualConcept: '', observation: '' }];
+            newData.entries = list.length > 0
+              ? list.map(n => ({ name: n, score: '', observation: '' }))
+              : [{ name: '', score: '', observation: '' }];
           }
           return newData;
         });
@@ -281,63 +244,54 @@
 
       const handleEntryChange = (index, field, value) => {
         const newEntries = [...batchData.entries];
-        if (field === 'score') { if (validateScoreInput(value)) newEntries[index][field] = value; }
-        else newEntries[index][field] = value;
+        if (field === 'score') {
+          if (validateScoreInput(value)) newEntries[index][field] = value;
+        } else newEntries[index][field] = value;
         setBatchData(prev => ({ ...prev, entries: newEntries }));
       };
-      
-      // AUTO-CORRECCIÓN 3.8 -> 3,8 al salir del campo
-      const handleEntryBlur = (index) => {
-        const newEntries = [...batchData.entries];
-        const val = newEntries[index].score;
-        if(val && val.includes('.')) {
-          newEntries[index].score = val.replace('.', ',');
-          setBatchData(prev => ({ ...prev, entries: newEntries }));
-        }
-      };
 
-      const createRecord = (grade, area, name, score, conceptRaw, observation) => {
-        const numScore = parseFloat(parseInput(score));
-        const scoreToSave = parseInput(score); 
-        
-        let finalConcept = conceptRaw;
-        if (!finalConcept) {
-          if (numScore >= 4.5) finalConcept = "Excelente desempeño";
-          else if (numScore >= 4.0) finalConcept = "Buen trabajo";
-          else if (numScore >= 3.0) finalConcept = "Aprobado básico";
-          else finalConcept = "Necesita refuerzo";
-        }
+      const buildRecord = (grade, area, actividad, nameRaw, score, observation) => {
+        const { nombre, doc } = splitNameDoc(nameRaw);
         return {
-          id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          gradeLevel: grade, area, name, score: scoreToSave, 
-          concept: finalConcept, observation: observation || '',
-          date: new Date().toLocaleDateString('es-CO'), createdAt: Date.now()
+          gradeLevel: grade, area, actividad: (actividad || '').trim(),
+          name: nameRaw, nombreEstudiante: nombre, documentoEstudiante: doc,
+          score: parseInput(score), nota: parseFloat(parseInput(score)),
+          observation: observation || '', observacion: observation || '',
+          periodo: periodoActual, date: new Date().toLocaleDateString('es-CO'), createdAt: Date.now(), timestamp: new Date().toISOString()
         };
       };
 
       const handleSaveBatch = async () => {
-        if (!batchData.gradeLevel || !batchData.area) { setError('Faltan datos'); return; }
-        const valid = batchData.entries.filter(en => en.name.trim() !== '' && en.score !== '');
-        if (valid.length === 0) { setError('Sin notas válidas'); return; }
-
+        if (!batchData.gradeLevel || !batchData.area || !batchData.actividad.trim()) { setError('Faltan datos básicos'); return; }
+        const valid = batchData.entries.filter(en => (en.name || '').trim() !== '' && en.score !== '');
+        if (valid.length === 0) { setError('Ingresa al menos una nota'); return; }
         try {
-          for (const en of valid) {
-            await writeRecord(createRecord(batchData.gradeLevel, batchData.area, en.name, en.score, en.individualConcept || batchData.globalConcept, en.observation));
-          }
+          const batch = db.batch();
+          valid.forEach(en => {
+            const rec = buildRecord(batchData.gradeLevel, batchData.area, batchData.actividad, en.name, en.score, en.observation);
+            batch.set(NOTAS_COL.doc(), rec);
+          });
+          await batch.commit();
           setIsFormOpen(false);
-          setBatchData({ gradeLevel: '', area: '', globalConcept: '', entries: [] });
+          setBatchData({ gradeLevel: '', area: '', actividad: '', entries: [] });
           setError('');
           Swal.fire({ icon: 'success', title: 'Guardado', timer: 1500, showConfirmButton: false });
-        } catch (e) { alert("Error: " + e.message); }
+        } catch (err) {}
       };
 
+      const removeRecord = async (id) => {
+        if(!confirm("¿Borrar?")) return;
+        try { await NOTAS_COL.doc(id).delete(); } catch (err) {}
+      };
+
+      // EDIT LOGIC
       const openTopicEditor = (topic) => {
-        const existing = students.filter(s => s.gradeLevel === topic.gradeLevel && s.area === topic.area && s.concept === topic.concept);
+        const existing = students.filter(s => s.gradeLevel === topic.gradeLevel && s.area === topic.area && s.actividad === topic.actividad);
         const currentList = studentLists[topic.gradeLevel] || [];
         const missing = currentList.filter(name => !existing.some(r => r.name === name));
         const placeholders = missing.map(name => ({
-          id: 'temp-' + Math.random(), gradeLevel: topic.gradeLevel, area: topic.area, concept: topic.concept,
-          name, score: '', observation: 'Pendiente', date: new Date().toLocaleDateString(), createdAt: Date.now(), isNew: true
+          id: 'temp-' + Math.random(), gradeLevel: topic.gradeLevel, area: topic.area, actividad: topic.actividad, name,
+          score: '', observation: 'Pendiente', date: new Date().toLocaleDateString('es-CO'), createdAt: Date.now(), isNew: true
         }));
         const formattedExisting = existing.map(r => ({...r, score: formatDisplay(r.score)}));
         setEditingTopic({ ...topic, records: [...formattedExisting, ...placeholders] });
@@ -349,244 +303,396 @@
           ...prev, records: prev.records.map(r => r.id === id ? { ...r, [field]: val } : r)
         }));
       };
-      
-      const handleTopicRecordBlur = (id) => {
-        setEditingTopic(prev => ({
-          ...prev, records: prev.records.map(r => (r.id === id && r.score && r.score.includes('.')) ? { ...r, score: r.score.replace('.', ',') } : r)
-        }));
-      };
 
       const saveTopicChanges = async () => {
-        const toSave = editingTopic.records.filter(r => r.name && r.score !== '');
-        for (const r of toSave) {
-          const scoreToSave = parseInput(r.score); 
-          if (r.isNew) await writeRecord(createRecord(r.gradeLevel, r.area, r.name, r.score, r.concept, r.observation));
-          else await writeRecord({ ...r, score: scoreToSave, observation: r.observation, updatedAt: Date.now() });
-        }
-        setEditingTopic(null);
-        Swal.fire({ icon: 'success', title: 'Actualizado', timer: 1000, showConfirmButton: false });
+        const recordsToProcess = editingTopic.records.filter(r => r.name && r.score !== '');
+        try {
+          const batch = db.batch();
+          for (const r of recordsToProcess) {
+            if (r.isNew) {
+              const rec = buildRecord(r.gradeLevel, r.area, editingTopic.actividad, r.name, r.score, r.observation);
+              batch.set(NOTAS_COL.doc(), rec);
+            } else {
+              batch.update(NOTAS_COL.doc(r.id), {
+                score: parseInput(r.score), nota: parseFloat(parseInput(r.score)),
+                observation: r.observation || '', observacion: r.observation || '', updatedAt: Date.now(), timestamp: new Date().toISOString()
+              });
+            }
+          }
+          await batch.commit();
+          setEditingTopic(null);
+          Swal.fire({ icon: 'success', title: 'Actualizado', timer: 1000, showConfirmButton: false });
+        } catch (err) {}
       };
 
-      // ======================================================================
-      // DESCARGA EXCEL MEJORADA (ESTILOS Y COLORES)
-      // ======================================================================
+      // EXCEL
       const downloadExcel = () => {
         const filtered = students.filter(s => s.gradeLevel === reportFilter.gradeLevel && s.area === reportFilter.area);
-        if (filtered.length === 0) { Swal.fire('Sin datos', 'No hay registros', 'info'); return; }
-        
-        const concepts = [...new Set(filtered.map(s => s.concept))];
+        if (filtered.length === 0) { Swal.fire('Vacío', 'Sin datos para exportar', 'info'); return; }
+        const actividades = [...new Set(filtered.map(s => s.actividad))];
         const uniqueStudents = [...new Set(filtered.map(s => s.name))];
-
-        // Construcción de Tabla HTML con Estilos en Línea (Excel los respeta)
-        let htmlTable = `
+        const htmlTable = `
           <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-          <head>
-            <meta http-equiv="content-type" content="application/vnd.ms-excel; charset=UTF-8">
-          </head>
+          <head><meta http-equiv="content-type" content="application/vnd.ms-excel; charset=UTF-8"></head>
           <body>
-            <table border="1" style="border-collapse: collapse; width: 100%;">
-              <thead>
-                <tr style="background-color: #d1e7dd; color: #14532d;">
-                  <th style="padding: 8px; border: 1px solid #000; text-align: center; font-weight: bold;">ESTUDIANTE / ACTIVIDAD</th>
-                  ${concepts.map(c => `<th style="padding: 8px; border: 1px solid #000; text-align: center; font-weight: bold;">${c}</th>`).join('')}
-                </tr>
-              </thead>
-              <tbody>
-                ${uniqueStudents.map(name => {
-                  const cells = concepts.map(c => {
-                    const r = filtered.find(s => s.name === name && s.concept === c);
-                    return `<td style="border: 1px solid #000; text-align: center;">${r ? formatDisplay(r.score) : ''}</td>`;
+            <table border="1">
+              <thead><tr style="background:#10b981;color:#fff;"><th>ESTUDIANTE / ACTIVIDAD</th>${actividades.map(a => `<th>${a}</th>`).join('')}</tr></thead>
+              <tbody>${uniqueStudents.map(name => {
+                  const cells = actividades.map(a => {
+                    const r = filtered.find(s => s.name === name && s.actividad === a);
+                    return `<td>${r ? formatDisplay(r.score) : ''}</td>`;
                   }).join('');
-                  
-                  return `<tr>
-                      <td style="background-color: #d1e7dd; border: 1px solid #000; font-weight: bold; padding: 5px;">${name}</td>
-                      ${cells}
-                    </tr>`;
-                }).join('')}
-              </tbody>
-            </table>
-          </body>
-          </html>
-        `;
-        
+                  return `<tr><td>${name}</td>${cells}</tr>`;
+                }).join('')}</tbody>
+            </table></body></html>`;
         const blob = new Blob([htmlTable], { type: 'application/vnd.ms-excel' });
-        const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", `Planilla_${reportFilter.gradeLevel}_${reportFilter.area}.xls`);
-        document.body.appendChild(link);
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute("download", `Planilla_${reportFilter.gradeLevel}.xls`);
         link.click();
-        document.body.removeChild(link);
       };
 
       const getScoreColor = (s) => {
-        const n = parseFloat(parseInput(s.toString()));
-        if (n >= 4.0) return 'text-green-600 bg-green-50 border-green-200';
-        if (n >= 3.0) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-        return 'text-red-600 bg-red-50 border-red-200';
+        const n = parseFloat(parseInput((s ?? '').toString()));
+        if (n >= 4.0) return 'text-emerald-600 bg-emerald-50 border-emerald-100';
+        if (n >= 3.0) return 'text-amber-600 bg-amber-50 border-amber-100';
+        return 'text-rose-600 bg-rose-50 border-rose-100';
       };
-      
-      const average = students.length > 0 ? (students.reduce((acc, curr) => acc + parseFloat(parseInput(curr.score.toString()) || 0), 0) / students.length).toFixed(1).replace('.', ',') : '0,0';
+
+      const average = students.length > 0 ? (students.reduce((acc, curr) => acc + (parseFloat(parseInput((curr.score ?? '').toString())) || 0), 0) / students.length).toFixed(1).replace('.', ',') : '0,0';
 
       return (
-        <div className="min-h-screen pb-28">
-          <header className="bg-lime-600 text-white p-5 rounded-b-3xl shadow-lg z-10 sticky top-0">
+        <div className="flex flex-col h-[100dvh] bg-slate-50">
+          
+          {/* TOP HEADER */}
+          <header className="px-6 py-6 bg-white/80 backdrop-blur-md sticky top-0 z-20 border-b border-slate-200/60">
             <div className="flex justify-between items-center">
               <div>
-                <h1 className="text-lg font-bold flex items-center gap-2 uppercase"><GraduationCap size={24} /> Seguimiento</h1>
-                <p className="text-lime-100 text-[10px] font-bold tracking-widest uppercase flex items-center gap-1"><KeyRound size={10} /> ID: {syncId}</p>
+                <h1 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+                  Seguimiento
+                </h1>
+                <p className="text-xs font-semibold text-emerald-600 mt-0.5 uppercase tracking-wider">
+                  Periodo {periodoActual} • Online
+                </p>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => setIsConfigOpen(true)} className="bg-white/20 p-2 rounded-lg backdrop-blur-sm"><Settings size={18} /></button>
-                <button onClick={() => setIsReportOpen(true)} className="bg-white/20 p-2 rounded-lg backdrop-blur-sm"><FileSpreadsheet size={18} /></button>
+              <div className="h-10 w-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 font-bold border border-slate-200">
+                {average}
               </div>
             </div>
           </header>
 
-          <div className="px-4 mt-4 flex gap-2 justify-center">
-            <button onClick={() => setView('recent')} className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${view === 'recent' ? 'bg-lime-600 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200'}`}>Últimos</button>
-            <button onClick={() => setView('topics')} className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${view === 'topics' ? 'bg-lime-600 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200'}`}>Por Temas</button>
-          </div>
-
-          <main className="p-4 max-w-md mx-auto space-y-3">
+          {/* MAIN SCROLL AREA */}
+          <main className="flex-1 overflow-y-auto p-4 pb-32 no-scrollbar">
+            
             {view === 'recent' && (
-              <>
-                <div className="flex justify-between items-center px-1">
-                  <h2 className="text-xs font-bold text-slate-400 uppercase">Historial General</h2>
-                  <span className="text-[10px] font-bold bg-slate-200 text-slate-600 px-2 py-1 rounded">Promedio: {average}</span>
+              <div className="space-y-4 animate-in">
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wide">Actividad Reciente</h2>
                 </div>
-                {students.length === 0 ? <p className="text-center text-slate-400 text-sm py-10">Sin registros</p> : 
+                
+                {students.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 opacity-50">
+                    <div className="bg-slate-100 p-4 rounded-full mb-3"><Layers size={32} /></div>
+                    <p className="text-sm font-medium">No hay notas registradas</p>
+                  </div>
+                ) : (
                   students.slice(0, 30).map(s => (
-                    <div key={s.id} className="bg-white p-3 rounded-xl shadow-sm border border-slate-100 flex justify-between items-start animate-fade-in">
-                      <div className="min-w-0 pr-2">
-                        <div className="flex gap-1 mb-1">
-                          <span className="text-[9px] uppercase font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">{s.gradeLevel}</span>
-                          <span className="text-[9px] uppercase font-black bg-lime-100 text-lime-700 px-1.5 py-0.5 rounded truncate max-w-[100px]">{s.area}</span>
+                    <div key={s.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100/80 flex items-center justify-between transition-all active:scale-[0.98]">
+                      <div className="min-w-0 flex-1 pr-4">
+                        <div className="flex items-center gap-2 mb-1.5">
+                           <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md uppercase tracking-tight">{s.gradeLevel}</span>
+                           <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-tight truncate">{s.area}</span>
                         </div>
-                        <h3 className="font-bold text-slate-800 text-sm">{s.name}</h3>
-                        <p className="text-xs text-slate-500 truncate">{s.concept}</p>
+                        <h3 className="text-sm font-bold text-slate-800 truncate leading-snug">{s.name}</h3>
+                        <p className="text-xs text-slate-500 truncate mt-0.5">{s.actividad}</p>
                       </div>
-                      <div className="text-right">
-                        <span className={`block font-mono font-bold text-lg px-2 py-0.5 rounded border ${getScoreColor(s.score)}`}>{formatDisplay(s.score)}</span>
-                        <button onClick={() => removeRecord(s.id)} className="text-[10px] text-slate-300 hover:text-red-500 mt-1 uppercase font-bold">Borrar</button>
+                      <div className="flex flex-col items-end gap-2">
+                        <span className={`text-lg font-bold px-3 py-1 rounded-xl border ${getScoreColor(s.score)}`}>
+                          {formatDisplay(s.score)}
+                        </span>
+                        <button onClick={() => removeRecord(s.id)} className="text-slate-300 hover:text-rose-500 transition-colors">
+                          <Trash2 size={16}/>
+                        </button>
                       </div>
                     </div>
                   ))
-                }
-              </>
+                )}
+              </div>
             )}
 
             {view === 'topics' && (
-              <>
-                <div className="bg-lime-50 p-4 rounded-xl border border-lime-100 mb-4">
+              <div className="animate-in pb-10">
+                {/* Filtros Estilizados */}
+                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6 sticky top-0 z-10">
                   <div className="grid grid-cols-2 gap-3">
-                    <select value={topicFilter.gradeLevel} onChange={(e) => setTopicFilter({...topicFilter, gradeLevel: e.target.value})} className="p-2 text-xs border border-lime-200 rounded-lg"><option value="">Grado...</option>{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select>
-                    <select value={topicFilter.area} onChange={(e) => setTopicFilter({...topicFilter, area: e.target.value})} className="p-2 text-xs border border-lime-200 rounded-lg"><option value="">Área...</option>{areas.map(a => <option key={a} value={a}>{a}</option>)}</select>
-                  </div>
-                </div>
-                {(!topicFilter.gradeLevel || !topicFilter.area) ? <div className="text-center text-slate-400 text-sm py-8">Filtra para ver temas.</div> :
-                  topics.map(t => (
-                    <div key={t.id} onClick={() => openTopicEditor(t)} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 active:scale-95 transition-transform flex justify-between items-center cursor-pointer animate-slide-up">
-                      <div><h3 className="font-bold text-slate-800 leading-tight">{t.concept}</h3><p className="text-xs text-slate-500 mt-1">{t.count} Evaluados</p></div>
-                      <div className="flex gap-2"><div className="bg-lime-50 text-lime-600 p-2 rounded-lg"><Edit2 size={16} /></div><button onClick={(e) => deleteTopic(e, t)} className="bg-red-50 text-red-500 p-2 rounded-lg"><Trash2 size={16} /></button></div>
+                    <div className="relative">
+                      <select value={topicFilter.gradeLevel} onChange={(e) => setTopicFilter({...topicFilter, gradeLevel: e.target.value})}
+                        className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl py-3 px-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                        <option value="">Todos los Grados</option>
+                        {gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}
+                      </select>
+                      <div className="absolute right-3 top-3.5 pointer-events-none text-slate-400"><ChevronRight size={14} className="rotate-90"/></div>
                     </div>
-                  ))
-                }
-              </>
-            )}
-          </main>
-
-          <button onClick={() => setIsFormOpen(true)} className="fixed bottom-6 right-6 bg-lime-600 hover:bg-lime-700 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95 z-40"><Plus size={28} /></button>
-
-          {isConfigOpen && (
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-              <div className="bg-white w-full max-w-sm h-[70vh] rounded-2xl flex flex-col shadow-2xl animate-slide-up">
-                <div className="p-4 bg-slate-800 text-white flex justify-between items-center rounded-t-2xl"><h3 className="font-bold flex gap-2"><Users size={18}/> Estudiantes</h3><button onClick={() => setIsConfigOpen(false)}><X size={20}/></button></div>
-                <div className="p-4 border-b"><select value={configGrade} onChange={e => setConfigGrade(e.target.value)} className="w-full p-2 border rounded-lg">{gradeLevels.map(g=><option key={g} value={g}>{g}</option>)}</select></div>
-                <div className="flex-1 overflow-y-auto p-4">
-                  <div className="flex gap-2 mb-4"><input type="text" value={newStudentName} onChange={e => setNewStudentName(e.target.value)} placeholder="Nuevo Estudiante" className="flex-1 p-2 border rounded-lg text-sm" /><button onClick={addStudentToList} className="bg-lime-600 text-white p-2 rounded-lg"><Plus/></button></div>
-                  <div className="space-y-2">{(studentLists[configGrade] || []).map((name, i) => (<div key={i} className="flex justify-between p-2 bg-slate-50 rounded border text-sm"><span>{name}</span><button onClick={() => removeStudentFromList(name)} className="text-red-400"><Trash2 size={14}/></button></div>))}</div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {isFormOpen && (
-            <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-              <div className="bg-white w-full max-w-lg h-[90vh] sm:h-auto rounded-t-2xl sm:rounded-2xl flex flex-col animate-slide-up">
-                <div className="p-4 border-b flex justify-between items-center"><h3 className="font-bold text-lg">Nueva Actividad</h3><button onClick={() => setIsFormOpen(false)} className="bg-slate-100 p-2 rounded-full"><X size={20}/></button></div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {error && <div className="bg-red-50 text-red-600 p-2 rounded text-xs font-bold text-center">{error}</div>}
-                  <div className="grid grid-cols-2 gap-2"><select name="gradeLevel" value={batchData.gradeLevel} onChange={handleBatchConfigChange} className="p-2 border rounded-lg bg-slate-50 text-sm font-bold"><option value="">Grado...</option>{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select><select name="area" value={batchData.area} onChange={handleBatchConfigChange} className="p-2 border rounded-lg bg-slate-50 text-sm font-bold"><option value="">Área...</option>{areas.map(a => <option key={a} value={a}>{a}</option>)}</select></div>
-                  <input type="text" name="globalConcept" placeholder="Título Actividad" value={batchData.globalConcept} onChange={handleBatchConfigChange} className="w-full p-3 border-2 border-lime-200 rounded-xl focus:outline-none focus:border-lime-500 font-bold text-lime-900" />
-                  <div className="space-y-2">
-                     {batchData.entries.map((entry, idx) => (
-                       /* --- AQUI SE APLICÓ LA MEJORA DE RESPONSIVIDAD PARA EL FORMULARIO NUEVO --- */
-                       <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2 p-2 border rounded-lg">
-                         <input type="text" value={entry.name} onChange={e => handleEntryChange(idx, 'name', e.target.value)} className="w-full sm:w-[40%] text-sm font-bold bg-transparent outline-none" placeholder="Estudiante" readOnly={!!studentLists[batchData.gradeLevel]?.length} />
-                         <div className="flex w-full sm:w-auto items-center gap-2 flex-1">
-                           <input type="text" inputMode="decimal" value={entry.score} onChange={e => handleEntryChange(idx, 'score', e.target.value)} onBlur={() => handleEntryBlur(idx)} className="w-16 text-center p-1 border rounded font-bold" placeholder="0,0" />
-                           <input type="text" value={entry.observation} onChange={e => handleEntryChange(idx, 'observation', e.target.value)} className="flex-1 text-xs p-1 bg-slate-50 rounded outline-none" placeholder="Obs..." />
-                         </div>
-                       </div>
-                     ))}
-                     {(!batchData.gradeLevel || !studentLists[batchData.gradeLevel]?.length) && <button onClick={() => setBatchData(p => ({...p, entries: [...p.entries, {name:'', score:'', observation:''}]}))} className="text-xs text-lime-600 font-bold flex items-center gap-1"><Plus size={12}/> Fila manual</button>}
+                    <div className="relative">
+                      <select value={topicFilter.area} onChange={(e) => setTopicFilter({...topicFilter, area: e.target.value})}
+                        className="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl py-3 px-3 focus:outline-none focus:ring-2 focus:ring-emerald-500/20">
+                        <option value="">Todas las Áreas</option>
+                        {areas.map(a => <option key={a} value={a}>{a}</option>)}
+                      </select>
+                      <div className="absolute right-3 top-3.5 pointer-events-none text-slate-400"><ChevronRight size={14} className="rotate-90"/></div>
+                    </div>
                   </div>
                 </div>
-                <div className="p-4 border-t"><button onClick={handleSaveBatch} className="w-full bg-lime-600 text-white font-bold py-3 rounded-xl shadow-lg flex justify-center gap-2"><Save size={20}/> Guardar</button></div>
-              </div>
-            </div>
-          )}
 
-          {editingTopic && (
-            <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-              <div className="bg-white w-full max-w-lg max-h-[90vh] rounded-2xl flex flex-col shadow-2xl animate-slide-up">
-                 <div className="p-4 border-b flex justify-between items-center bg-slate-50 rounded-t-2xl"><div><h3 className="font-bold">{editingTopic.concept}</h3><p className="text-xs uppercase text-slate-500">{editingTopic.gradeLevel}</p></div><button onClick={() => setEditingTopic(null)}><X size={20}/></button></div>
-                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                    {editingTopic.records.map(r => (
-                      /* --- AQUI SE APLICÓ LA MEJORA PRINCIPAL DE RESPONSIVIDAD PARA EDICIÓN --- */
-                      <div key={r.id} className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 border rounded-lg bg-white shadow-sm">
-                        {/* Nombre: Full width en móvil, 40% en desktop */}
-                        <span className="text-sm font-bold text-slate-700 w-full sm:w-[40%] truncate">
-                          {r.name}
-                        </span>
-                        
-                        {/* Contenedor de inputs: Fila en móvil y desktop */}
-                        <div className="flex items-center gap-2 w-full sm:flex-1">
-                          <input 
-                            type="text" 
-                            inputMode="decimal" 
-                            value={r.score} 
-                            onChange={e => handleTopicRecordChange(r.id, 'score', e.target.value)} 
-                            onBlur={() => handleTopicRecordBlur(r.id)} 
-                            className="w-16 text-center border border-slate-200 rounded-md font-bold p-1.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-lime-500 focus:outline-none transition-all"
-                            placeholder="0,0"
-                          />
-                          <input 
-                            type="text" 
-                            value={r.observation} 
-                            onChange={e => setEditingTopic(prev => ({...prev, records: prev.records.map(rec => rec.id===r.id ? {...rec, observation: e.target.value} : rec)}))} 
-                            className="flex-1 text-xs bg-slate-50 p-1.5 border border-slate-200 rounded-md focus:bg-white focus:border-lime-500 focus:outline-none transition-all" 
-                            placeholder="Observación..." 
-                          />
+                {(!topicFilter.gradeLevel || !topicFilter.area) ? (
+                  <div className="text-center py-12 text-slate-400 text-sm font-medium">Selecciona un Grado y Área<br/>para ver los temas.</div>
+                ) : (
+                  <div className="grid gap-3">
+                    {topics.map(t => (
+                      <div key={t.id} onClick={() => openTopicEditor(t)}
+                        className="group bg-white p-5 rounded-2xl shadow-sm border border-slate-100 active:scale-[0.98] transition-all flex items-center justify-between cursor-pointer">
+                        <div>
+                          <h3 className="font-bold text-slate-800 text-sm mb-1 group-hover:text-emerald-700 transition-colors">{t.actividad}</h3>
+                          <span className="text-xs font-semibold bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-md">{t.count} Notas</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                           <button className="h-8 w-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition-colors">
+                             <Edit3 size={16}/>
+                           </button>
+                           <button onClick={(e) => deleteTopic(e, t)} className="h-8 w-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-500">
+                             <Trash2 size={16}/>
+                           </button>
                         </div>
                       </div>
                     ))}
-                 </div>
-                 <div className="p-4 border-t"><button onClick={saveTopicChanges} className="w-full bg-lime-600 text-white font-bold py-3 rounded-xl"><Save size={18} className="inline mr-2"/> Actualizar</button></div>
+                  </div>
+                )}
+              </div>
+            )}
+          </main>
+
+          {/* BOTTOM NAVIGATION BAR */}
+          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 pb-safe z-30 flex items-center justify-between shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
+            <button onClick={() => setView('recent')} className={`flex flex-col items-center gap-1 ${view === 'recent' ? 'text-emerald-600' : 'text-slate-400'}`}>
+              <Home size={22} strokeWidth={view === 'recent' ? 2.5 : 2} />
+              <span className="text-[10px] font-bold">Inicio</span>
+            </button>
+            
+            <button onClick={() => setView('topics')} className={`flex flex-col items-center gap-1 ${view === 'topics' ? 'text-emerald-600' : 'text-slate-400'}`}>
+              <Layers size={22} strokeWidth={view === 'topics' ? 2.5 : 2} />
+              <span className="text-[10px] font-bold">Temas</span>
+            </button>
+
+            {/* MAIN ACTION BUTTON (FAB) */}
+            <div className="-mt-12">
+              <button onClick={() => setIsFormOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white h-14 w-14 rounded-full shadow-xl shadow-emerald-500/40 flex items-center justify-center transition-transform active:scale-95">
+                <Plus size={28} strokeWidth={3} />
+              </button>
+            </div>
+
+            <button onClick={() => setIsReportOpen(true)} className="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-600">
+              <FileText size={22} />
+              <span className="text-[10px] font-bold">Reporte</span>
+            </button>
+
+            <button onClick={() => setIsConfigOpen(true)} className="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-600">
+              <Settings size={22} />
+              <span className="text-[10px] font-bold">Ajustes</span>
+            </button>
+          </nav>
+
+          {/* MODALS - BOTTOM SHEET STYLE */}
+          
+          {/* 1. CONFIG MODAL */}
+          {isConfigOpen && (
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+              <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => setIsConfigOpen(false)} />
+              <div className="relative z-10 bg-white w-full max-w-md h-[85vh] sm:h-auto sm:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col animate-slide-up">
+                <div className="p-2 flex justify-center"><div className="w-12 h-1.5 bg-slate-200 rounded-full my-2"/></div>
+                
+                <div className="px-6 pb-6 border-b border-slate-100">
+                   <h2 className="text-xl font-black text-slate-800">Configuración</h2>
+                   <p className="text-sm text-slate-500 font-medium">Periodo Escolar & Listas</p>
+                </div>
+
+                <div className="p-6 overflow-y-auto space-y-8">
+                  {/* Period Selector */}
+                  <div>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Periodo Activo</label>
+                    <div className="flex gap-2 p-1.5 bg-slate-100 rounded-2xl">
+                      {[1, 2, 3, 4].map(p => (
+                        <button key={p} onClick={() => changePeriod(p)}
+                          className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all shadow-sm ${periodoActual === p ? 'bg-white text-emerald-600 shadow-md ring-1 ring-black/5' : 'text-slate-400 hover:text-slate-600'}`}>
+                          {p}°
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Student Management */}
+                  <div>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Gestión de Listas</label>
+                    <div className="flex gap-2 mb-3">
+                      <select value={configGrade} onChange={e => setConfigGrade(e.target.value)} className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none">
+                        {gradeLevels.map(g=><option key={g} value={g}>{g}</option>)}
+                      </select>
+                    </div>
+                    
+                    <div className="flex gap-2 mb-4">
+                      <input type="text" value={newStudentName} onChange={e => setNewStudentName(e.target.value)}
+                        placeholder="Nombre Completo - Documento"
+                        className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-emerald-500 transition-colors" />
+                      <button onClick={addStudentToList} className="bg-slate-800 text-white p-3 rounded-xl shadow-lg hover:bg-slate-900"><Plus/></button>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-2xl p-4 max-h-60 overflow-y-auto space-y-2 border border-slate-100">
+                      {(studentLists[configGrade] || []).length === 0 ? <p className="text-center text-xs text-slate-400 py-4">Lista vacía</p> : 
+                        (studentLists[configGrade] || []).map((name, i) => (
+                        <div key={i} className="flex items-center gap-3 py-2 border-b border-slate-200/50 last:border-0">
+                          <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
+                          <span className="text-xs font-semibold text-slate-600 truncate">{name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
-          
-          {isReportOpen && (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-               <div className="bg-white p-6 rounded-2xl w-full max-w-sm animate-slide-up">
-                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><FileSpreadsheet/> Descargar Planilla</h3>
-                  <div className="space-y-3 mb-6">
-                    <select value={reportFilter.gradeLevel} onChange={e => setReportFilter({...reportFilter, gradeLevel: e.target.value})} className="w-full p-2 border rounded-lg">{gradeLevels.map(g=><option key={g} value={g}>{g}</option>)}</select>
-                    <select value={reportFilter.area} onChange={e => setReportFilter({...reportFilter, area: e.target.value})} className="w-full p-2 border rounded-lg">{areas.map(a=><option key={a} value={a}>{a}</option>)}</select>
+
+          {/* 2. FORM MODAL (ADD NOTES) */}
+          {isFormOpen && (
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsFormOpen(false)} />
+              <div className="relative z-10 bg-white w-full max-w-lg h-[92vh] sm:h-auto sm:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col animate-slide-up">
+                
+                {/* Header Modal */}
+                <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-white rounded-t-3xl">
+                   <div>
+                     <h2 className="text-xl font-black text-slate-800">Nueva Actividad</h2>
+                     <p className="text-xs font-bold text-emerald-600 uppercase tracking-wide">Periodo {periodoActual}</p>
+                   </div>
+                   <button onClick={() => setIsFormOpen(false)} className="bg-slate-100 p-2 rounded-full text-slate-500 hover:bg-slate-200"><X size={20}/></button>
+                </div>
+
+                {/* Form Content */}
+                <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+                  {error && <div className="mb-4 bg-rose-50 text-rose-600 p-3 rounded-xl text-xs font-bold text-center border border-rose-100 animate-in">{error}</div>}
+
+                  <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-4 space-y-4">
+                     <input type="text" name="actividad" placeholder="Título de la Actividad..." value={batchData.actividad} onChange={handleBatchConfigChange}
+                      className="w-full text-lg font-bold text-slate-800 placeholder-slate-300 border-none focus:ring-0 p-0" />
+                     
+                     <div className="grid grid-cols-2 gap-3">
+                        <select name="gradeLevel" value={batchData.gradeLevel} onChange={handleBatchConfigChange}
+                          className="bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl p-3 outline-none">
+                          <option value="">Seleccionar Grado</option>
+                          {gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}
+                        </select>
+                        <select name="area" value={batchData.area} onChange={handleBatchConfigChange}
+                          className="bg-slate-50 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl p-3 outline-none">
+                          <option value="">Seleccionar Área</option>
+                          {areas.map(a => <option key={a} value={a}>{a}</option>)}
+                        </select>
+                     </div>
                   </div>
-                  <div className="flex gap-2"><button onClick={() => setIsReportOpen(false)} className="flex-1 border border-slate-300 p-3 rounded-xl font-bold text-slate-500">Cancelar</button><button onClick={downloadExcel} className="flex-1 bg-emerald-600 text-white p-3 rounded-xl font-bold shadow-lg flex justify-center gap-2"><Download/> Excel (.xls)</button></div>
+
+                  {batchData.gradeLevel && (
+                    <div className="space-y-3">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Estudiantes</p>
+                      {batchData.entries.map((entry, idx) => (
+                        <div key={idx} className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-bold text-slate-700 truncate max-w-[70%]">{entry.name || 'Nuevo'}</span>
+                            <input type="text" inputMode="decimal" value={entry.score} onChange={e => handleEntryChange(idx, 'score', e.target.value)} onBlur={() => handleEntryBlur(idx)}
+                              className="w-16 h-10 text-center bg-slate-50 border border-slate-200 rounded-lg font-mono font-bold text-lg focus:border-emerald-500 outline-none" placeholder="0,0" />
+                          </div>
+                          <input type="text" value={entry.observation} onChange={e => handleEntryChange(idx, 'observation', e.target.value)}
+                            className="w-full bg-slate-50 border-none rounded-lg text-xs p-2.5 placeholder-slate-400 focus:ring-1 focus:ring-emerald-500/50" placeholder="Escribir observación..." />
+                        </div>
+                      ))}
+                      {(!studentLists[batchData.gradeLevel]?.length) && (
+                         <button onClick={() => setBatchData(p => ({...p, entries: [...p.entries, {name:'', score:'', observation:''}]}))}
+                          className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-400 text-xs font-bold hover:bg-slate-50 hover:border-emerald-300 hover:text-emerald-600 transition-all">
+                          + Fila Manual
+                         </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4 bg-white border-t border-slate-100">
+                  <button onClick={handleSaveBatch} className="w-full bg-slate-800 text-white font-bold py-4 rounded-2xl shadow-xl shadow-slate-900/20 flex justify-center items-center gap-2 active:scale-[0.98] transition-transform">
+                    <Save size={20}/> Guardar Notas
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 3. EDIT TOPIC MODAL */}
+          {editingTopic && (
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setEditingTopic(null)} />
+              <div className="relative z-10 bg-white w-full max-w-lg h-[90vh] sm:h-auto sm:rounded-3xl rounded-t-3xl shadow-2xl flex flex-col animate-slide-up">
+                 <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                   <div>
+                     <h3 className="font-black text-slate-800 text-lg">{editingTopic.actividad}</h3>
+                     <p className="text-xs font-bold text-slate-400 uppercase">{editingTopic.gradeLevel} • {editingTopic.area}</p>
+                   </div>
+                   <button onClick={() => setEditingTopic(null)} className="bg-slate-50 p-2 rounded-full hover:bg-slate-100"><X size={20}/></button>
+                 </div>
+
+                 <div className="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-3">
+                    {editingTopic.records.map(r => (
+                      <div key={r.id} className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                        <div className="flex justify-between items-center mb-3">
+                          <span className="text-xs font-bold text-slate-700">{r.name}</span>
+                          <input type="text" inputMode="decimal" value={r.score} onChange={e => handleTopicRecordChange(r.id, 'score', e.target.value)} onBlur={() => handleTopicRecordBlur(r.id)}
+                            className="w-14 h-9 text-center bg-slate-50 border border-slate-200 rounded-lg font-bold outline-none focus:border-emerald-500" placeholder="-" />
+                        </div>
+                        <input type="text" value={r.observation} onChange={e => handleTopicRecordChange(r.id, 'observation', e.target.value)}
+                           className="w-full text-xs p-2 bg-slate-50 rounded-lg outline-none placeholder-slate-300" placeholder="Observación..." />
+                      </div>
+                    ))}
+                 </div>
+
+                 <div className="p-4 bg-white border-t border-slate-100">
+                   <button onClick={saveTopicChanges} className="w-full bg-emerald-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-emerald-500/30 flex justify-center items-center gap-2">
+                     <Save size={18}/> Guardar Cambios
+                   </button>
+                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* 4. REPORT MODAL */}
+          {isReportOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setIsReportOpen(false)} />
+               <div className="relative z-10 bg-white p-6 rounded-3xl w-full max-w-xs shadow-2xl animate-in">
+                  <div className="flex flex-col items-center mb-6">
+                    <div className="h-12 w-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-3">
+                      <FileText size={24}/>
+                    </div>
+                    <h3 className="font-black text-slate-800">Descargar Planilla</h3>
+                    <p className="text-xs text-slate-400 text-center mt-1">Genera un archivo Excel con todas las notas del periodo actual.</p>
+                  </div>
+                  
+                  <div className="space-y-3 mb-6">
+                    <select value={reportFilter.gradeLevel} onChange={e => setReportFilter({...reportFilter, gradeLevel: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none">
+                      {gradeLevels.map(g=><option key={g} value={g}>{g}</option>)}
+                    </select>
+                    <select value={reportFilter.area} onChange={e => setReportFilter({...reportFilter, area: e.target.value})} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 outline-none">
+                      {areas.map(a=><option key={a} value={a}>{a}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex gap-3">
+                    <button onClick={() => setIsReportOpen(false)} className="flex-1 py-3 text-xs font-bold text-slate-400 hover:text-slate-600">Cancelar</button>
+                    <button onClick={downloadExcel} className="flex-[2] bg-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-emerald-500/30 flex justify-center gap-2 text-xs items-center">
+                      <Download size={14}/> Descargar
+                    </button>
+                  </div>
                </div>
             </div>
           )}
@@ -594,8 +700,11 @@
       );
     };
 
+    const App = () => <Dashboard />;
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
 </body>
 </html>
+
+
