@@ -1,32 +1,31 @@
+¡Perfecto! Vamos a agregar esa funcionalidad al Aplicativo del Docente.
+He añadido:
+ * Función generateAgendaPDF: Esta función toma todas las tareas que estás viendo actualmente (ya sean publicadas o borradores) y genera un PDF organizado.
+ * Columnas del PDF: Incluye Grado, Área, Actividad (Título + Detalles) y Fecha de Entrega, tal como lo pediste.
+ * Botón de Descarga: Ubicado justo al lado de las pestañas de "Publicadas/Borradores" para un acceso rápido.
+Aquí tienes el código completo actualizado del Docente:
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Seguimiento Premium PDF</title>
+  <title>Seguimiento Docente + Agenda Pro</title>
 
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- React & ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-  <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- SweetAlert2 -->
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-  <!-- Firebase compat -->
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
 
-  <!-- jsPDF & AutoTable (Para generar el PDF) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
-  <!-- Google Fonts (Inter) -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 
   <style>
@@ -35,16 +34,12 @@
       -webkit-tap-highlight-color: transparent; 
       background-color: #f8fafc;
     }
-    
     .animate-in { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
     .animate-slide-up { animation: slideUpPanel 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-    
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes slideUpPanel { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
     input, select, textarea { font-size: 16px !important; } 
   </style>
 </head>
@@ -70,6 +65,8 @@
     const CFG_DOC = db.collection("configuracionGlobal").doc("notas");            
     const LISTS_DOC = db.collection("configuracionGlobal").doc("listasEstudiantes"); 
     const NOTAS_COL = db.collection("notasAcademicas"); 
+    const AGENDA_COL = db.collection("agendaEscolar"); 
+    const MSGS_COL = db.collection("mensajesAgenda");
 
     // ==========================================================
     // ICONS
@@ -90,6 +87,17 @@
     const Edit3 = (p) => <Icon {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></Icon>;
     const Settings = (p) => <Icon {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></Icon>;
     const ChevronRight = (p) => <Icon {...p}><polyline points="9 18 15 12 9 6"/></Icon>;
+    
+    // ICONOS AGENDA & BUZÓN
+    const Book = (p) => <Icon {...p}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></Icon>;
+    const Calendar = (p) => <Icon {...p}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></Icon>;
+    const Archive = (p) => <Icon {...p}><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></Icon>;
+    const CheckCircle = (p) => <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>;
+    const User = (p) => <Icon {...p}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>;
+    const Upload = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></Icon>;
+    const MessageCircle = (p) => <Icon {...p}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></Icon>;
+    const Send = (p) => <Icon {...p}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Icon>;
+    const Folder = (p) => <Icon {...p}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></Icon>;
 
     const { useState, useEffect, useMemo } = React;
 
@@ -130,16 +138,10 @@
 
     const Dashboard = () => {
       const [students, setStudents] = useState([]);
-      const [studentLists, setStudentLists] = useState({
-        'Primero': ["MARTINEZ ARANGO AYLYN - 1042155626", "OSORIO MUÑOZ JERONIMO - 1041636979"],
-        'Segundo': ["GONZALEZ BETANCUR MARIA JOSE - 1041636870", "GUTIERREZ CHAVARRIA JOSE LEANDRO - 1042155380", "LOPERA CADAVID LUCIANA - 1032328826", "MARTINEZ MARTINEZ SEBASTIAN - 1041636641", "VARELAS BARRIENTOS LUCIANA - 1041636841"],
-        'Tercero': ["MOLINA OCHOA BELEN - 1035922719", "PACHECO BARRERA JOSE DANIEL - 1067959648"],
-        'Cuarto': ["CASAS FERNANDEZ ANTONELLA - 1042155250", "RESTREPO VILLA DILMER FELIPE - 1035801483"],
-        'Quinto': ["BERRIO CORREA VALENTINA - 1157463842", "GUZMAN CORREA DYLAN - 1038213324", "VARELAS BARRIENTOS MAXIMILIANO - 1041636021"]
-      });
+      const [studentLists, setStudentLists] = useState({});
 
       const [periodoActual, setPeriodoActual] = useState(1);
-      const [view, setView] = useState('recent'); // 'recent' | 'topics'
+      const [view, setView] = useState('recent'); // 'recent' | 'topics' | 'agenda' | 'mailbox'
       const [isFormOpen, setIsFormOpen] = useState(false);
       const [isReportOpen, setIsReportOpen] = useState(false);
       const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -150,6 +152,23 @@
       const [configGrade, setConfigGrade] = useState('Quinto');
       const [newStudentName, setNewStudentName] = useState('');
       const [reportFilter, setReportFilter] = useState({ gradeLevel: 'Quinto', area: 'MATEMATICAS' });
+      
+      // ESTADOS AGENDA
+      const [agendaItems, setAgendaItems] = useState([]);
+      const [agendaTab, setAgendaTab] = useState('published'); // 'published' | 'drafts'
+      const [selectedGrades, setSelectedGrades] = useState([]); // Array para selección múltiple
+      const [newTask, setNewTask] = useState({ 
+        area: '',         
+        title: '',
+        description: '', 
+        date: '',
+        targetStudent: '' 
+      });
+      const [editingTask, setEditingTask] = useState(null);
+
+      // ESTADOS BUZÓN
+      const [inboxMessages, setInboxMessages] = useState([]);
+      const [replyText, setReplyText] = useState({});
 
       // FIREBASE SYNC
       useEffect(() => {
@@ -178,7 +197,37 @@
         return () => unsub();
       }, [periodoActual]);
 
-      // LOGIC
+      // SYNC AGENDA
+      useEffect(() => {
+        const unsub = AGENDA_COL.orderBy("createdAt", "desc").limit(100).onSnapshot(snap => {
+          const arr = [];
+          snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+          setAgendaItems(arr);
+        });
+        return () => unsub();
+      }, []);
+
+      // SYNC BUZÓN
+      useEffect(() => {
+        const unsub = MSGS_COL.orderBy("timestamp", "desc").limit(50).onSnapshot(snap => {
+          const arr = [];
+          snap.forEach(d => arr.push({ id: d.id, ...d.data() }));
+          setInboxMessages(arr);
+        });
+        return () => unsub();
+      }, []);
+
+      // HELPER NOMBRE ESTUDIANTE
+      const getStudentName = (id) => {
+        if(!id) return '';
+        for (const grade in studentLists) {
+          const found = studentLists[grade].find(s => s.includes(id));
+          if(found) return found.split(' - ')[0]; 
+        }
+        return id; 
+      };
+
+      // LOGIC NOTAS
       const topics = useMemo(() => {
         const grouped = {};
         const relevant = students.filter(s => {
@@ -214,7 +263,157 @@
         try { await LISTS_DOC.set(updated, { merge: true }); } catch (err) {}
       };
 
-      // CRUD
+      // LOGIC AGENDA - SELECCIÓN MÚLTIPLE
+      const toggleGrade = (grade) => {
+        setSelectedGrades(prev => {
+          if (prev.includes(grade)) return prev.filter(g => g !== grade);
+          return [...prev, grade];
+        });
+      };
+
+      const addTask = async (saveAsArchived) => {
+        if (selectedGrades.length === 0) {
+          Swal.fire('Atención', 'Selecciona al menos un grado', 'warning');
+          return;
+        }
+        if (!newTask.title.trim() || !newTask.date || !newTask.area) {
+          Swal.fire('Faltan datos', 'Completa título, área y fecha', 'warning');
+          return;
+        }
+        
+        try {
+          const batch = db.batch();
+          
+          selectedGrades.forEach(grade => {
+             const docRef = AGENDA_COL.doc();
+             batch.set(docRef, {
+                gradeLevel: grade,
+                area: newTask.area,
+                title: newTask.title,
+                description: newTask.description || '', 
+                date: newTask.date,
+                targetStudent: newTask.targetStudent || '', 
+                archived: saveAsArchived, 
+                createdAt: Date.now(),
+                timestamp: new Date().toISOString()
+             });
+          });
+
+          await batch.commit();
+
+          setNewTask({ ...newTask, title: '', description: '', targetStudent: '' }); 
+          
+          const msg = saveAsArchived ? 'Guardado en Borradores' : 'Tarea Publicada';
+          Swal.fire({ icon: 'success', title: msg, toast: true, position: 'top', showConfirmButton: false, timer: 1500 });
+        } catch (e) { console.error(e); }
+      };
+
+      const toggleArchiveTask = async (id, currentStatus) => {
+        try { 
+          await AGENDA_COL.doc(id).update({ archived: !currentStatus }); 
+          Swal.fire({ icon: 'success', title: !currentStatus ? 'Movido a Borradores' : 'Tarea Publicada', toast: true, position: 'top', showConfirmButton: false, timer: 1200 });
+        } catch(e){}
+      };
+
+      const deletePermanent = async (id) => {
+        if(!confirm("¿Eliminar definitivamente?")) return;
+        try { await AGENDA_COL.doc(id).delete(); } catch(e){}
+      };
+
+      const openEditTask = (task) => { setEditingTask({ ...task }); };
+
+      const saveTaskEdit = async () => {
+        if (!editingTask.title.trim() || !editingTask.date || !editingTask.area) {
+          Swal.fire('Error', 'Faltan datos requeridos', 'warning');
+          return;
+        }
+        try {
+          await AGENDA_COL.doc(editingTask.id).update({
+            gradeLevel: editingTask.gradeLevel,
+            area: editingTask.area,
+            title: editingTask.title,
+            description: editingTask.description || '',
+            date: editingTask.date,
+            targetStudent: editingTask.targetStudent || ''
+          });
+          setEditingTask(null);
+          Swal.fire({ icon: 'success', title: 'Tarea Actualizada', toast: true, position: 'top', showConfirmButton: false, timer: 1500 });
+        } catch(e) { console.error(e); }
+      };
+
+      // GENERAR PDF AGENDA UNIFICADA
+      const generateAgendaPDF = () => {
+        // Filtrar tareas visibles en la lista actual (sea borrador o publicada)
+        const tasksToPrint = agendaItems.filter(item => {
+          if (agendaTab === 'drafts') return item.archived === true;
+          return !item.archived;
+        });
+
+        if (tasksToPrint.length === 0) {
+          Swal.fire('Atención', 'No hay tareas visibles para descargar', 'warning');
+          return;
+        }
+
+        // Ordenar por Fecha, luego por Grado
+        tasksToPrint.sort((a, b) => {
+           if(a.date !== b.date) return a.date.localeCompare(b.date);
+           return a.gradeLevel.localeCompare(b.gradeLevel);
+        });
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Encabezado
+        doc.setFontSize(14);
+        doc.setTextColor(20, 83, 45); // Dark Green
+        doc.setFont("helvetica", "bold");
+        doc.text("INSTITUCIÓN EDUCATIVA DE MARÍA - Sede Santa Juana", 105, 15, { align: "center" });
+        doc.setFontSize(12);
+        doc.setTextColor(50);
+        doc.text(`REPORTE DE AGENDA ESCOLAR (${agendaTab === 'drafts' ? 'BORRADORES' : 'PUBLICADAS'})`, 105, 23, { align: "center" });
+        doc.setFontSize(10);
+        doc.text(`Generado: ${new Date().toLocaleDateString()}`, 105, 29, { align: "center" });
+
+        const tableBody = tasksToPrint.map(t => [
+          t.gradeLevel,
+          t.area,
+          t.title + (t.description ? `\n- ${t.description}` : '') + (t.targetStudent ? ` (Individual)` : ''),
+          t.date
+        ]);
+
+        doc.autoTable({
+          startY: 35,
+          head: [['GRADO', 'ÁREA', 'ACTIVIDAD / DETALLE', 'FECHA']],
+          body: tableBody,
+          theme: 'grid',
+          headStyles: { fillColor: [16, 185, 129], textColor: 255, fontSize: 9, fontStyle: 'bold' },
+          columnStyles: {
+            0: { cellWidth: 25, fontStyle: 'bold' },
+            1: { cellWidth: 30 },
+            2: { cellWidth: 'auto' },
+            3: { cellWidth: 30, halign: 'center' }
+          },
+          styles: { fontSize: 9, cellPadding: 3, overflow: 'linebreak' }
+        });
+
+        doc.save(`Agenda_Escolar_Unificada_${new Date().toLocaleDateString().replace(/\//g,'-')}.pdf`);
+      };
+
+      // LOGIC BUZÓN
+      const sendReply = async (msgId) => {
+        const text = replyText[msgId];
+        if(!text || !text.trim()) return;
+        try {
+          await MSGS_COL.doc(msgId).update({
+            respuesta: text,
+            fechaRespuesta: new Date().toISOString()
+          });
+          setReplyText(prev => ({...prev, [msgId]: ''}));
+          Swal.fire({ icon: 'success', title: 'Respuesta enviada', toast: true, position: 'top', showConfirmButton: false, timer: 1500 });
+        } catch(e) { console.error(e); }
+      };
+
+      // LOGIC NOTAS CRUD
       const deleteTopic = async (e, topic) => {
         e.stopPropagation();
         if (!confirm(`¿Borrar "${topic.actividad}"?`)) return;
@@ -333,124 +532,53 @@
         } catch (err) {}
       };
 
-      // ==========================================================
-      // GENERAR PDF (REPORTE PROFESIONAL)
-      // ==========================================================
+      // GENERAR PDF NOTAS
       const generatePDF = () => {
-        // Filtrar datos
         const filtered = students.filter(s => s.gradeLevel === reportFilter.gradeLevel && s.area === reportFilter.area);
-        
-        if (filtered.length === 0) { 
-          Swal.fire('Vacío', 'No hay registros en este Grado y Área', 'info'); 
-          return; 
-        }
-
-        // Obtener actividades únicas (Columnas)
+        if (filtered.length === 0) { Swal.fire('Vacío', 'No hay registros', 'info'); return; }
         const activitiesSet = new Set();
         filtered.forEach(s => activitiesSet.add(s.actividad));
-        const activities = Array.from(activitiesSet).sort(); // Ordenar alfabéticamente o por fecha si tuvieras
-
-        // Obtener estudiantes únicos (Filas)
+        const activities = Array.from(activitiesSet).sort();
         const uniqueStudents = [...new Set(filtered.map(s => s.name))].sort();
-
-        // Construir cuerpo de la tabla
         const tableBody = uniqueStudents.map(studentName => {
           const row = [studentName];
-          let sum = 0;
-          let count = 0;
-
+          let sum = 0; let count = 0;
           activities.forEach(act => {
             const record = filtered.find(s => s.name === studentName && s.actividad === act);
             if (record) {
               const val = record.nota || 0;
               row.push(formatDisplay(val));
-              sum += val;
-              count++;
-            } else {
-              row.push("-"); // Sin nota
-            }
+              sum += val; count++;
+            } else { row.push("-"); }
           });
-
-          // Calcular Promedio Final
           const avg = count > 0 ? (sum / count).toFixed(1).replace('.', ',') : "0,0";
-          row.push(avg); // Última columna: Definitiva
-
+          row.push(avg);
           return row;
         });
-
-        // Configurar jsPDF
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-
-        // Encabezado del Documento
-        doc.setFontSize(14);
-        doc.setTextColor(20, 83, 45); // Emerald Dark
-        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14); doc.setTextColor(20, 83, 45); doc.setFont("helvetica", "bold");
         doc.text("INSTITUCIÓN EDUCATIVA DE MARÍA - Sede Santa Juana", 105, 15, { align: "center" });
-        
-        doc.setFontSize(10);
-        doc.setTextColor(60);
+        doc.setFontSize(10); doc.setTextColor(60);
         doc.text(`PLANILLA DE CALIFICACIONES - PERIODO ${periodoActual}`, 105, 22, { align: "center" });
-        
         doc.setFontSize(9);
         doc.text(`GRADO: ${reportFilter.gradeLevel.toUpperCase()}   |   ÁREA: ${reportFilter.area}`, 105, 28, { align: "center" });
-
-        // Generar Tabla
         doc.autoTable({
-          startY: 35,
-          head: [['ESTUDIANTE', ...activities, 'DEF']],
-          body: tableBody,
-          theme: 'grid',
-          headStyles: { 
-            fillColor: [16, 185, 129], // Emerald 500
-            textColor: 255,
-            fontSize: 8,
-            fontStyle: 'bold',
-            halign: 'center'
-          },
-          bodyStyles: {
-            fontSize: 8,
-            textColor: 50
-          },
-          columnStyles: {
-            0: { halign: 'left', fontStyle: 'bold', cellWidth: 60 }, // Columna Nombre más ancha
-            // Las demás columnas (notas) automáticas
-          },
-          styles: {
-            cellPadding: 2,
-            overflow: 'linebreak',
-            valign: 'middle'
-          },
+          startY: 35, head: [['ESTUDIANTE', ...activities, 'DEF']], body: tableBody, theme: 'grid',
+          headStyles: { fillColor: [16, 185, 129], textColor: 255, fontSize: 8, fontStyle: 'bold', halign: 'center' },
+          bodyStyles: { fontSize: 8, textColor: 50 },
+          columnStyles: { 0: { halign: 'left', fontStyle: 'bold', cellWidth: 60 } },
           didParseCell: function(data) {
-            // Alinear notas al centro (excepto nombre)
             if (data.section === 'body' && data.column.index > 0) {
               data.cell.styles.halign = 'center';
-              
-              // Colorear notas bajas en rojo
               const valStr = data.cell.raw;
               if(typeof valStr === 'string' && valStr !== '-') {
                  const num = parseFloat(valStr.replace(',', '.'));
-                 if(num < 3.0) {
-                   data.cell.styles.textColor = [220, 38, 38]; // Rojo
-                   data.cell.styles.fontStyle = 'bold';
-                 }
+                 if(num < 3.0) { data.cell.styles.textColor = [220, 38, 38]; data.cell.styles.fontStyle = 'bold'; }
               }
             }
           }
         });
-
-        // Pie de página
-        const pageCount = doc.internal.getNumberOfPages();
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        const dateStr = new Date().toLocaleDateString('es-CO');
-        
-        for(let i = 1; i <= pageCount; i++) {
-          doc.setPage(i);
-          doc.text(`Generado el: ${dateStr} - Pág ${i} de ${pageCount}`, 105, 290, { align: "center" });
-        }
-
-        // Guardar
         doc.save(`Reporte_${reportFilter.gradeLevel}_${reportFilter.area}_P${periodoActual}.pdf`);
       };
 
@@ -462,6 +590,12 @@
       };
 
       const average = students.length > 0 ? (students.reduce((acc, curr) => acc + (parseFloat(parseInput((curr.score ?? '').toString())) || 0), 0) / students.length).toFixed(1).replace('.', ',') : '0,0';
+
+      // RENDER AGENDA FILTERED
+      const visibleAgenda = agendaItems.filter(item => {
+        if (agendaTab === 'drafts') return item.archived === true;
+        return !item.archived;
+      });
 
       return (
         <div className="flex flex-col h-[100dvh] bg-slate-50">
@@ -491,7 +625,6 @@
                 <div className="flex items-center justify-between mb-2 px-1">
                   <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wide">Actividad Reciente</h2>
                 </div>
-                
                 {students.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-20 opacity-50">
                     <div className="bg-slate-100 p-4 rounded-full mb-3"><Layers size={32} /></div>
@@ -524,7 +657,6 @@
 
             {view === 'topics' && (
               <div className="animate-in pb-10">
-                {/* Filtros Estilizados */}
                 <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6 sticky top-0 z-10">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="relative">
@@ -545,7 +677,6 @@
                     </div>
                   </div>
                 </div>
-
                 {(!topicFilter.gradeLevel || !topicFilter.area) ? (
                   <div className="text-center py-12 text-slate-400 text-sm font-medium">Selecciona un Grado y Área<br/>para ver los temas.</div>
                 ) : (
@@ -565,6 +696,191 @@
                              <Trash2 size={16}/>
                            </button>
                         </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* VISTA AGENDA ACTUALIZADA */}
+            {view === 'agenda' && (
+              <div className="animate-in pb-20">
+                
+                {/* TABS CARPETAS */}
+                <div className="flex p-1 bg-slate-200/50 rounded-xl mb-6 mx-1">
+                  <button onClick={() => setAgendaTab('published')} 
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${agendaTab === 'published' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+                    🚀 Tareas Publicadas
+                  </button>
+                  <button onClick={() => setAgendaTab('drafts')} 
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${agendaTab === 'drafts' ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+                    📂 Borradores
+                  </button>
+                </div>
+
+                {/* BOTÓN DESCARGA PDF AGENDA */}
+                <div className="flex justify-end px-1 mb-4">
+                   <button onClick={generateAgendaPDF} className="bg-slate-700 text-white text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-slate-800 shadow-md">
+                     <Download size={14}/> PDF Agenda
+                   </button>
+                </div>
+
+                {agendaTab === 'published' && (
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6">
+                    <h2 className="text-lg font-black text-slate-800 mb-4 flex items-center gap-2">
+                      <Book size={20} className="text-emerald-600"/> Nueva Tarea
+                    </h2>
+                    <div className="space-y-3">
+                      {/* MULTI SELECT GRADOS */}
+                      <div>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wide ml-1 mb-2 block">Grados (Selección Múltiple)</label>
+                        <div className="flex flex-wrap gap-2">
+                          {gradeLevels.map(g => (
+                            <button key={g} onClick={() => toggleGrade(g)}
+                              className={`px-3 py-2 rounded-lg text-xs font-bold transition-all border ${selectedGrades.includes(g) ? 'bg-slate-800 text-white border-slate-800' : 'bg-slate-50 text-slate-500 border-slate-200 hover:border-slate-300'}`}>
+                              {g}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <select value={newTask.area} onChange={e => setNewTask({...newTask, area: e.target.value})}
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none">
+                        <option value="">Seleccionar Área</option>
+                        {areas.map(a => <option key={a} value={a}>{a}</option>)}
+                      </select>
+
+                      {/* SELECTOR DE ESTUDIANTE INDIVIDUAL */}
+                      {selectedGrades.length === 1 && (
+                        <select value={newTask.targetStudent} onChange={e => setNewTask({...newTask, targetStudent: e.target.value})}
+                          className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none">
+                          <option value="">👥 Asignar a: Toda la clase</option>
+                          {(studentLists[selectedGrades[0]] || []).map(st => (
+                            <option key={st} value={st.split(" - ")[1] || st}>{st.split(" - ")[0]}</option>
+                          ))}
+                        </select>
+                      )}
+
+                      <input type="text" placeholder="Título de la tarea (ej: Maqueta Sistema Solar)" value={newTask.title} onChange={e => setNewTask({...newTask, title: e.target.value})}
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none"/>
+                      
+                      <div>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wide ml-1">Fecha de Entrega</label>
+                        <input type="date" value={newTask.date} onChange={e => setNewTask({...newTask, date: e.target.value})}
+                          className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none text-slate-600 mt-1"/>
+                      </div>
+                      
+                      <textarea placeholder="Descripción o detalles (Opcional)..." value={newTask.description} onChange={e => setNewTask({...newTask, description: e.target.value})}
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none h-20 resize-none"></textarea>
+                      
+                      {/* DOS BOTONES: GUARDAR Y PUBLICAR */}
+                      <div className="flex gap-3 pt-2">
+                        <button onClick={() => addTask(true)} className="flex-1 bg-slate-100 text-slate-600 font-bold py-3 rounded-xl hover:bg-slate-200 transition-all flex justify-center items-center gap-2 text-xs border border-slate-200">
+                          <Save size={16}/> Guardar Borrador
+                        </button>
+                        <button onClick={() => addTask(false)} className="flex-[2] bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-emerald-700 transition-all flex justify-center items-center gap-2 text-sm">
+                          <Upload size={18}/> Publicar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  {visibleAgenda.length === 0 ? (
+                    <div className="text-center py-10 text-slate-400 text-sm">No hay tareas en esta carpeta.</div>
+                  ) : (
+                    visibleAgenda.map(item => (
+                      <div key={item.id} className={`bg-white p-4 rounded-2xl shadow-sm border ${item.archived ? 'border-amber-100 bg-amber-50/50' : 'border-slate-100'} flex flex-col gap-2 relative group`}>
+                        <div className="flex justify-between items-start">
+                          <div className="flex flex-wrap gap-2">
+                            <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-1 rounded uppercase">{item.gradeLevel}</span>
+                            <span className="bg-blue-100 text-blue-800 text-[10px] font-black px-2 py-1 rounded uppercase">{item.area}</span>
+                            {item.targetStudent && (
+                              <span className="bg-purple-100 text-purple-800 text-[10px] font-black px-2 py-1 rounded uppercase flex items-center gap-1">
+                                <User size={10}/> Individual
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs font-bold text-slate-400 flex items-center gap-1"><Calendar size={12}/> {item.date}</span>
+                        </div>
+                        <h3 className="font-bold text-slate-800 leading-tight mt-1">{item.title}</h3>
+                        
+                        {item.description && <p className="text-xs text-slate-500 line-clamp-2">{item.description}</p>}
+
+                        {item.targetStudent && (
+                           <p className="text-xs text-purple-600 font-medium">Asignado a: {getStudentName(item.targetStudent)}</p>
+                        )}
+
+                        <div className="flex justify-end gap-2 mt-2 pt-2 border-t border-dashed border-slate-200">
+                          {/* BOTÓN EDITAR */}
+                          <button onClick={() => openEditTask(item)} className="p-2 bg-slate-50 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50" title="Editar">
+                            <Edit3 size={16}/>
+                          </button>
+
+                          {/* BOTÓN PUBLICAR / ARCHIVAR */}
+                          {item.archived ? (
+                             <button onClick={() => toggleArchiveTask(item.id, true)} 
+                               className="bg-emerald-500 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-md hover:bg-emerald-600 flex items-center gap-1">
+                               <CheckCircle size={14}/> Publicar
+                             </button>
+                          ) : (
+                             <button onClick={() => toggleArchiveTask(item.id, false)} className="p-2 bg-slate-50 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50" title="Mover a Borradores">
+                               <Archive size={16}/>
+                             </button>
+                          )}
+                          
+                          {/* BOTÓN ELIMINAR MEJORADO */}
+                          <button onClick={() => deletePermanent(item.id)} className="bg-rose-50 text-rose-600 text-xs font-bold px-3 py-2 rounded-lg hover:bg-rose-100 flex items-center gap-1" title="Eliminar Definitivamente">
+                            <Trash2 size={14}/> Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* VISTA BUZÓN */}
+            {view === 'mailbox' && (
+              <div className="animate-in pb-20">
+                <div className="flex items-center justify-between mb-4 px-1">
+                  <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                    <MessageCircle size={20} className="text-emerald-600"/> Buzón de Dudas
+                  </h2>
+                </div>
+
+                {inboxMessages.length === 0 ? (
+                  <div className="text-center py-20 text-slate-400 text-sm">No hay mensajes pendientes.</div>
+                ) : (
+                  <div className="space-y-4">
+                    {inboxMessages.map(msg => (
+                      <div key={msg.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                        <div className="flex justify-between mb-2">
+                          <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded uppercase">{msg.studentName}</span>
+                          <span className="text-[10px] text-slate-400">{new Date(msg.timestamp).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-xs font-bold text-emerald-600 mb-1">Sobre: {msg.taskTitle}</p>
+                        <p className="text-sm text-slate-700 italic mb-4">"{msg.pregunta}"</p>
+                        
+                        {msg.respuesta ? (
+                          <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                            <p className="text-xs font-bold text-emerald-800 mb-1">Tu respuesta:</p>
+                            <p className="text-xs text-emerald-700">{msg.respuesta}</p>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <input type="text" placeholder="Escribir respuesta..." 
+                              value={replyText[msg.id] || ''} 
+                              onChange={(e) => setReplyText({...replyText, [msg.id]: e.target.value})}
+                              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 text-sm outline-none"/>
+                            <button onClick={() => sendReply(msg.id)} className="bg-slate-800 text-white p-2.5 rounded-xl hover:bg-slate-900">
+                              <Send size={16}/>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -592,14 +908,14 @@
               </button>
             </div>
 
-            <button onClick={() => setIsReportOpen(true)} className="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-600">
-              <FileText size={22} />
-              <span className="text-[10px] font-bold">Reporte</span>
+            <button onClick={() => setView('agenda')} className={`flex flex-col items-center gap-1 ${view === 'agenda' ? 'text-emerald-600' : 'text-slate-400'}`}>
+              <Book size={22} strokeWidth={view === 'agenda' ? 2.5 : 2} />
+              <span className="text-[10px] font-bold">Agenda</span>
             </button>
 
-            <button onClick={() => setIsConfigOpen(true)} className="flex flex-col items-center gap-1 text-slate-400 hover:text-emerald-600">
-              <Settings size={22} />
-              <span className="text-[10px] font-bold">Ajustes</span>
+            <button onClick={() => setView('mailbox')} className={`flex flex-col items-center gap-1 ${view === 'mailbox' ? 'text-emerald-600' : 'text-slate-400'}`}>
+              <MessageCircle size={22} strokeWidth={view === 'mailbox' ? 2.5 : 2} />
+              <span className="text-[10px] font-bold">Buzón</span>
             </button>
           </nav>
 
@@ -732,7 +1048,7 @@
             </div>
           )}
 
-          {/* 3. EDIT TOPIC MODAL */}
+          {/* 3. EDIT TOPIC MODAL (NOTAS) */}
           {editingTopic && (
             <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
               <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setEditingTopic(null)} />
@@ -768,7 +1084,53 @@
             </div>
           )}
 
-          {/* 4. REPORT MODAL */}
+          {/* 4. MODAL EDICIÓN AGENDA */}
+          {editingTask && (
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setEditingTask(null)} />
+              <div className="relative z-10 bg-white w-full max-w-lg rounded-3xl shadow-2xl flex flex-col animate-slide-up p-6">
+                 <h3 className="font-black text-slate-800 text-lg mb-4 flex items-center gap-2">
+                   <Edit3 size={20} className="text-emerald-600"/> Editar Tarea
+                 </h3>
+                 
+                 <div className="space-y-3 mb-6">
+                    <div className="grid grid-cols-2 gap-3">
+                      <select value={editingTask.gradeLevel} onChange={e => setEditingTask({...editingTask, gradeLevel: e.target.value})}
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none">
+                        {gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}
+                      </select>
+                      <select value={editingTask.area} onChange={e => setEditingTask({...editingTask, area: e.target.value})}
+                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none">
+                        {areas.map(a => <option key={a} value={a}>{a}</option>)}
+                      </select>
+                    </div>
+
+                    <select value={editingTask.targetStudent || ''} onChange={e => setEditingTask({...editingTask, targetStudent: e.target.value})}
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 outline-none">
+                      <option value="">👥 Asignar a: Toda la clase</option>
+                      {(studentLists[editingTask.gradeLevel] || []).map(st => (
+                        <option key={st} value={st.split(" - ")[1] || st}>{st.split(" - ")[0]}</option>
+                      ))}
+                    </select>
+
+                    <input type="text" value={editingTask.title} onChange={e => setEditingTask({...editingTask, title: e.target.value})}
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none"/>
+                    
+                    <input type="date" value={editingTask.date} onChange={e => setEditingTask({...editingTask, date: e.target.value})}
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none text-slate-600"/>
+                    
+                    <textarea value={editingTask.description} onChange={e => setEditingTask({...editingTask, description: e.target.value})}
+                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none h-24 resize-none"></textarea>
+                 </div>
+
+                 <button onClick={saveTaskEdit} className="w-full bg-slate-800 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-slate-900 flex justify-center items-center gap-2">
+                   <Save size={18}/> Guardar Cambios
+                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* 5. REPORT MODAL */}
           {isReportOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={() => setIsReportOpen(false)} />
