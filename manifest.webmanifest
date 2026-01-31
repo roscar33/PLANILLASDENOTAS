@@ -7,9 +7,9 @@
   "background_color": "#ffffff",
   "theme_color": "#0f172a",
   "icons": [
-    { "src": "/PLANILLASDENOTAS/icons/icon-192.png", "sizes": "192x192", "type": "notas/png" },
-    { "src": "/PLANILLASDENOTAS/icons/icon-512.png", "sizes": "512x512", "type": "notas/png" },
-    { "src": "/PLANILLASDENOTAS/icons/maskable-192.png", "sizes": "192x192", "type": "notas/png", "purpose": "maskable" },
-    { "src": "/PLANILLASDENOTAS/icons/maskable-512.png", "sizes": "512x512", "type": "notas/png", "purpose": "maskable" }
+    { "src": "/PLANILLASDENOTAS/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/PLANILLASDENOTAS/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/PLANILLASDENOTAS/icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/PLANILLASDENOTAS/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
