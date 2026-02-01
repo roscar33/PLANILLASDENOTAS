@@ -53,7 +53,7 @@
     const Icon = ({ children, size = 24, className = "" }) => (
       <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
     );
-    const Home = (p)=><Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
+    const Home = (p)=><Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
     const Book = (p)=><Icon {...p}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></Icon>;
     const Plus = (p)=><Icon {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Icon>;
     const MessageCircle = (p)=><Icon {...p}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></Icon>;
@@ -64,6 +64,8 @@
     const Send = (p)=><Icon {...p}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Icon>;
     const VideoIcon = (p)=><Icon {...p}><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></Icon>;
     const FileText = (p)=><Icon {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></Icon>;
+    const ArchiveIcon = (p)=><Icon {...p}><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></Icon>;
+    const RestoreIcon = (p)=><Icon {...p}><polyline points="16 14 12 9 8 14"/><path d="M12 9v12"/><path d="M20 20h-8a6 6 0 0 1-6-6V8"/><path d="M4 8h16"/></Icon>;
 
     const gradeLevels = ['Primero', 'Segundo', 'Tercero', 'Cuarto', 'Quinto'];
     const areasList = ['INGLES', 'CIENCIAS NATURALES', 'CIENCIAS SOCIALES', 'ARTISTICA', 'EDUCACION FISICA', 'ETICA Y VALORES', 'RELIGION', 'ESPAÑOL (LENGUAJE)', 'MATEMATICAS', 'TECNOLOGIA E INFORMATICA'];
@@ -84,6 +86,8 @@
       const [editingTask, setEditingTask] = useState(null);
       const [inboxMessages, setInboxMessages] = useState([]);
       const [replyText, setReplyText] = useState({});
+      const [agendaTab, setAgendaTab] = useState('published');
+      const [mailboxTab, setMailboxTab] = useState('active'); // Nuevo estado para pestañas de buzón
       
       const [filterGrade, setFilterGrade] = useState('Quinto');
       const [filterArea, setFilterArea] = useState('MATEMATICAS');
@@ -135,10 +139,23 @@
         });
       };
 
-      const handleAddTask = async () => {
-        if(!newTask.title || !newTask.area || !newTask.date) return Swal.fire('Error','Faltan datos','warning');
+      const handleAddTask = async (status = 'published') => {
+        const gradeReady = assignmentType === 'group' ? selectedGrades.length > 0 : !!newTask.gradeLevel;
+        if(!gradeReady || !newTask.area || !newTask.date) {
+            return Swal.fire('Error','Grado, Área y Fecha son obligatorios','warning');
+        }
+
         const batch = db.batch();
-        const baseTask = { ...newTask, archived: false, createdAt: Date.now(), periodo: periodoActual };
+        const isPublished = status === 'published';
+        const baseTask = { 
+            ...newTask, 
+            status, 
+            publico: isPublished, 
+            archived: false, 
+            createdAt: Date.now(), 
+            periodo: periodoActual 
+        };
+
         if(assignmentType === 'group') {
           selectedGrades.forEach(g => {
             const ref = db.collection("agendaEscolar").doc();
@@ -150,7 +167,8 @@
         }
         await batch.commit();
         setNewTask({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '' });
-        Swal.fire({icon:'success', title: 'Tarea Publicada'});
+        setSelectedGrades([]);
+        Swal.fire({icon:'success', title: isPublished ? 'Tarea Publicada' : 'Borrador Guardado (Privado)'});
       };
 
       const saveGrades = async () => {
@@ -192,6 +210,33 @@
         const body = filteredRecords.map(r => [r.nombreEstudiante, r.actividad, (r.score || '0').replace('.', ',')]);
         doc.autoTable({ startY: 28, head: [['NOMBRE ESTUDIANTE', 'ACTIVIDAD', 'NOTA']], body, headStyles: { fillColor: [6, 78, 59] }, styles: { fontSize: 8 } });
         doc.save(`Reporte_Notas_${filterGrade}_${filterArea}.pdf`);
+      };
+
+      const generateGeneralAgendaPDF = () => {
+        const doc = new window.jspdf.jsPDF();
+        doc.setFontSize(14);
+        doc.text(`AGENDA GENERAL DE TAREAS - P${periodoVisualizacion}`, 14, 15);
+        const activeTasks = agendaItems.filter(i => !i.archived && i.status !== 'draft');
+        const body = activeTasks.map(t => [t.date, t.gradeLevel, t.area, t.title || '(Sin título)', t.description || '']);
+        doc.autoTable({
+            startY: 20,
+            head: [['FECHA', 'GRADO', 'ÁREA', 'TÍTULO', 'DESCRIPCIÓN']],
+            body: body,
+            headStyles: { fillColor: [6, 78, 59] },
+            styles: { fontSize: 8, overflow: 'linebreak' },
+            columnStyles: { 4: { cellWidth: 60 } }
+        });
+        doc.save(`Agenda_General_P${periodoVisualizacion}.pdf`);
+      };
+
+      const archiveTask = async (task) => {
+        if((await Swal.fire({title:'¿Archivar Tarea?', text: 'Los padres dejarán de verla.', icon: 'question', showCancelButton:true})).isConfirmed) {
+            await db.collection("agendaEscolar").doc(task.id).update({
+                archived: true,
+                publico: false 
+            });
+            Swal.fire({icon:'success', title: 'Tarea Archivada', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false});
+        }
       };
 
       return (
@@ -259,7 +304,7 @@
                     <option value="">Seleccione Área...</option>
                     {areasList.map(a => <option key={a} value={a}>{a}</option>)}
                   </select>
-                  <input type="text" placeholder="Título Actividad" value={newTask.title} onChange={e=>setNewTask({...newTask,title:e.target.value})} className="w-full p-4 text-sm font-black"/>
+                  <input type="text" placeholder="Título Actividad (Opcional)" value={newTask.title} onChange={e=>setNewTask({...newTask,title:e.target.value})} className="w-full p-4 text-sm font-black"/>
                   <div className="grid grid-cols-2 gap-3">
                     <input type="date" value={newTask.date} onChange={e=>setNewTask({...newTask,date:e.target.value})} className="p-4 text-xs font-black"/>
                     <div className="flex gap-2">
@@ -274,22 +319,45 @@
                   <input type="url" placeholder="YouTube URL" value={newTask.videoLink} onChange={e=>setNewTask({...newTask,videoLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
                   <input type="url" placeholder="Drive URL" value={newTask.pdfLink} onChange={e=>setNewTask({...newTask,pdfLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
                   <textarea placeholder="Descripción..." value={newTask.description} onChange={e=>setNewTask({...newTask,description:e.target.value})} className="w-full p-4 text-sm font-bold h-24 resize-none"></textarea>
-                  <button onClick={handleAddTask} className="w-full py-4 bg-[#064e3b] text-white font-black rounded-2xl text-[11px] uppercase shadow-lg">Publicar Tarea</button>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleAddTask('draft')} className="flex-1 py-4 bg-stone-200 text-stone-600 font-black rounded-2xl text-[11px] uppercase">Guardar Borrador</button>
+                    <button onClick={() => handleAddTask('published')} className="flex-[2] py-4 bg-[#064e3b] text-white font-black rounded-2xl text-[11px] uppercase shadow-lg">Publicar Tarea</button>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
-                  {agendaItems.map(item => (
-                    <div key={item.id} className="earth-card p-5 border-l-[6px] border-l-[#facc15]">
+                  <button onClick={generateGeneralAgendaPDF} className="w-full py-4 bg-[#facc15] text-[#064e3b] font-black rounded-2xl text-[11px] uppercase shadow-md flex items-center justify-center gap-2">
+                     <FileText size={16}/> Descargar Agenda General (PDF)
+                  </button>
+
+                  <div className="flex gap-2 mb-2 bg-stone-100 p-1 rounded-2xl">
+                    <button onClick={()=>setAgendaTab('published')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${agendaTab==='published'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Publicadas</button>
+                    <button onClick={()=>setAgendaTab('draft')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${agendaTab==='draft'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Borradores</button>
+                    <button onClick={()=>setAgendaTab('archived')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${agendaTab==='archived'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Archivadas</button>
+                  </div>
+                  
+                  {agendaItems.filter(item => {
+                    if (agendaTab === 'archived') return item.archived === true;
+                    if (agendaTab === 'draft') return item.status === 'draft' && !item.archived;
+                    return item.status !== 'draft' && !item.archived;
+                  }).map(item => (
+                    <div key={item.id} className={`earth-card p-5 border-l-[6px] ${item.status === 'draft' ? 'border-l-stone-400 bg-stone-50' : item.archived ? 'border-l-stone-500 bg-stone-100 opacity-75' : 'border-l-[#facc15]'}`}>
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-2">
                           <span className="text-[9px] font-black bg-stone-900 text-white px-2 py-0.5 rounded uppercase">{item.gradeLevel}</span>
                           {item.videoLink && <VideoIcon size={12} className="text-red-500"/>}
                           {item.pdfLink && <FileText size={12} className="text-blue-500"/>}
+                          {item.archived && <span className="text-[8px] font-black bg-stone-200 text-stone-500 px-2 rounded">ARCHIVADA</span>}
                         </div>
                         <span className="text-[10px] font-black text-[#064e3b]">{item.date}</span>
                       </div>
-                      <h3 className="font-extrabold text-stone-900 text-sm uppercase">{item.title}</h3>
+                      <h3 className="font-extrabold text-stone-900 text-sm uppercase">{item.title || '(Sin Título)'}</h3>
                       <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-stone-100">
+                        {!item.archived && (
+                            <button onClick={() => archiveTask(item)} className="p-2 text-stone-400 hover:text-stone-600" title="Archivar (Ocultar a Padres)">
+                                <ArchiveIcon size={20}/>
+                            </button>
+                        )}
                         <button onClick={()=>setEditingTask(item)} className="p-2 text-stone-400 hover:text-emerald-700"><EditIcon size={20}/></button>
                         <button onClick={async ()=>{ if((await Swal.fire({title:'¿Borrar?', showCancelButton:true})).isConfirmed) db.collection("agendaEscolar").doc(item.id).delete(); }} className="p-2 text-stone-400 hover:text-red-500"><TrashIcon size={20}/></button>
                       </div>
@@ -356,10 +424,48 @@
             {view === 'mailbox' && (
               <div className="space-y-4">
                 <h2 className="text-[11px] font-black text-stone-600 uppercase tracking-widest px-1">Buzón de Chat</h2>
-                {inboxMessages.map(m => (
-                  <div key={m.id} className="earth-card p-5 border-r-[6px] border-r-[#facc15]">
-                    <p className="text-[10px] font-black text-[#064e3b] uppercase">{m.studentName}</p>
-                    <p className="text-[9px] font-bold text-stone-400 uppercase truncate mb-4">{m.taskTitle}</p>
+                
+                {/* BOTONES DE PESTAÑAS PARA EL BUZÓN */}
+                <div className="flex gap-2 mb-2 bg-stone-100 p-1 rounded-2xl">
+                    <button onClick={()=>setMailboxTab('active')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${mailboxTab==='active'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Recibidos</button>
+                    <button onClick={()=>setMailboxTab('archived')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${mailboxTab==='archived'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Archivados</button>
+                </div>
+
+                {/* LOGICA DE FILTRADO SEGÚN PESTAÑA */}
+                {inboxMessages.filter(m => mailboxTab === 'active' ? !m.archived : m.archived).map(m => (
+                  <div key={m.id} className={`earth-card p-5 border-r-[6px] ${m.archived ? 'border-r-stone-400 bg-stone-50' : 'border-r-[#facc15]'}`}>
+                    <div className="flex justify-between items-start mb-2">
+                        <div>
+                            <p className="text-[10px] font-black text-[#064e3b] uppercase">{m.studentName}</p>
+                            <p className="text-[9px] font-bold text-stone-400 uppercase truncate">{m.taskTitle}</p>
+                        </div>
+                        <div className="flex gap-1">
+                            {/* SI ESTÁ ACTIVO: MOSTRAR BOTÓN ARCHIVAR */}
+                            {!m.archived && (
+                                <button onClick={async ()=>{
+                                    if((await Swal.fire({title:'¿Archivar Chat?', icon:'question', showCancelButton:true})).isConfirmed) {
+                                        await db.collection("mensajesAgenda").doc(m.id).update({ archived: true });
+                                    }
+                                }} className="p-2 bg-stone-100 rounded-lg text-stone-400 hover:text-stone-600"><ArchiveIcon size={14}/></button>
+                            )}
+
+                            {/* SI ESTÁ ARCHIVADO: MOSTRAR BOTÓN RESTAURAR (FLECHA) */}
+                            {m.archived && (
+                                <button onClick={async ()=>{
+                                    if((await Swal.fire({title:'¿Restaurar Chat?', icon:'question', showCancelButton:true})).isConfirmed) {
+                                        await db.collection("mensajesAgenda").doc(m.id).update({ archived: false });
+                                    }
+                                }} className="p-2 bg-stone-200 rounded-lg text-emerald-600 hover:text-emerald-800" title="Restaurar a Recibidos"><RestoreIcon size={14}/></button>
+                            )}
+
+                            <button onClick={async ()=>{
+                                if((await Swal.fire({title:'¿Eliminar Chat?', text:'No se podrá recuperar', icon:'warning', showCancelButton:true})).isConfirmed) {
+                                    await db.collection("mensajesAgenda").doc(m.id).delete();
+                                }
+                            }} className="p-2 bg-red-50 rounded-lg text-red-400 hover:text-red-600"><TrashIcon size={14}/></button>
+                        </div>
+                    </div>
+                    
                     <div className="flex flex-col gap-2 mb-4">
                       {m.conversacion && m.conversacion.map((chat, idx) => (
                         <div key={idx} className={`chat-bubble ${chat.rol === 'docente' ? 'docente' : 'user'}`}>
@@ -417,7 +523,7 @@
             </div>
           )}
 
-          {/* MODAL REGISTRO NOTAS CON OBSERVACION (REQUISITO) */}
+          {/* MODAL REGISTRO NOTAS */}
           {isFormOpen && (
             <div className="fixed inset-0 z-[100] flex items-end justify-center">
               <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-md" onClick={()=>setIsFormOpen(false)} />
@@ -450,24 +556,60 @@
             </div>
           )}
 
-          {/* MODAL EDICIÓN AGENDA TOTAL (REQUISITO) */}
+          {/* MODAL EDICIÓN AGENDA - 3 BOTONES: CANCELAR, GUARDAR EDICIÓN, PUBLICAR TAREA */}
           {editingTask && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-stone-900/80 backdrop-blur-sm" onClick={()=>setEditingTask(null)} />
               <div className="relative bg-white w-full max-w-md rounded-[40px] shadow-2xl flex flex-col border-t-[10px] border-[#facc15] overflow-hidden">
                 <div className="p-6 border-b flex justify-between items-center"><h3 className="font-black text-lg uppercase">Editar Actividad</h3><button onClick={()=>setEditingTask(null)}>✕</button></div>
-                <div className="p-6 space-y-4 flex-1 overflow-y-auto no-scrollbar max-h-[70vh]">
-                    <div className="space-y-1"><label className="text-[10px] font-black text-stone-400 uppercase">Título</label><input type="text" value={editingTask.title} onChange={e=>setEditingTask({...editingTask, title:e.target.value})} className="w-full p-4 text-sm font-black"/></div>
+                <div className="p-6 space-y-4 flex-1 overflow-y-auto no-scrollbar max-h-[65vh]">
+                    <div className="space-y-1"><label className="text-[10px] font-black text-stone-400 uppercase">Título (Opcional)</label><input type="text" value={editingTask.title} onChange={e=>setEditingTask({...editingTask, title:e.target.value})} className="w-full p-4 text-sm font-black"/></div>
                     <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1"><label className="text-[10px] font-black text-stone-400 uppercase">Área</label><select value={editingTask.area} onChange={e=>setEditingTask({...editingTask, area:e.target.value})} className="w-full p-4 text-[10px] font-black">{areasList.map(a => <option key={a} value={a}>{a}</option>)}</select></div>
-                        <div className="space-y-1"><label className="text-[10px] font-black text-stone-400 uppercase">Fecha</label><input type="date" value={editingTask.date} onChange={e=>setEditingTask({...editingTask, date:e.target.value})} className="w-full p-4 text-[10px] font-black"/></div>
+                        <div className="space-y-1"><label className="text-[10px] font-black text-stone-400 uppercase">Área (Obligatorio)</label><select value={editingTask.area} onChange={e=>setEditingTask({...editingTask, area:e.target.value})} className="w-full p-4 text-[10px] font-black">{areasList.map(a => <option key={a} value={a}>{a}</option>)}</select></div>
+                        <div className="space-y-1"><label className="text-[10px] font-black text-stone-400 uppercase">Fecha (Obligatorio)</label><input type="date" value={editingTask.date} onChange={e=>setEditingTask({...editingTask, date:e.target.value})} className="w-full p-4 text-[10px] font-black"/></div>
                     </div>
                     <div className="space-y-1"><label className="text-[10px] font-black text-stone-400 uppercase">YouTube Link</label><input type="url" value={editingTask.videoLink || ''} onChange={e=>setEditingTask({...editingTask, videoLink:e.target.value})} className="w-full p-4 text-[10px] font-black bg-stone-50"/></div>
                     <div className="space-y-1"><label className="text-[10px] font-black text-stone-400 uppercase">Drive/PDF Link</label><input type="url" value={editingTask.pdfLink || ''} onChange={e=>setEditingTask({...editingTask, pdfLink:e.target.value})} className="w-full p-4 text-[10px] font-black bg-stone-50"/></div>
                     <div className="space-y-1"><label className="text-[10px] font-black text-stone-400 uppercase">Descripción</label><textarea value={editingTask.description} onChange={e=>setEditingTask({...editingTask, description:e.target.value})} className="w-full p-4 text-xs font-bold h-32 resize-none"></textarea></div>
-                    <div className="space-y-1"><label className="text-[10px] font-black text-stone-400 uppercase">Grado</label><select value={editingTask.gradeLevel} onChange={e=>setEditingTask({...editingTask, gradeLevel:e.target.value})} className="w-full p-4 text-[10px] font-black">{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
+                    <div className="space-y-1"><label className="text-[10px] font-black text-stone-400 uppercase">Grado (Obligatorio)</label><select value={editingTask.gradeLevel} onChange={e=>setEditingTask({...editingTask, gradeLevel:e.target.value})} className="w-full p-4 text-[10px] font-black">{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
                 </div>
-                <div className="p-6 bg-stone-50 flex gap-3"><button onClick={()=>setEditingTask(null)} className="flex-1 py-4 bg-stone-200 text-stone-600 font-black rounded-2xl text-[11px] uppercase">Cancelar</button><button onClick={async ()=>{ await db.collection("agendaEscolar").doc(editingTask.id).update(editingTask); setEditingTask(null); Swal.fire({icon:'success', title:'Actualizado'}); }} className="flex-[2] py-4 bg-[#064e3b] text-[#facc15] font-black rounded-2xl text-[11px] uppercase shadow-lg">Guardar Cambios</button></div>
+                
+                <div className="p-6 bg-stone-50 flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-3">
+                        {/* BOTÓN 1: CANCELAR */}
+                        <button onClick={()=>setEditingTask(null)} className="py-4 bg-stone-200 text-stone-600 font-black rounded-2xl text-[11px] uppercase">Cancelar</button>
+                        
+                        {/* BOTÓN 2: GUARDAR EDICIÓN (Mantiene el estado PRIVADO si es borrador) */}
+                        <button onClick={async ()=>{ 
+                            if(!editingTask.area || !editingTask.date || !editingTask.gradeLevel) return Swal.fire('Error','Grado, Área y Fecha son obligatorios','warning');
+                            // IMPORTANTE: Asegurar consistencia de privacidad
+                            const publicStatus = editingTask.status === 'draft' ? false : true;
+                            await db.collection("agendaEscolar").doc(editingTask.id).update({
+                              ...editingTask,
+                              publico: publicStatus
+                            }); 
+                            setEditingTask(null); 
+                            Swal.fire({icon:'success', title:'Edición Guardada', toast:true, position:'top-end', timer:2000, showConfirmButton:false}); 
+                        }} className="py-4 bg-stone-800 text-white font-black rounded-2xl text-[11px] uppercase shadow-lg">Guardar Edición</button>
+                    </div>
+                    
+                    {/* BOTÓN 3: PUBLICAR TAREA (Cambia borrador a público y status published) */}
+                    {(editingTask.status === 'draft' || !editingTask.publico) && (
+                        <button onClick={async ()=>{ 
+                            if(!editingTask.area || !editingTask.date || !editingTask.gradeLevel) return Swal.fire('Error','Grado, Área y Fecha son obligatorios para publicar','warning');
+                            await db.collection("agendaEscolar").doc(editingTask.id).update({
+                                ...editingTask, 
+                                status: 'published',
+                                publico: true,
+                                archived: false
+                            }); 
+                            setEditingTask(null); 
+                            Swal.fire({icon:'success', title:'Tarea Publicada', text:'Ahora es visible para los Padres.'}); 
+                        }} className="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl text-[11px] uppercase shadow-lg flex items-center justify-center gap-2">
+                             Publicar Tarea
+                        </button>
+                    )}
+                </div>
               </div>
             </div>
           )}
@@ -501,4 +643,3 @@
   </script>
 </body>
 </html>
-
