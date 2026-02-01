@@ -1,16 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <link rel="manifest" href="/PLANILLASDENOTAS/manifest.webmanifest">
-<meta name="theme-color" content="#0f172a">
-<link rel="apple-touch-icon" href="/PLANILLASDENOTAS/icons/icon-192.png">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Seguimiento Docente 2026 - Tierra</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -22,84 +19,22 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
-    :root {
-      --dark-green: #064e3b;  
-      --dark-brown: #451a03;  
-      --vibrant-yellow: #facc15; 
-      --cream-white: #fafaf9; 
-    }
-<script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/PLANILLASDENOTAS/sw.js");
-    });
-  }
-</script>
-    body { 
-      font-family: 'Plus Jakarta Sans', sans-serif; 
-      background-color: var(--cream-white);
-      color: var(--dark-brown);
-    }
-
+    :root { --dark-green: #064e3b; --dark-brown: #451a03; --vibrant-yellow: #facc15; --cream-white: #fafaf9; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--cream-white); color: var(--dark-brown); }
     .no-scrollbar::-webkit-scrollbar { display: none; }
-    
-    .earth-card {
-      background: #ffffff;
-      border: 1px solid #d6d3d1; /* Borde un poco más oscuro */
-      border-radius: 16px;
-      box-shadow: 0 2px 8px rgba(69, 26, 3, 0.08);
-    }
-
-    .tab-selected {
-      background-color: var(--vibrant-yellow) !important;
-      color: var(--dark-green) !important;
-      border: 1px solid var(--dark-green) !important;
-      font-weight: 800 !important;
-      box-shadow: 0 4px 12px rgba(250, 204, 21, 0.4);
-    }
-
-    .tab-unselected {
-      background-color: #f5f5f4 !important;
-      color: #57534e !important; /* Texto inactivo más oscuro */
-      border: 1px solid #d6d3d1 !important;
-    }
-
-    .nav-active {
-      color: var(--dark-green);
-      font-weight: 800;
-    }
-    .nav-active svg {
-      fill: var(--vibrant-yellow);
-      stroke: var(--dark-green);
-    }
-
-    .animate-in { animation: slideUp 0.3s ease-out; }
-    @keyframes slideUp { 
-      from { opacity: 0; transform: translateY(10px); } 
-      to { opacity: 1; transform: translateY(0); } 
-    }
-
-    input, select, textarea { 
-      border: 1.5px solid #a8a29e !important; /* Bordes de inputs más visibles */
-      background: #ffffff !important;
-      border-radius: 12px !important;
-      color: var(--dark-brown) !important;
-    }
-    input:focus, select:focus {
-      border-color: var(--dark-green) !important;
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(6, 78, 59, 0.15);
-    }
-
-    .fab-earth {
-      background-color: var(--dark-green);
-      color: var(--vibrant-yellow);
-      box-shadow: 0 8px 24px rgba(6, 78, 59, 0.4);
-    }
-
-    /* Mejora de visibilidad de textos informativos */
-    .text-info { color: #44403c; } /* Stone 700 */
-    .text-muted-pro { color: #78716c; } /* Stone 500 */
+    .earth-card { background: #ffffff; border: 1px solid #d6d3d1; border-radius: 16px; box-shadow: 0 2px 8px rgba(69, 26, 3, 0.08); }
+    .nav-active { color: var(--dark-green); font-weight: 800; }
+    .nav-active svg { fill: var(--vibrant-yellow); stroke: var(--dark-green); }
+    input, select, textarea { border: 1.5px solid #a8a29e !important; background: #ffffff !important; border-radius: 12px !important; color: var(--dark-brown) !important; }
+    .table-earth { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+    .table-earth tr { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .table-earth td, .table-earth th { padding: 12px; text-align: left; }
+    .table-earth th { font-size: 10px; text-transform: uppercase; font-weight: 900; color: #78716c; }
+    .chat-bubble { max-width: 85%; padding: 10px; border-radius: 14px; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+    .chat-bubble.user { background: #f3f4f6; color: #1f2937; border: 1px solid #e5e7eb; border-bottom-left-radius: 2px; }
+    .chat-bubble.docente { background: var(--dark-green); color: var(--vibrant-yellow); align-self: flex-end; border-bottom-right-radius: 2px; }
+    .btn-red { background: #ef4444; color: white; border-radius: 12px; font-weight: 900; padding: 12px; width: 100%; box-shadow: 0 4px 0 #b91c1c; cursor: pointer; text-transform: uppercase; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-red:active { transform: translateY(2px); box-shadow: 0 2px 0 #b91c1c; }
   </style>
 </head>
 
@@ -122,63 +57,105 @@
     const Book = (p)=><Icon {...p}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></Icon>;
     const Plus = (p)=><Icon {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Icon>;
     const MessageCircle = (p)=><Icon {...p}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></Icon>;
-    const Settings = (p)=><Icon {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></Icon>;
+    const Database = (p)=><Icon {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></Icon>;
+    const Settings = (p)=><Icon {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></Icon>;
     const EditIcon = (p)=><Icon {...p}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></Icon>;
     const TrashIcon = (p)=><Icon {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></Icon>;
     const Send = (p)=><Icon {...p}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Icon>;
-    const Save = (p)=><Icon {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></Icon>;
+    const VideoIcon = (p)=><Icon {...p}><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></Icon>;
+    const FileText = (p)=><Icon {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></Icon>;
 
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useMemo } = React;
     const gradeLevels = ['Primero', 'Segundo', 'Tercero', 'Cuarto', 'Quinto'];
     const areas = ['INGLES', 'CIENCIAS NATURALES', 'CIENCIAS SOCIALES', 'ARTISTICA', 'EDUCACION FISICA', 'ETICA Y VALORES', 'RELIGION', 'ESPAÑOL (LENGUAJE)', 'MATEMATICAS', 'TECNOLOGIA E INFORMATICA'];
+    const academicPeriods = [1, 2, 3, 4];
 
     const Dashboard = () => {
       const [view, setView] = useState('recent');
       const [students, setStudents] = useState([]);
       const [studentLists, setStudentLists] = useState({});
       const [periodoActual, setPeriodoActual] = useState(1);
+      const [periodoVisualizacion, setPeriodoVisualizacion] = useState(1);
       const [isFormOpen, setIsFormOpen] = useState(false);
       const [isConfigOpen, setIsConfigOpen] = useState(false);
       const [batchData, setBatchData] = useState({ gradeLevel: '', area: '', actividad: '', entries: [] });
       const [agendaItems, setAgendaItems] = useState([]);
-      const [agendaTab, setAgendaTab] = useState('published');
       const [assignmentType, setAssignmentType] = useState('group');
       const [selectedGrades, setSelectedGrades] = useState([]);
-      
       const [newTask, setNewTask] = useState({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '' });
       const [editingTask, setEditingTask] = useState(null);
       const [inboxMessages, setInboxMessages] = useState([]);
       const [replyText, setReplyText] = useState({});
+      const [filterGrade, setFilterGrade] = useState('Quinto');
+      const [filterArea, setFilterArea] = useState('MATEMATICAS');
+      const [filterActivity, setFilterActivity] = useState('');
+      const [editingGradeEntry, setEditingGradeEntry] = useState(null);
 
       useEffect(() => {
-        db.collection("configuracionGlobal").doc("notas").onSnapshot(s => setPeriodoActual(s.exists ? s.data().periodoActual || 1 : 1));
+        db.collection("configuracionGlobal").doc("notas").onSnapshot(s => {
+            const p = s.exists ? s.data().periodoActual || 1 : 1;
+            setPeriodoActual(p);
+            setPeriodoVisualizacion(p);
+        });
         db.collection("configuracionGlobal").doc("listasEstudiantes").onSnapshot(s => setStudentLists(s.exists ? s.data() : {}));
-        db.collection("notasAcademicas").where("periodo", "==", periodoActual).onSnapshot(s => {
-          const a=[]; s.forEach(d=>a.push({id:d.id,...d.data()})); setStudents(a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0)));
+      }, []);
+
+      useEffect(() => {
+        const unsubNotes = db.collection("notasAcademicas").onSnapshot(s => {
+          const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); 
+          setStudents(a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0)));
         });
-        db.collection("agendaEscolar").orderBy("createdAt", "desc").onSnapshot(s => {
-          const a=[]; s.forEach(d=>a.push({id:d.id,...d.data()})); setAgendaItems(a);
+        const unsubAgenda = db.collection("agendaEscolar").onSnapshot(s => {
+          const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); 
+          setAgendaItems(a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0)));
         });
-        db.collection("mensajesAgenda").orderBy("timestamp", "desc").onSnapshot(s => {
-          const a=[]; s.forEach(d=>a.push({id:d.id,...d.data()})); setInboxMessages(a);
+        const unsubMessages = db.collection("mensajesAgenda").onSnapshot(s => {
+          const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); 
+          setInboxMessages(a.sort((x,y)=>(y.lastUpdate||'').localeCompare(x.lastUpdate||'')));
         });
-      }, [periodoActual]);
+        return () => { unsubNotes(); unsubAgenda(); unsubMessages(); };
+      }, [periodoVisualizacion]);
+
+      const updateGlobalPeriod = async (p) => {
+        await db.collection("configuracionGlobal").doc("notas").set({ periodoActual: p }, { merge: true });
+        setPeriodoActual(p);
+        setPeriodoVisualizacion(p);
+        Swal.fire({ icon: 'success', title: `P${p} Activo`, toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+      };
 
       const handleBatchConfigChange = (e) => {
         const { name, value } = e.target;
         setBatchData(prev => {
           const newData = { ...prev, [name]: value };
           if (name === 'gradeLevel') {
-            const list = studentLists[value] || [];
+            const list = value ? (studentLists[value] || []) : [];
             newData.entries = list.map(n => ({ name: n, score: '', observation: '' }));
           }
           return newData;
         });
       };
 
+      const handleAddTask = async () => {
+        if(!newTask.title || !newTask.area || !newTask.date) return Swal.fire('Error','Faltan datos','warning');
+        const batch = db.batch();
+        const baseTask = { ...newTask, archived: false, createdAt: Date.now(), periodo: periodoActual };
+        if(assignmentType === 'group') {
+          selectedGrades.forEach(g => {
+            const ref = db.collection("agendaEscolar").doc();
+            batch.set(ref, { ...baseTask, gradeLevel: g });
+          });
+        } else {
+          const ref = db.collection("agendaEscolar").doc();
+          batch.set(ref, baseTask);
+        }
+        await batch.commit();
+        setNewTask({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '' });
+        Swal.fire({icon:'success', title: 'Tarea Publicada'});
+      };
+
       const saveGrades = async () => {
         const valid = batchData.entries.filter(e => e.score !== '');
-        if(!batchData.area || !batchData.actividad || !valid.length) return Swal.fire('Atención','Por favor completa los campos requeridos','warning');
+        if(!batchData.area || !batchData.actividad || !valid.length) return Swal.fire('Error','Faltan datos','warning');
         const batch = db.batch();
         valid.forEach(en => {
           const idx = en.name.lastIndexOf(" - ");
@@ -186,161 +163,172 @@
             gradeLevel: batchData.gradeLevel, area: batchData.area, actividad: batchData.actividad.trim(),
             name: en.name, nombreEstudiante: en.name.slice(0,idx).trim(), documentoEstudiante: en.name.slice(idx+3).trim(),
             score: en.score.replace(',','.'), nota: parseFloat(en.score.replace(',','.')),
-            periodo: periodoActual, createdAt: Date.now()
+            observacion: en.observation || '', periodo: periodoActual, createdAt: Date.now()
           });
         });
         await batch.commit();
         setIsFormOpen(false);
         setBatchData({ gradeLevel: '', area: '', actividad: '', entries: [] });
-        Swal.fire({icon:'success', title:'Guardado exitoso', showConfirmButton: false, timer: 1500});
+        Swal.fire({icon:'success', title:'Notas Guardadas'});
       };
 
-      const handleAddTask = async (isDraft) => {
-        if(!newTask.title || !newTask.area || !newTask.date) return Swal.fire('Error','Título, área y fecha son obligatorios','warning');
-        const batch = db.batch();
-        const base = { 
-            gradeLevel: newTask.gradeLevel, area: newTask.area, title: newTask.title, 
-            description: newTask.description, date: newTask.date, videoLink: newTask.videoLink || '',
-            pdfLink: newTask.pdfLink || '', archived: isDraft, createdAt: Date.now() 
-        };
-        if(assignmentType === 'group') {
-          if(!selectedGrades.length) return Swal.fire('Selección','Elige al menos un grupo','info');
-          selectedGrades.forEach(g => batch.set(db.collection("agendaEscolar").doc(), {...base, gradeLevel: g, targetStudent: ''}));
-        } else {
-          if(!newTask.targetStudent) return Swal.fire('Selección','Elige un estudiante','info');
-          batch.set(db.collection("agendaEscolar").doc(), {...base, targetStudent: newTask.targetStudent});
+      const descargarAgendaPDF = () => {
+        const doc = new window.jspdf.jsPDF();
+        doc.text(`AGENDA ESCOLAR - P${periodoVisualizacion}`, 10, 15);
+        const body = agendaItems.map(i => [i.gradeLevel, i.area, i.title, i.date]);
+        doc.autoTable({ startY: 25, head: [['GRADO', 'ÁREA', 'ACTIVIDAD', 'ENTREGA']], body, headStyles: { fillColor: [6, 78, 59] } });
+        doc.save(`Agenda_Docente_P${periodoVisualizacion}.pdf`);
+      };
+
+      // --- FUNCIÓN RESTAURADA: DESCARGAR NOTAS POR GRADO Y ÁREA ---
+      const descargarNotasPDF = () => {
+        const doc = new window.jspdf.jsPDF();
+        const titulo = `REPORTE DE NOTAS - ${filterGrade.toUpperCase()} - ${filterArea}`;
+        doc.setFontSize(14);
+        doc.text(titulo, 10, 15);
+        doc.setFontSize(10);
+        doc.text(`Periodo: ${periodoVisualizacion} | Generado el: ${new Date().toLocaleDateString()}`, 10, 22);
+
+        const body = filteredRecords.map(r => [
+          r.nombreEstudiante,
+          r.actividad,
+          r.score.replace('.', ',')
+        ]);
+
+        doc.autoTable({
+          startY: 30,
+          head: [['ESTUDIANTE', 'ACTIVIDAD', 'NOTA']],
+          body: body,
+          headStyles: { fillColor: [6, 78, 59] },
+          styles: { fontSize: 8 }
+        });
+
+        doc.save(`Notas_${filterGrade}_${filterArea}_P${periodoVisualizacion}.pdf`);
+      };
+
+      const handleReplyMessage = async (msgId) => {
+        if(!replyText[msgId]) return;
+        const nuevoMensaje = { rol: 'docente', texto: replyText[msgId], timestamp: new Date().toISOString() };
+        await db.collection("mensajesAgenda").doc(msgId).update({
+          conversacion: firebase.firestore.FieldValue.arrayUnion(nuevoMensaje),
+          lastUpdate: new Date().toISOString(), read: true
+        });
+        setReplyText({...replyText, [msgId]: ''});
+        Swal.fire({icon:'success', title:'Enviado', toast:true, position:'top-end', timer:1500});
+      };
+
+      const handleDeleteMessage = async (msgId) => {
+        const res = await Swal.fire({ title: '¿Borrar chat?', text: "Se perderá el historial.", icon: 'warning', showCancelButton: true, confirmButtonColor: '#064e3b' });
+        if (res.isConfirmed) { await db.collection("mensajesAgenda").doc(msgId).delete(); Swal.fire('Borrado', '', 'success'); }
+      };
+
+      const filteredRecords = useMemo(() => {
+        let base = students.filter(s => s.gradeLevel === filterGrade && s.area === filterArea);
+        if (filterActivity) base = base.filter(r => r.actividad === filterActivity);
+        return base;
+      }, [students, filterGrade, filterArea, filterActivity]);
+
+      const currentActivities = useMemo(() => {
+        return [...new Set(students.filter(s => s.gradeLevel === filterGrade && s.area === filterArea).map(r => r.actividad))];
+      }, [students, filterGrade, filterArea]);
+
+      const deleteEntireActivity = async () => {
+        if (!filterActivity) return;
+        const res = await Swal.fire({ title: '¿BORRAR TODO?', text: `Se borrarán todos los registros de "${filterActivity}".`, icon: 'error', showCancelButton: true, confirmButtonColor: '#b91c1c' });
+        if (res.isConfirmed) {
+          const batch = db.batch();
+          filteredRecords.forEach(d => batch.delete(db.collection("notasAcademicas").doc(d.id)));
+          await batch.commit();
+          setFilterActivity('');
+          Swal.fire('Borrado', '', 'success');
         }
-        await batch.commit();
-        setNewTask({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '' });
-        Swal.fire({icon:'success', title: isDraft ? 'Borrador Guardado' : 'Publicado'});
       };
-
-      const saveEditTask = async () => {
-        await db.collection("agendaEscolar").doc(editingTask.id).update(editingTask);
-        setEditingTask(null);
-        Swal.fire({icon:'success', title:'Actualizado'});
-      };
-
-      const deleteAgendaItem = async (id) => {
-        const result = await Swal.fire({title:'¿Eliminar?', text:'Esta acción no se puede deshacer', showCancelButton:true, confirmButtonColor:'#064e3b'});
-        if(result.isConfirmed) await db.collection("agendaEscolar").doc(id).delete();
-      };
-
-      const visibleAgenda = agendaItems.filter(i => agendaTab === 'drafts' ? i.archived === true : !i.archived);
 
       return (
         <div className="flex flex-col h-[100dvh]">
-          
-          <header className="px-6 pt-12 pb-6 bg-emerald-900 border-b border-amber-900/20 sticky top-0 z-40">
-            <div className="flex justify-between items-center">
+          <header className="px-6 pt-12 pb-6 bg-emerald-900 sticky top-0 z-40 shadow-xl">
+            <div className="flex justify-between items-center text-white">
               <div>
-                <h1 className="text-2xl font-black tracking-tight text-white">Seguimiento <span className="text-yellow-400">Escolar</span></h1>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="h-2 w-2 rounded-full bg-yellow-400"></span>
-                  <p className="text-[10px] font-extrabold text-emerald-100 uppercase tracking-widest">Periodo Académico {periodoActual}</p>
-                </div>
+                <h1 className="text-2xl font-black uppercase tracking-tighter">Docente <span className="text-yellow-400">2026</span></h1>
+                <p className="text-[10px] font-bold text-emerald-200 uppercase tracking-widest">P{periodoVisualizacion} · Tierra</p>
               </div>
-              <div className="h-12 w-12 rounded-2xl bg-white/15 flex items-center justify-center border border-white/20 backdrop-blur-md">
-                <Icon size={22} className="text-yellow-400"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>
+              <div className="flex gap-3">
+                <button onClick={() => setIsConfigOpen(true)} className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20 active:scale-90 transition-all">
+                  <Settings size={22} className="text-yellow-400" />
+                </button>
+                <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20">
+                    <Icon size={22} className="text-yellow-400"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>
+                </div>
               </div>
             </div>
           </header>
 
           <main className="flex-1 overflow-y-auto p-4 pb-40 no-scrollbar">
-            
-            {view === 'recent' && (
-              <div className="space-y-4 animate-in">
-                <h2 className="text-[11px] font-black text-stone-600 uppercase tracking-widest px-1">Registros Recientes</h2>
-                {students.map(s => (
-                  <div key={s.id} className="earth-card p-5 flex justify-between items-center active:scale-[0.98] transition-transform">
-                    <div className="min-w-0 pr-4">
-                      <div className="flex gap-2 mb-2 items-center">
-                        <span className="bg-stone-800 text-yellow-400 text-[9px] font-black px-2 py-0.5 rounded-md uppercase">{s.gradeLevel}</span>
-                        <span className="text-[10px] font-black text-emerald-900 uppercase truncate">{s.area}</span>
-                      </div>
-                      <h3 className="text-sm font-bold text-stone-900 truncate">{s.name}</h3>
-                      <p className="text-[11px] font-bold text-stone-600 truncate mt-1 leading-tight">{s.actividad}</p>
+            {view === 'agenda' && (
+              <div className="space-y-6">
+                <div className="earth-card p-6 space-y-4">
+                  <h3 className="text-[10px] font-black text-stone-400 uppercase tracking-widest">Gestionar Agenda P{periodoActual}</h3>
+                  <div className="flex gap-2 bg-stone-100 p-1 rounded-xl">
+                    <button onClick={()=>setAssignmentType('group')} className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${assignmentType==='group'?'bg-white text-emerald-900 shadow-sm':'text-stone-400'}`}>Grupal</button>
+                    <button onClick={()=>setAssignmentType('individual')} className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${assignmentType==='individual'?'bg-white text-emerald-900 shadow-sm':'text-stone-400'}`}>Individual</button>
+                  </div>
+                  {assignmentType === 'group' ? (
+                    <div className="grid grid-cols-5 gap-1">
+                      {gradeLevels.map(g => (
+                        <button key={g} onClick={()=>{
+                          setSelectedGrades(prev => prev.includes(g) ? prev.filter(x=>x!==g) : [...prev, g]);
+                        }} className={`py-3 rounded-xl text-[10px] font-black border transition-all ${selectedGrades.includes(g)?'bg-emerald-900 text-yellow-400 border-emerald-900':'bg-white text-stone-400 border-stone-200'}`}>{g}</button>
+                      ))}
                     </div>
-                    <div className="flex flex-col items-end">
-                       <span className="text-2xl font-black text-emerald-900 drop-shadow-sm">{(s.score||'0').replace('.',',')}</span>
-                       <span className="text-[8px] font-black text-stone-500 uppercase">Calificación</span>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      <select value={newTask.gradeLevel} onChange={e=>setNewTask({...newTask,gradeLevel:e.target.value})} className="p-4 text-xs font-black">
+                        {gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}
+                      </select>
+                      <select value={newTask.targetStudent} onChange={e=>setNewTask({...newTask,targetStudent:e.target.value})} className="p-4 text-xs font-black">
+                        <option value="">Seleccione Estudiante...</option>
+                        {(studentLists[newTask.gradeLevel] || []).map(name => <option key={name.split(' - ')[1]} value={name.split(' - ')[1]}>{name.split(' - ')[0]}</option>)}
+                      </select>
+                    </div>
+                  )}
+                  <select value={newTask.area} onChange={e=>setNewTask({...newTask,area:e.target.value})} className="w-full p-4 text-xs font-black">
+                    <option value="">Área...</option>
+                    {areas.map(a => <option key={a} value={a}>{a}</option>)}
+                  </select>
+                  <input type="text" placeholder="Título Actividad" value={newTask.title} onChange={e=>setNewTask({...newTask,title:e.target.value})} className="w-full p-4 text-sm font-black"/>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input type="date" value={newTask.date} onChange={e=>setNewTask({...newTask,date:e.target.value})} className="p-4 text-xs font-black"/>
+                    <div className="flex gap-2">
+                        <div className="flex-1 flex items-center justify-center bg-stone-50 rounded-xl border border-dashed border-stone-300">
+                            <VideoIcon size={16} className={newTask.videoLink ? 'text-red-600' : 'text-stone-300'}/>
+                        </div>
+                        <div className="flex-1 flex items-center justify-center bg-stone-50 rounded-xl border border-dashed border-stone-300">
+                            <FileText size={16} className={newTask.pdfLink ? 'text-blue-600' : 'text-stone-300'}/>
+                        </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-
-            {view === 'agenda' && (
-              <div className="space-y-6 animate-in">
-                <div className="flex p-1.5 bg-stone-200/60 rounded-2xl border border-stone-300">
-                  <button onClick={()=>setAgendaTab('published')} className={`flex-1 py-3 text-[11px] font-black rounded-xl transition-all duration-300 ${agendaTab==='published'?'tab-selected':'tab-unselected'}`}>TAREAS ACTIVAS</button>
-                  <button onClick={()=>setAgendaTab('drafts')} className={`flex-1 py-3 text-[11px] font-black rounded-xl transition-all duration-300 ${agendaTab==='drafts'?'tab-selected':'tab-unselected'}`}>BORRADORES</button>
+                  <input type="url" placeholder="YouTube URL" value={newTask.videoLink} onChange={e=>setNewTask({...newTask,videoLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
+                  <input type="url" placeholder="Drive URL" value={newTask.pdfLink} onChange={e=>setNewTask({...newTask,pdfLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
+                  <textarea placeholder="Descripción..." value={newTask.description} onChange={e=>setNewTask({...newTask,description:e.target.value})} className="w-full p-4 text-sm font-bold h-24 resize-none"></textarea>
+                  <button onClick={handleAddTask} className="w-full py-4 bg-emerald-800 text-white font-black rounded-2xl text-[11px] uppercase shadow-lg">Publicar en Agenda</button>
                 </div>
 
-                {agendaTab === 'published' && (
-                  <div className="earth-card p-6 space-y-6">
-                    <div className="flex gap-2 p-1 bg-stone-100 rounded-xl">
-                      <button onClick={()=>setAssignmentType('group')} className={`flex-1 py-2.5 text-[10px] font-black rounded-lg transition-all ${assignmentType==='group'?'bg-white text-stone-900 shadow-sm':'text-stone-500'}`}>MODO GRUPAL</button>
-                      <button onClick={()=>setAssignmentType('individual')} className={`flex-1 py-2.5 text-[10px] font-black rounded-lg transition-all ${assignmentType==='individual'?'bg-white text-stone-900 shadow-sm':'text-stone-500'}`}>MODO INDIVIDUAL</button>
-                    </div>
-
-                    <div className="space-y-5">
-                      {assignmentType === 'group' ? (
-                        <div className="flex flex-wrap gap-2 pt-1">
-                          {gradeLevels.map(g=>(
-                            <button key={g} 
-                              onClick={()=>{setSelectedGrades(p=>p.includes(g)?p.filter(x=>x!==g):[...p,g])}} 
-                              className={`px-4 py-2.5 rounded-xl text-[11px] font-black border-2 transition-all ${selectedGrades.includes(g)?'tab-selected':'tab-unselected'}`}>
-                              {g}
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-3">
-                          <select value={newTask.gradeLevel} onChange={e=>setNewTask({...newTask,gradeLevel:e.target.value})} className="p-4 text-xs font-black">{gradeLevels.map(g=><option key={g} value={g}>{g}</option>)}</select>
-                          <select value={newTask.targetStudent} onChange={e=>setNewTask({...newTask,targetStudent:e.target.value})} className="p-4 text-xs font-black"><option value="">Seleccionar Alumno...</option>{(studentLists[newTask.gradeLevel]||[]).map(s=><option key={s} value={s.split(' - ')[1]}>{s.split(' - ')[0]}</option>)}</select>
-                        </div>
-                      )}
-
-                      <select value={newTask.area} onChange={e=>setNewTask({...newTask,area:e.target.value})} className="w-full p-4 text-xs font-black"><option value="">Elegir Área Académica...</option>{areas.map(a=><option key={a} value={a}>{a}</option>)}</select>
-                      <input type="text" placeholder="Título de la actividad" value={newTask.title} onChange={e=>setNewTask({...newTask,title:e.target.value})} className="w-full p-4 text-sm font-black"/>
-                      
-                      <div className="grid grid-cols-2 gap-3">
-                         <div className="flex flex-col gap-1">
-                            <label className="text-[9px] font-black text-stone-500 uppercase ml-1">Fecha Límite</label>
-                            <input type="date" value={newTask.date} onChange={e=>setNewTask({...newTask,date:e.target.value})} className="p-4 text-xs font-black"/>
-                         </div>
-                         <div className="flex flex-col gap-1">
-                            <label className="text-[9px] font-black text-stone-500 uppercase ml-1">Enlace Video</label>
-                            <input type="url" placeholder="https://..." value={newTask.videoLink} onChange={e=>setNewTask({...newTask,videoLink:e.target.value})} className="p-4 text-[10px] font-black"/>
-                         </div>
-                      </div>
-
-                      <textarea placeholder="Descripción detallada de la tarea..." value={newTask.description} onChange={e=>setNewTask({...newTask,description:e.target.value})} className="w-full p-4 text-sm font-bold h-28 resize-none"></textarea>
-                      
-                      <div className="flex gap-4 pt-2">
-                        <button onClick={()=>handleAddTask(true)} className="flex-1 py-4 border-2 border-stone-800 text-stone-900 font-black rounded-2xl text-[10px] uppercase">Borrador</button>
-                        <button onClick={()=>handleAddTask(false)} className="flex-[2] py-4 bg-emerald-800 text-white font-black rounded-2xl text-[11px] uppercase shadow-lg shadow-emerald-200 active:scale-95 transition-all">Publicar Agenda</button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 <div className="space-y-4">
-                  {visibleAgenda.map(item => (
-                    <div key={item.id} className="earth-card p-5 relative group border-l-[6px] border-l-yellow-400">
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        <span className="text-[9px] font-black bg-emerald-950 text-white px-2 py-0.5 rounded-md uppercase">{item.gradeLevel}</span>
-                        <span className="text-[10px] font-black text-stone-500 uppercase tracking-tight">{item.area}</span>
-                        <span className="text-[11px] font-black text-emerald-900 ml-auto">{item.date}</span>
+                  <button onClick={descargarAgendaPDF} className="btn-red">📄 Descargar PDF de Agenda</button>
+                  {agendaItems.map(item => (
+                    <div key={item.id} className="earth-card p-5 border-l-[6px] border-l-yellow-400">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] font-black bg-stone-900 text-white px-2 py-0.5 rounded uppercase">{item.gradeLevel}</span>
+                          {item.videoLink && <VideoIcon size={12} className="text-red-500"/>}
+                          {item.pdfLink && <FileText size={12} className="text-blue-500"/>}
+                        </div>
+                        <span className="text-[10px] font-black text-emerald-900">{item.date}</span>
                       </div>
-                      <h3 className="font-extrabold text-stone-900 text-base leading-tight mb-2 uppercase">{item.title}</h3>
-                      <p className="text-xs text-stone-700 font-bold line-clamp-3 leading-relaxed">{item.description}</p>
-                      
-                      <div className="flex justify-end gap-1 mt-6 pt-4 border-t border-stone-200">
-                        <button onClick={()=>setEditingTask(item)} className="p-3 text-stone-400 hover:text-emerald-800 transition-all"><EditIcon size={20}/></button>
-                        <button onClick={()=>deleteAgendaItem(item.id)} className="p-3 text-stone-400 hover:text-rose-600 transition-all"><TrashIcon size={20}/></button>
-                        {item.archived && <button onClick={()=>db.collection("agendaEscolar").doc(item.id).update({archived:false})} className="tab-selected px-6 py-2 rounded-xl text-[10px] font-extrabold ml-2">PUBLICAR AHORA</button>}
+                      <h3 className="font-extrabold text-stone-900 text-sm uppercase">{item.title}</h3>
+                      <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-stone-100">
+                        <button onClick={()=>setEditingTask(item)} className="p-2 text-stone-400"><EditIcon size={20}/></button>
+                        <button onClick={async ()=>{ if((await Swal.fire({title:'¿Borrar?', showCancelButton:true})).isConfirmed) db.collection("agendaEscolar").doc(item.id).delete(); }} className="p-2 text-stone-400"><TrashIcon size={20}/></button>
                       </div>
                     </div>
                   ))}
@@ -349,145 +337,172 @@
             )}
 
             {view === 'mailbox' && (
-              <div className="space-y-4 animate-in">
-                <h2 className="text-[11px] font-black text-stone-600 uppercase tracking-widest px-1">Buzón de Mensajes</h2>
-                {inboxMessages.length === 0 ? (
-                  <div className="text-center py-24 bg-white rounded-3xl border-2 border-dashed border-stone-200">
-                    <p className="text-stone-400 font-bold uppercase tracking-widest text-[10px]">No hay dudas pendientes</p>
-                  </div>
-                ) : (
-                  inboxMessages.map(m => (
-                    <div key={m.id} className="earth-card p-6 border-r-[6px] border-r-yellow-400">
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="text-[11px] font-black bg-stone-900 text-yellow-400 px-4 py-1.5 rounded-full uppercase">{m.studentName}</span>
-                        <span className="text-[10px] font-black text-stone-500">{new Date(m.timestamp).toLocaleDateString()}</span>
-                      </div>
-                      <p className="text-[11px] font-black text-emerald-900 mb-2 uppercase tracking-tight">Tarea: {m.taskTitle}</p>
-                      <div className="bg-stone-100 p-5 rounded-2xl italic text-stone-800 text-sm border-l-4 border-stone-300 leading-relaxed mb-6 font-bold shadow-inner">
-                        "{m.pregunta}"
-                      </div>
-                      <div className="flex gap-2">
-                        <input type="text" placeholder="Escribe tu respuesta aquí..." value={replyText[m.id]||''} onChange={e=>setReplyText({...replyText,[m.id]:e.target.value})} className="flex-1 px-4 text-sm font-black"/>
-                        <button onClick={async ()=>{
-                          if(!replyText[m.id]) return;
-                          await db.collection("mensajesAgenda").doc(m.id).update({respuesta:replyText[m.id], fechaRespuesta: new Date().toISOString()});
-                          setReplyText(p=>({...p,[m.id]:''}));
-                          Swal.fire({icon:'success',title:'Mensaje Enviado', timer: 1500, showConfirmButton: false});
-                        }} className="bg-emerald-900 text-yellow-400 p-4 rounded-2xl shadow-lg active:scale-95 transition-all"><Send size={20}/></button>
-                      </div>
+              <div className="space-y-4">
+                <h2 className="text-[11px] font-black text-stone-600 uppercase tracking-widest px-1">Buzón de Chat</h2>
+                {inboxMessages.map(m => (
+                  <div key={m.id} className="earth-card p-5 border-r-[6px] border-r-yellow-400 relative">
+                    <button onClick={() => handleDeleteMessage(m.id)} className="absolute top-4 right-4 text-stone-300 hover:text-red-500 transition-all"><TrashIcon size={18}/></button>
+                    <p className="text-[10px] font-black text-emerald-900 uppercase">{m.studentName}</p>
+                    <p className="text-[9px] font-bold text-stone-400 uppercase truncate mb-4">Tarea: {m.taskTitle}</p>
+                    <div className="flex flex-col gap-2 mb-4 max-h-56 overflow-y-auto pr-2 no-scrollbar">
+                      {m.conversacion && m.conversacion.map((chat, idx) => (
+                        <div key={idx} className={`chat-bubble ${chat.rol === 'docente' ? 'docente' : 'user'}`}>
+                          <span className="block text-[8px] uppercase opacity-60 mb-1">{chat.rol === 'docente' ? 'Tú' : 'Padre'}</span>
+                          {chat.texto}
+                        </div>
+                      ))}
                     </div>
-                  ))
-                )}
+                    <div className="flex gap-2">
+                      <input type="text" placeholder="Escribir..." value={replyText[m.id]||''} onChange={e=>setReplyText({...replyText,[m.id]:e.target.value})} className="flex-1 px-4 text-xs font-black"/>
+                      <button onClick={() => handleReplyMessage(m.id)} className="bg-emerald-900 text-yellow-400 p-4 rounded-xl active:scale-95"><Send size={18}/></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {view === 'records' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-3">
+                  <select value={filterGrade} onChange={e=>setFilterGrade(e.target.value)} className="p-4 text-xs font-black">{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select>
+                  <select value={filterArea} onChange={e=>setFilterArea(e.target.value)} className="p-4 text-xs font-black">{areas.map(a => <option key={a} value={a}>{a}</option>)}</select>
+                </div>
+
+                {/* BOTÓN RESTAURADO: DESCARGAR REPORTE DE NOTAS PDF */}
+                <button onClick={descargarNotasPDF} className="btn-red">📄 Descargar Notas PDF ({filterGrade} - {filterArea})</button>
+
+                <div className="space-y-3">
+                    <select value={filterActivity} onChange={e=>setFilterActivity(e.target.value)} className="w-full p-4 text-xs font-black">
+                        <option value="">Filtrar actividad...</option>
+                        {currentActivities.map(act => <option key={act} value={act}>{act}</option>)}
+                    </select>
+                    {filterActivity && (
+                        <button onClick={deleteEntireActivity} className="w-full p-4 bg-red-800 text-white font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 shadow-lg">
+                            <TrashIcon size={14}/> Borrar registros de "{filterActivity}"
+                        </button>
+                    )}
+                </div>
+
+                <div className="overflow-x-auto no-scrollbar">
+                  <table className="table-earth">
+                    <thead><tr><th>Estudiante</th><th className="text-center">Nota</th><th className="text-right">Editar</th></tr></thead>
+                    <tbody>
+                      {filteredRecords.map(s => (
+                        <tr key={s.id}>
+                          <td><p className="text-xs font-black text-stone-900 leading-none">{s.nombreEstudiante}</p><p className="text-[9px] text-stone-400 uppercase truncate max-w-[140px] mt-1">{s.actividad}</p></td>
+                          <td className="text-center font-black text-emerald-900">{(s.score||'0').replace('.',',')}</td>
+                          <td className="text-right"><button onClick={()=>setEditingGradeEntry(s)} className="p-3 bg-stone-100 rounded-xl text-stone-600"><EditIcon size={16}/></button></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {view === 'recent' && (
+              <div className="space-y-4">
+                <h2 className="text-[11px] font-black text-stone-600 uppercase tracking-widest px-1">Registros Recientes</h2>
+                {students.slice(0, 10).map(s => (
+                  <div key={s.id} className="earth-card p-5 flex justify-between items-center">
+                    <div className="min-w-0 pr-4">
+                        <div className="flex gap-2 mb-1">
+                            <span className="text-[9px] font-black bg-stone-100 px-2 py-0.5 rounded uppercase">{s.gradeLevel}</span>
+                            <span className="text-[9px] font-black text-emerald-900 uppercase truncate">{s.area}</span>
+                        </div>
+                        <h3 className="text-sm font-bold truncate">{s.nombreEstudiante}</h3>
+                        <p className="text-[10px] text-stone-500 truncate">{s.actividad}</p>
+                    </div>
+                    <div className="text-right font-black text-emerald-900 text-2xl">{(s.score||'0').replace('.',',')}</div>
+                  </div>
+                ))}
               </div>
             )}
           </main>
 
-          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-stone-200 px-8 py-5 pb-safe-offset-2 z-[100] flex items-center justify-between shadow-[0_-12px_40px_rgba(0,0,0,0.1)]">
-            <button onClick={()=>setView('recent')} className={`flex flex-col items-center gap-2 transition-all duration-300 ${view==='recent'?'nav-active':'text-stone-400'}`}>
-              <Home size={24}/><span className="text-[10px] font-black uppercase tracking-tighter">Inicio</span>
-            </button>
-            <button onClick={()=>setView('agenda')} className={`flex flex-col items-center gap-2 transition-all duration-300 ${view==='agenda'?'nav-active':'text-stone-400'}`}>
-              <Book size={24}/><span className="text-[10px] font-black uppercase tracking-tighter">Agenda</span>
-            </button>
-            
-            <div className="-mt-14">
-              <button onClick={()=>setIsFormOpen(true)} className="fab-earth h-16 w-16 rounded-[24px] flex items-center justify-center text-white ring-[12px] ring-cream-white shadow-2xl active:scale-90 transition-all">
-                <Plus size={32} strokeWidth={4}/>
-              </button>
-            </div>
-            
-            <button onClick={()=>setView('mailbox')} className={`flex flex-col items-center gap-2 transition-all duration-300 ${view==='mailbox'?'nav-active':'text-stone-400'}`}>
-              <div className="relative">
-                <MessageCircle size={24}/>
-                {inboxMessages.length > 0 && <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-yellow-400 rounded-full border-2 border-white shadow-sm"></span>}
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-tighter">Buzón</span>
-            </button>
-            <button onClick={()=>setIsConfigOpen(true)} className="flex flex-col items-center gap-2 text-stone-400">
-              <Settings size={24}/><span className="text-[10px] font-black uppercase tracking-tighter">Ajustes</span>
-            </button>
+          <nav className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 pb-8 flex items-center justify-between shadow-2xl z-50">
+            <button onClick={()=>setView('recent')} className={`flex flex-col items-center gap-1 ${view==='recent'?'nav-active':'text-stone-400'}`}><Home size={22}/><span className="text-[8px] font-black uppercase">Inicio</span></button>
+            <button onClick={()=>setView('agenda')} className={`flex flex-col items-center gap-1 ${view==='agenda'?'nav-active':'text-stone-400'}`}><Book size={22}/><span className="text-[8px] font-black uppercase">Agenda</span></button>
+            <div className="-mt-14"><button onClick={()=>setIsFormOpen(true)} className="h-16 w-16 rounded-2xl bg-emerald-900 text-yellow-400 flex items-center justify-center shadow-2xl active:scale-90"><Plus size={32}/></button></div>
+            <button onClick={()=>setView('records')} className={`flex flex-col items-center gap-1 ${view==='records'?'nav-active':'text-stone-400'}`}><Database size={22}/><span className="text-[8px] font-black uppercase">Registros</span></button>
+            <button onClick={()=>setView('mailbox')} className={`flex flex-col items-center gap-1 ${view==='mailbox'?'nav-active':'text-stone-400'}`}><MessageCircle size={22}/><span className="text-[8px] font-black uppercase">Buzón</span></button>
           </nav>
 
-          {isFormOpen && (
-            <div className="fixed inset-0 z-[1000] flex items-end sm:items-center justify-center">
-              <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-md animate-fade-in" onClick={()=>setIsFormOpen(false)} />
-              <div className="relative z-10 bg-white w-full max-w-lg h-[95vh] sm:h-auto sm:max-h-[85vh] sm:rounded-[40px] rounded-t-[40px] shadow-2xl flex flex-col animate-in border-t-8 border-emerald-900 overflow-hidden">
-                <div className="p-8 border-b border-stone-200 flex justify-between items-center bg-stone-50/80">
+          {/* MODAL CONFIGURACIÓN PERIODOS */}
+          {isConfigOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-stone-900/80 backdrop-blur-lg" onClick={()=>setIsConfigOpen(false)} />
+              <div className="relative bg-white w-full max-w-md rounded-[32px] overflow-hidden flex flex-col border-t-8 border-emerald-900 shadow-2xl">
+                <div className="p-8 border-b flex justify-between items-center"><h2 className="text-xl font-black text-emerald-900 uppercase">Configuración</h2><button onClick={()=>setIsConfigOpen(false)}>✕</button></div>
+                <div className="p-8 space-y-8">
                   <div>
-                    <h2 className="text-2xl font-black text-stone-900 uppercase">Cargar Calificaciones</h2>
-                    <p className="text-[10px] font-black text-stone-500 uppercase mt-2 tracking-widest">Gestión Académica Premium</p>
-                  </div>
-                  <button onClick={()=>setIsFormOpen(false)} className="h-10 w-10 bg-white border-2 border-stone-200 rounded-2xl text-stone-500 flex items-center justify-center font-bold">✕</button>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto p-8 space-y-8 no-scrollbar">
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-stone-500 uppercase ml-1">Descripción de la Actividad</label>
-                    <input type="text" name="actividad" placeholder="Ej: Taller de refuerzo..." value={batchData.actividad} onChange={handleBatchConfigChange} className="w-full text-xl font-black outline-none border-b-[3px] border-stone-200 pb-3 focus:border-emerald-700 transition-colors bg-transparent rounded-none !border-t-0 !border-x-0 !bg-transparent shadow-none"/>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-stone-500 uppercase ml-1">Grado Escolar</label>
-                      <select name="gradeLevel" value={batchData.gradeLevel} onChange={handleBatchConfigChange} className="w-full p-4 text-xs font-black">{gradeLevels.map(g=><option key={g} value={g}>{g}</option>)}</select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-stone-500 uppercase ml-1">Área Académica</label>
-                      <select name="area" value={batchData.area} onChange={handleBatchConfigChange} className="w-full p-4 text-xs font-black">{areas.map(a=><option key={a} value={a}>{a}</option>)}</select>
+                    <label className="text-[10px] font-black text-stone-500 uppercase block mb-4">Periodo Registro (Global)</label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {academicPeriods.map(p => <button key={p} onClick={() => updateGlobalPeriod(p)} className={`py-4 rounded-2xl font-black text-sm transition-all ${periodoActual === p ? 'bg-emerald-800 text-yellow-400' : 'bg-stone-100 text-stone-400'}`}>P{p}</button>)}
                     </div>
                   </div>
-
-                  <div className="space-y-4 pt-4">
-                    <h4 className="text-[11px] font-black text-emerald-900 uppercase tracking-widest mb-4 border-b-2 border-stone-100 pb-2">Listado de Alumnos</h4>
-                    {batchData.entries.map((en, idx) => (
-                      <div key={idx} className="bg-stone-50 p-5 rounded-2xl border-2 border-stone-200 flex justify-between items-center group transition-all hover:bg-white hover:border-emerald-200">
-                        <div className="flex flex-col min-w-0 pr-4">
-                          <span className="text-xs font-black text-stone-900 uppercase truncate">{en.name.split(' - ')[0]}</span>
-                          <span className="text-[10px] font-bold text-stone-500 uppercase tracking-tighter mt-1">{en.name.split(' - ')[1]}</span>
-                        </div>
-                        <input type="text" placeholder="0.0" value={en.score} onChange={e => {
-                          const v = e.target.value; if(v===''||/^[0-9]*[.,]?[0-9]*$/.test(v)){
-                            const n=[...batchData.entries]; n[idx].score=v; setBatchData({...batchData,entries:n});
-                          }
-                        }} className="w-20 h-14 text-center bg-white border-2 border-stone-400 focus:border-emerald-600 rounded-xl font-black text-xl text-emerald-900 outline-none transition-all shadow-md"/>
-                      </div>
-                    ))}
+                  <div>
+                    <label className="text-[10px] font-black text-stone-500 uppercase block mb-4">Ver Periodo (Visualización)</label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {academicPeriods.map(p => <button key={p} onClick={() => setPeriodoVisualizacion(p)} className={`py-4 rounded-2xl font-black text-sm border-2 transition-all ${periodoVisualizacion === p ? 'border-yellow-400 bg-yellow-50 text-emerald-900' : 'border-stone-100 text-stone-400'}`}>P{p}</button>)}
+                    </div>
                   </div>
                 </div>
-                
-                <div className="p-8 bg-stone-100 border-t border-stone-200">
-                  <button onClick={saveGrades} className="w-full bg-emerald-900 text-yellow-400 py-5 rounded-2xl shadow-xl flex justify-center items-center gap-3 font-black text-sm uppercase tracking-widest active:scale-95 transition-all">
-                    <Save size={24}/> Registrar Notas Finales
-                  </button>
-                </div>
+                <div className="p-8 bg-stone-50"><button onClick={()=>setIsConfigOpen(false)} className="w-full py-5 bg-emerald-900 text-white rounded-2xl font-black uppercase text-[11px]">Cerrar</button></div>
               </div>
             </div>
           )}
 
-          {editingTask && (
-            <div className="fixed inset-0 z-[2000] flex items-center justify-center p-6">
-              <div className="absolute inset-0 bg-stone-900/70 backdrop-blur-md" onClick={()=>setEditingTask(null)} />
-              <div className="relative bg-white w-full max-w-md rounded-[40px] p-10 shadow-2xl animate-in space-y-8 border-t-[10px] border-yellow-400">
-                <h3 className="font-black text-2xl text-stone-900 text-center uppercase tracking-tighter">Editar Actividad</h3>
-                <div className="space-y-6">
-                  <input type="text" value={editingTask.title} onChange={e=>setEditingTask({...editingTask,title:e.target.value})} className="w-full p-4 rounded-xl text-sm font-black" placeholder="Título de la tarea"/>
-                  
+          {isFormOpen && (
+            <div className="fixed inset-0 z-[100] flex items-end justify-center">
+              <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-md" onClick={()=>setIsFormOpen(false)} />
+              <div className="relative bg-white w-full max-w-lg h-[85vh] rounded-t-[40px] shadow-2xl flex flex-col border-t-8 border-emerald-900 overflow-hidden">
+                <div className="p-8 border-b flex justify-between items-center"><div><h2 className="text-xl font-black text-stone-900 uppercase tracking-tighter">Notas</h2><p className="text-[9px] font-black text-emerald-700 uppercase">P{periodoActual}</p></div><button onClick={()=>setIsFormOpen(false)} className="h-10 w-10 bg-stone-100 rounded-2xl font-bold">✕</button></div>
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
+                  <input type="text" name="actividad" placeholder="Nombre de actividad..." value={batchData.actividad} onChange={handleBatchConfigChange} className="w-full text-lg font-black outline-none border-b-2 border-stone-200 pb-2"/>
                   <div className="grid grid-cols-2 gap-3">
-                    <input type="url" value={editingTask.videoLink || ''} onChange={e=>setEditingTask({...editingTask,videoLink:e.target.value})} className="w-full p-3 rounded-xl text-[11px] font-black border-2" placeholder="Enlace YouTube"/>
-                    <input type="url" value={editingTask.pdfLink || ''} onChange={e=>setEditingTask({...editingTask,pdfLink:e.target.value})} className="w-full p-3 rounded-xl text-[11px] font-black border-2" placeholder="Enlace Recurso"/>
+                    <select name="gradeLevel" value={batchData.gradeLevel} onChange={handleBatchConfigChange} className="p-4 text-xs font-black"><option value="">Grado...</option>{gradeLevels.map(g=><option key={g} value={g}>{g}</option>)}</select>
+                    <select name="area" value={batchData.area} onChange={handleBatchConfigChange} className="p-4 text-xs font-black"><option value="">Área...</option>{areas.map(a=><option key={a} value={a}>{a}</option>)}</select>
                   </div>
-                  
-                  <textarea value={editingTask.description} onChange={e=>setEditingTask({...editingTask,description:e.target.value})} className="w-full p-4 rounded-xl text-sm font-bold h-48 resize-none border-2"></textarea>
-                  
-                  <div className="flex gap-4 pt-4">
-                    <button onClick={()=>setEditingTask(null)} className="flex-1 py-4 bg-stone-100 text-stone-500 font-black rounded-2xl text-[11px] uppercase active:scale-95 transition-all">Cerrar</button>
-                    <button onClick={saveEditTask} className="flex-1 py-4 bg-stone-900 text-white font-black rounded-2xl text-[11px] uppercase shadow-lg active:scale-95 transition-all">Guardar</button>
+                  <div className="space-y-4">
+                    {batchData.entries.length > 0 ? (
+                        batchData.entries.map((en, idx) => (
+                            <div key={idx} className="bg-stone-50 p-4 rounded-2xl border-2 border-stone-200 flex justify-between items-center">
+                                <span className="text-xs font-black text-stone-900 uppercase pr-4">{en.name.split(' - ')[0]}</span>
+                                <input type="text" placeholder="0.0" value={en.score} onChange={e => {
+                                    const newEntries = [...batchData.entries];
+                                    newEntries[idx].score = e.target.value;
+                                    setBatchData({...batchData, entries: newEntries});
+                                }} className="w-20 h-12 text-center bg-white border-2 border-stone-400 rounded-xl font-black text-xl"/>
+                            </div>
+                        ))
+                    ) : ( <p className="text-center text-stone-400 text-xs font-bold py-10">Escoja un grado para cargar estudiantes.</p> )}
                   </div>
                 </div>
+                <div className="p-8 border-t border-stone-100 shadow-inner"><button onClick={saveGrades} className="w-full bg-emerald-900 text-yellow-400 py-5 rounded-2xl font-black uppercase">Registrar planilla</button></div>
               </div>
             </div>
           )}
 
+          {editingGradeEntry && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-stone-900/70 backdrop-blur-md" onClick={()=>setEditingGradeEntry(null)} />
+              <div className="relative bg-white w-full max-w-md rounded-[40px] shadow-2xl flex flex-col border-t-[10px] border-yellow-400 overflow-hidden">
+                <div className="p-6 border-b flex justify-between items-center"><h3 className="font-black text-lg uppercase truncate">{editingGradeEntry.nombreEstudiante}</h3><button onClick={()=>setEditingGradeEntry(null)}>✕</button></div>
+                <div className="p-6 space-y-6">
+                  <input type="text" value={editingGradeEntry.score} onChange={e=>setEditingGradeEntry({...editingGradeEntry, score: e.target.value})} className="w-full p-5 text-3xl text-center font-black bg-stone-50 border-2 border-emerald-900 rounded-2xl"/>
+                  <textarea value={editingGradeEntry.observacion} onChange={e=>setEditingGradeEntry({...editingGradeEntry, observacion: e.target.value})} className="w-full p-4 border rounded-xl text-xs font-bold h-24 resize-none" placeholder="Observación..."></textarea>
+                </div>
+                <div className="p-6 bg-stone-50 flex gap-3">
+                    <button onClick={()=>setEditingGradeEntry(null)} className="flex-1 py-4 bg-stone-200 rounded-2xl text-[10px] font-black uppercase">Cancelar</button>
+                    <button onClick={async ()=>{
+                        await db.collection("notasAcademicas").doc(editingGradeEntry.id).update({ score: editingGradeEntry.score.replace(',','.'), nota: parseFloat(editingGradeEntry.score.replace(',','.')), observacion: editingGradeEntry.observacion || '' });
+                        setEditingGradeEntry(null); Swal.fire({icon:'success', title:'Actualizado', toast:true, position:'top-end', timer:1500});
+                    }} className="flex-[2] py-4 bg-emerald-900 text-yellow-400 rounded-2xl text-[10px] font-black uppercase shadow-lg">Actualizar</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     };
@@ -497,4 +512,3 @@
   </script>
 </body>
 </html>
-
