@@ -87,13 +87,18 @@
       const [inboxMessages, setInboxMessages] = useState([]);
       const [replyText, setReplyText] = useState({});
       const [agendaTab, setAgendaTab] = useState('published');
-      const [mailboxTab, setMailboxTab] = useState('active'); // Nuevo estado para pestañas de buzón
+      const [mailboxTab, setMailboxTab] = useState('active');
       
       const [filterGrade, setFilterGrade] = useState('Quinto');
       const [filterArea, setFilterArea] = useState('MATEMATICAS');
       const [filterActivity, setFilterActivity] = useState('');
       const [filterStudent, setFilterStudent] = useState('');
       const [editingGradeEntry, setEditingGradeEntry] = useState(null);
+
+      // --- NUEVOS ESTADOS PARA FILTROS DE AGENDA ---
+      const [agendaFilterGrade, setAgendaFilterGrade] = useState('');
+      const [agendaFilterArea, setAgendaFilterArea] = useState('');
+      const [agendaFilterDate, setAgendaFilterDate] = useState('');
 
       useEffect(() => {
         db.collection("configuracionGlobal").doc("notas").onSnapshot(s => {
@@ -335,21 +340,46 @@
                     <button onClick={()=>setAgendaTab('draft')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${agendaTab==='draft'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Borradores</button>
                     <button onClick={()=>setAgendaTab('archived')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${agendaTab==='archived'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Archivadas</button>
                   </div>
+
+                  {/* --- NUEVA BARRA DE FILTROS --- */}
+                  <div className="bg-stone-50 p-2 rounded-2xl border border-stone-200 grid grid-cols-2 md:grid-cols-3 gap-2">
+                     <select value={agendaFilterGrade} onChange={e=>setAgendaFilterGrade(e.target.value)} className="w-full p-2 text-[9px] font-black border-none bg-white rounded-xl shadow-sm">
+                        <option value="">Todos los Grados</option>
+                        {gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}
+                     </select>
+                     <select value={agendaFilterArea} onChange={e=>setAgendaFilterArea(e.target.value)} className="w-full p-2 text-[9px] font-black border-none bg-white rounded-xl shadow-sm">
+                        <option value="">Todas las Áreas</option>
+                        {areasList.map(a => <option key={a} value={a}>{a}</option>)}
+                     </select>
+                     <input type="date" value={agendaFilterDate} onChange={e=>setAgendaFilterDate(e.target.value)} className="w-full p-2 text-[9px] font-black border-none bg-white rounded-xl shadow-sm col-span-2 md:col-span-1" />
+                  </div>
                   
                   {agendaItems.filter(item => {
-                    if (agendaTab === 'archived') return item.archived === true;
-                    if (agendaTab === 'draft') return item.status === 'draft' && !item.archived;
-                    return item.status !== 'draft' && !item.archived;
+                    // Lógica original de pestañas
+                    let show = false;
+                    if (agendaTab === 'archived') show = item.archived === true;
+                    else if (agendaTab === 'draft') show = item.status === 'draft' && !item.archived;
+                    else show = item.status !== 'draft' && !item.archived;
+
+                    // Lógica nueva de filtros
+                    if (show && agendaFilterGrade && item.gradeLevel !== agendaFilterGrade) show = false;
+                    if (show && agendaFilterArea && item.area !== agendaFilterArea) show = false;
+                    if (show && agendaFilterDate && item.date !== agendaFilterDate) show = false;
+                    
+                    return show;
                   }).map(item => (
                     <div key={item.id} className={`earth-card p-5 border-l-[6px] ${item.status === 'draft' ? 'border-l-stone-400 bg-stone-50' : item.archived ? 'border-l-stone-500 bg-stone-100 opacity-75' : 'border-l-[#facc15]'}`}>
                       <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-[9px] font-black bg-stone-900 text-white px-2 py-0.5 rounded uppercase">{item.gradeLevel}</span>
+                          {/* --- NUEVA ETIQUETA DE ÁREA --- */}
+                          <span className="text-[9px] font-black bg-emerald-100 text-emerald-900 border border-emerald-200 px-2 py-0.5 rounded uppercase">{item.area}</span>
+                          
                           {item.videoLink && <VideoIcon size={12} className="text-red-500"/>}
                           {item.pdfLink && <FileText size={12} className="text-blue-500"/>}
                           {item.archived && <span className="text-[8px] font-black bg-stone-200 text-stone-500 px-2 rounded">ARCHIVADA</span>}
                         </div>
-                        <span className="text-[10px] font-black text-[#064e3b]">{item.date}</span>
+                        <span className="text-[10px] font-black text-[#064e3b] whitespace-nowrap ml-2">{item.date}</span>
                       </div>
                       <h3 className="font-extrabold text-stone-900 text-sm uppercase">{item.title || '(Sin Título)'}</h3>
                       <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-stone-100">
