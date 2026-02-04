@@ -33,8 +33,6 @@
     .chat-bubble { max-width: 85%; padding: 10px; border-radius: 14px; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
     .chat-bubble.user { background: #f3f4f6; color: #1f2937; border: 1px solid #e5e7eb; border-bottom-left-radius: 2px; }
     .chat-bubble.docente { background: var(--dark-green); color: var(--vibrant-yellow); align-self: flex-end; border-bottom-right-radius: 2px; }
-    .bell-active { animation: ring 0.5s infinite; }
-    @keyframes ring { 0% { transform: rotate(0); } 25% { transform: rotate(10deg); } 50% { transform: rotate(-10deg); } 100% { transform: rotate(0); } }
   </style>
 </head>
 
@@ -42,7 +40,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useMemo, useRef } = React;
+    const { useState, useEffect, useMemo } = React;
 
     const firebaseConfig = {
       apiKey: "AIzaSyB2MJ-jdwQeT6sOfZ21tCrFYzGiuTNOAJ8",
@@ -52,12 +50,8 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Sonido de notificación
-    const alertSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
-
-    const Icon = ({ children, size = 24, className = "" }) => (
-      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
-    );
+    // ICONOS
+    const Icon = ({ children, size = 24, className = "" }) => ( <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg> );
     const Home = (p)=><Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
     const Book = (p)=><Icon {...p}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></Icon>;
     const Plus = (p)=><Icon {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Icon>;
@@ -72,7 +66,7 @@
     const ArchiveIcon = (p)=><Icon {...p}><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></Icon>;
     const RestoreIcon = (p)=><Icon {...p}><polyline points="16 14 12 9 8 14"/><path d="M12 9v12"/><path d="M20 20h-8a6 6 0 0 1-6-6V8"/><path d="M4 8h16"/></Icon>;
     const SaveIcon = (p)=><Icon {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></Icon>;
-    const Bell = (p)=><Icon {...p}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></Icon>;
+    const BoardIcon = (p)=><Icon {...p}><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></Icon>;
 
     const gradeLevels = ['Primero', 'Segundo', 'Tercero', 'Cuarto', 'Quinto'];
     const areasList = ['INGLES', 'CIENCIAS NATURALES', 'CIENCIAS SOCIALES', 'ARTISTICA', 'EDUCACION FISICA', 'ETICA Y VALORES', 'RELIGION', 'ESPAÑOL (LENGUAJE)', 'MATEMATICAS', 'TECNOLOGIA E INFORMATICA'];
@@ -83,8 +77,12 @@
       const [studentLists, setStudentLists] = useState({});
       const [periodoActual, setPeriodoActual] = useState(1);
       const [periodoVisualizacion, setPeriodoVisualizacion] = useState(1);
+      
+      // MODALES
       const [isFormOpen, setIsFormOpen] = useState(false);
       const [isConfigOpen, setIsConfigOpen] = useState(false);
+      const [isBoardOpen, setIsBoardOpen] = useState(false); // NUEVO MODAL TABLERO
+
       const [batchData, setBatchData] = useState({ gradeLevel: '', area: '', actividad: '', entries: [] });
       const [agendaItems, setAgendaItems] = useState([]);
       const [assignmentType, setAssignmentType] = useState('group');
@@ -96,6 +94,14 @@
       const [agendaTab, setAgendaTab] = useState('published');
       const [mailboxTab, setMailboxTab] = useState('active');
       
+      // ESTADO PARA AVISOS (PERIÓDICO ESCOLAR)
+      const [noticeText, setNoticeText] = useState('');
+      const [noticeColor, setNoticeColor] = useState('yellow');
+      const [noticeImage, setNoticeImage] = useState('');
+      const [noticeVideo, setNoticeVideo] = useState('');
+      const [noticesList, setNoticesList] = useState([]);
+      const [editingNoticeId, setEditingNoticeId] = useState(null);
+
       const [filterGrade, setFilterGrade] = useState('Quinto');
       const [filterArea, setFilterArea] = useState('MATEMATICAS');
       const [filterActivity, setFilterActivity] = useState('');
@@ -106,10 +112,6 @@
       const [agendaFilterArea, setAgendaFilterArea] = useState('');
       const [agendaFilterDate, setAgendaFilterDate] = useState('');
 
-      // Sistema de sonido
-      const [soundEnabled, setSoundEnabled] = useState(false);
-      const isInitialLoad = useRef(true);
-
       useEffect(() => {
         db.collection("configuracionGlobal").doc("notas").onSnapshot(s => {
           const p = s.exists ? s.data().periodoActual || 1 : 1;
@@ -119,6 +121,7 @@
         db.collection("configuracionGlobal").doc("listasEstudiantes").onSnapshot(s => setStudentLists(s.exists ? s.data() : {}));
       }, []);
 
+      // SUSCRIPCIONES PRINCIPALES
       useEffect(() => {
         const unsubNotes = db.collection("notasAcademicas").onSnapshot(s => {
           const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); 
@@ -128,44 +131,17 @@
           const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); 
           setAgendaItems(a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0)));
         });
-        
-        // Listener de Mensajes con SONIDO
         const unsubMessages = db.collection("mensajesAgenda").onSnapshot(s => {
-          const a=[]; 
-          
-          if (isInitialLoad.current) {
-            isInitialLoad.current = false;
-          } else if (soundEnabled && !s.metadata.hasPendingWrites) {
-            s.docChanges().forEach(change => {
-              if (change.type === "added" || change.type === "modified") {
-                const data = change.doc.data();
-                if (data.conversacion?.length > 0) {
-                  const lastChat = data.conversacion[data.conversacion.length - 1];
-                  if (lastChat.rol !== 'docente') {
-                    alertSound.play().catch(e => console.log("Permiso de audio requerido"));
-                    if (navigator.vibrate) navigator.vibrate(200);
-                  }
-                }
-              }
-            });
-          }
-
-          s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); 
+          const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); 
           setInboxMessages(a.sort((x,y)=>(y.lastUpdate||'').localeCompare(x.lastUpdate||'')));
         });
-        return () => { unsubNotes(); unsubAgenda(); unsubMessages(); };
-      }, [periodoVisualizacion, soundEnabled]);
+        // SUSCRIPCIÓN PERIÓDICO ESCOLAR
+        const unsubNotices = db.collection("tableroAvisos").orderBy("timestamp", "desc").onSnapshot(s => {
+            setNoticesList(s.docs.map(d => ({id:d.id, ...d.data()})));
+        });
 
-      const toggleSound = () => {
-        setSoundEnabled(!soundEnabled);
-        if (!soundEnabled) {
-          alertSound.play().then(() => {
-            alertSound.pause();
-            alertSound.currentTime = 0;
-            Swal.fire({ icon: 'success', title: 'Sonido Activado', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
-          });
-        }
-      };
+        return () => { unsubNotes(); unsubAgenda(); unsubMessages(); unsubNotices(); };
+      }, [periodoVisualizacion]);
 
       const updateGlobalPeriod = async (p) => {
         await db.collection("configuracionGlobal").doc("notas").set({ periodoActual: p }, { merge: true });
@@ -185,16 +161,63 @@
           return newData;
         });
       };
+      
+      // --- LÓGICA AVISOS (CRUD) ---
+      const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          if (file.size > 800000) return Swal.fire('Foto muy pesada', 'Máx 800kb', 'error');
+          const reader = new FileReader();
+          reader.onloadend = () => setNoticeImage(reader.result);
+          reader.readAsDataURL(file);
+        }
+      };
+
+      const handlePublishNotice = async () => {
+        if(!noticeText.trim() && !noticeImage) return Swal.fire('Error', 'Escribe o sube foto', 'warning');
+        
+        const payload = {
+            mensaje: noticeText, color: noticeColor, imageUrl: noticeImage, videoUrl: noticeVideo,
+            fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
+            timestamp: new Date().toISOString()
+        };
+
+        try {
+            if(editingNoticeId) {
+                await db.collection("tableroAvisos").doc(editingNoticeId).update(payload);
+                Swal.fire({ icon: 'success', title: 'Aviso Actualizado', toast: true, position: 'top-end', timer: 1500 });
+                setEditingNoticeId(null);
+            } else {
+                await db.collection("tableroAvisos").add({...payload, archived: false});
+                Swal.fire({ icon: 'success', title: 'Aviso Publicado', toast: true, position: 'top-end', timer: 1500 });
+            }
+            setNoticeText(''); setNoticeImage(''); setNoticeVideo('');
+        } catch (e) { Swal.fire('Error', 'Error al guardar', 'error'); }
+      };
+
+      const prepareEditNotice = (n) => {
+        setNoticeText(n.mensaje); setNoticeColor(n.color); setNoticeImage(n.imageUrl || ''); setNoticeVideo(n.videoUrl || '');
+        setEditingNoticeId(n.id);
+      };
+
+      const archiveNotice = async (n) => {
+        await db.collection("tableroAvisos").doc(n.id).update({ archived: !n.archived });
+        Swal.fire({ icon: 'success', title: n.archived ? 'Restaurado' : 'Archivado', toast: true, position: 'top-end', timer: 1000 });
+      };
+
+      const deleteNotice = async (id) => {
+        if((await Swal.fire({title:'¿Eliminar?', text:'Irreversible', icon:'warning', showCancelButton:true})).isConfirmed){
+            await db.collection("tableroAvisos").doc(id).delete();
+            Swal.fire('Eliminado', '', 'success');
+        }
+      };
+      // --- FIN LÓGICA AVISOS ---
 
       const handleAddTask = async (status = 'published') => {
         const isPublished = status === 'published';
         const gradeReady = assignmentType === 'group' ? selectedGrades.length > 0 : !!newTask.gradeLevel;
-
         if(!gradeReady) return Swal.fire('Error','Debes seleccionar el grado','warning');
-        
-        if(isPublished && (!newTask.area || !newTask.date)) {
-            return Swal.fire('Error','Área y Fecha son obligatorios para publicar','warning');
-        }
+        if(isPublished && (!newTask.area || !newTask.date)) return Swal.fire('Error','Área y Fecha obligatorios','warning');
 
         const batch = db.batch();
         const baseTask = { ...newTask, status, publico: isPublished, archived: false, createdAt: Date.now(), periodo: periodoActual };
@@ -211,38 +234,23 @@
         await batch.commit();
         setNewTask({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '' });
         setSelectedGrades([]);
-        Swal.fire({icon:'success', title: isPublished ? 'Tarea Publicada' : 'Borrador Guardado'});
+        Swal.fire({icon:'success', title: isPublished ? 'Publicada' : 'Guardada'});
       };
 
       const saveIndividualGrade = async (en, idx) => {
-        if (!batchData.area || !batchData.actividad || en.score === '') {
-            return Swal.fire('Error', 'Faltan datos (Área, Actividad o Nota)', 'warning');
-        }
-
+        if (!batchData.area || !batchData.actividad || en.score === '') return Swal.fire('Error', 'Faltan datos', 'warning');
         const nameParts = en.name.lastIndexOf(" - ");
         const studentObj = {
-          gradeLevel: batchData.gradeLevel,
-          area: batchData.area,
-          actividad: batchData.actividad.trim(),
-          name: en.name,
-          nombreEstudiante: en.name.slice(0, nameParts).trim(),
-          documentoEstudiante: en.name.slice(nameParts + 3).trim(),
-          score: en.score.replace(',', '.'),
-          nota: parseFloat(en.score.replace(',', '.')),
-          observacion: en.observation || '',
-          periodo: periodoActual,
-          createdAt: Date.now()
+          gradeLevel: batchData.gradeLevel, area: batchData.area, actividad: batchData.actividad.trim(),
+          name: en.name, nombreEstudiante: en.name.slice(0, nameParts).trim(), documentoEstudiante: en.name.slice(nameParts + 3).trim(),
+          score: en.score.replace(',', '.'), nota: parseFloat(en.score.replace(',', '.')),
+          observacion: en.observation || '', periodo: periodoActual, createdAt: Date.now()
         };
-
         try {
           await db.collection("notasAcademicas").add(studentObj);
           Swal.fire({ icon: 'success', title: 'Nota Guardada', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
-          const newEntries = [...batchData.entries];
-          newEntries[idx].saved = true;
-          setBatchData({ ...batchData, entries: newEntries });
-        } catch (error) {
-          Swal.fire('Error', 'No se pudo guardar la nota', 'error');
-        }
+          const newEntries = [...batchData.entries]; newEntries[idx].saved = true; setBatchData({ ...batchData, entries: newEntries });
+        } catch (error) { Swal.fire('Error', 'No se guardó', 'error'); }
       };
 
       const saveGrades = async () => {
@@ -265,35 +273,24 @@
       };
 
       const generateReportPDF = () => {
-        const doc = new window.jspdf.jsPDF();
-        doc.setFontSize(14);
-        doc.text(`REPORTE REGISTRO DE NOTAS - P${periodoVisualizacion}`, 14, 15);
+        const doc = new window.jspdf.jsPDF(); doc.setFontSize(14); doc.text(`REPORTE NOTAS - P${periodoVisualizacion}`, 14, 15);
         const body = filteredRecords.map(r => [r.nombreEstudiante, r.actividad, (r.score || '0').replace('.', ',')]);
         doc.autoTable({ startY: 28, head: [['NOMBRE ESTUDIANTE', 'ACTIVIDAD', 'NOTA']], body, headStyles: { fillColor: [6, 78, 59] }, styles: { fontSize: 8 } });
         doc.save(`Reporte_Notas.pdf`);
       };
 
       const generateGeneralAgendaPDF = () => {
-        const doc = new window.jspdf.jsPDF();
-        doc.setFontSize(14);
-        doc.text(`AGENDA GENERAL DE TAREAS - P${periodoVisualizacion}`, 14, 15);
+        const doc = new window.jspdf.jsPDF(); doc.setFontSize(14); doc.text(`AGENDA TAREAS - P${periodoVisualizacion}`, 14, 15);
         const activeTasks = agendaItems.filter(i => !i.archived && i.status !== 'draft');
         const body = activeTasks.map(t => [t.date, t.gradeLevel, t.area, t.title || '(Sin título)', t.description || '']);
-        doc.autoTable({
-            startY: 20,
-            head: [['FECHA', 'GRADO', 'ÁREA', 'TÍTULO', 'DESCRIPCIÓN']],
-            body: body,
-            headStyles: { fillColor: [6, 78, 59] },
-            styles: { fontSize: 8, overflow: 'linebreak' },
-            columnStyles: { 4: { cellWidth: 60 } }
-        });
+        doc.autoTable({ startY: 20, head: [['FECHA', 'GRADO', 'ÁREA', 'TÍTULO', 'DESCRIPCIÓN']], body, headStyles: { fillColor: [6, 78, 59] }, styles: { fontSize: 8, overflow: 'linebreak' }, columnStyles: { 4: { cellWidth: 60 } } });
         doc.save(`Agenda_General.pdf`);
       };
 
       const archiveTask = async (task) => {
-        if((await Swal.fire({title:'¿Archivar Tarea?', text: 'Los padres dejarán de verla.', icon: 'question', showCancelButton:true})).isConfirmed) {
+        if((await Swal.fire({title:'¿Archivar?', text: 'Se ocultará.', icon: 'question', showCancelButton:true})).isConfirmed) {
             await db.collection("agendaEscolar").doc(task.id).update({ archived: true, publico: false });
-            Swal.fire({icon:'success', title: 'Tarea Archivada', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false});
+            Swal.fire({icon:'success', title: 'Archivada', toast: true, position: 'top-end', timer: 1500 });
         }
       };
 
@@ -317,11 +314,11 @@
                 <p className="text-[10px] font-bold text-emerald-200 uppercase tracking-widest">P{periodoVisualizacion} · Tierra</p>
               </div>
               <div className="flex gap-2">
-                <button onClick={toggleSound} className={`h-12 w-12 rounded-2xl flex items-center justify-center border transition-all ${soundEnabled ? 'bg-emerald-600 border-white/40 shadow-lg' : 'bg-white/10 border-white/20'}`}>
-                    <Bell size={22} className={soundEnabled ? 'text-white bell-active' : 'text-white/40'} />
+                <button onClick={() => setIsBoardOpen(true)} className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20 active:scale-90 transition-all text-[#facc15]" title="Gestión Periódico Escolar">
+                    <BoardIcon size={22} />
                 </button>
-                <button onClick={() => setIsConfigOpen(true)} className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20 active:scale-90 transition-all">
-                    <Settings size={22} className="text-[#facc15]" />
+                <button onClick={() => setIsConfigOpen(true)} className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20 active:scale-90 transition-all text-[#facc15]" title="Configuración">
+                    <Settings size={22} />
                 </button>
               </div>
             </div>
@@ -374,41 +371,38 @@
                       </select>
                     </div>
                   )}
-                  <select value={newTask.area} onChange={e=>setNewTask({...newTask,area:e.target.value})} className="w-full p-4 text-xs font-black">
-                    <option value="">Seleccione Área...</option>
-                    {areasList.map(a => <option key={a} value={a}>{a}</option>)}
-                  </select>
+                  <select value={newTask.area} onChange={e=>setNewTask({...newTask,area:e.target.value})} className="w-full p-4 text-xs font-black"><option value="">Área...</option>{areasList.map(a => <option key={a} value={a}>{a}</option>)}</select>
                   <input type="text" placeholder="Título Actividad" value={newTask.title} onChange={e=>setNewTask({...newTask,title:e.target.value})} className="w-full p-4 text-sm font-black"/>
                   <div className="grid grid-cols-2 gap-3">
                     <input type="date" value={newTask.date} onChange={e=>setNewTask({...newTask,date:e.target.value})} className="p-4 text-xs font-black"/>
                     <div className="flex gap-2">
-                        <div className="flex-1 flex items-center justify-center bg-stone-50 rounded-xl border border-dashed border-stone-300">
-                            <VideoIcon size={16} className={newTask.videoLink ? 'text-red-600' : 'text-stone-300'}/>
-                        </div>
-                        <div className="flex-1 flex items-center justify-center bg-stone-50 rounded-xl border border-dashed border-stone-300">
-                            <FileText size={16} className={newTask.pdfLink ? 'text-blue-600' : 'text-stone-300'}/>
-                        </div>
+                        <div className="flex-1 flex items-center justify-center bg-stone-50 rounded-xl border border-dashed border-stone-300"><VideoIcon size={16} className={newTask.videoLink ? 'text-red-600' : 'text-stone-300'}/></div>
+                        <div className="flex-1 flex items-center justify-center bg-stone-50 rounded-xl border border-dashed border-stone-300"><FileText size={16} className={newTask.pdfLink ? 'text-blue-600' : 'text-stone-300'}/></div>
                     </div>
                   </div>
                   <input type="url" placeholder="YouTube URL" value={newTask.videoLink} onChange={e=>setNewTask({...newTask,videoLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
                   <input type="url" placeholder="Drive URL" value={newTask.pdfLink} onChange={e=>setNewTask({...newTask,pdfLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
                   <textarea placeholder="Descripción..." value={newTask.description} onChange={e=>setNewTask({...newTask,description:e.target.value})} className="w-full p-4 text-sm font-bold h-24 resize-none"></textarea>
                   <div className="flex gap-2">
-                    <button onClick={() => handleAddTask('draft')} className="flex-1 py-4 bg-stone-200 text-stone-600 font-black rounded-2xl text-[11px] uppercase">Guardar Borrador</button>
-                    <button onClick={() => handleAddTask('published')} className="flex-[2] py-4 bg-[#064e3b] text-white font-black rounded-2xl text-[11px] uppercase shadow-lg">Publicar Tarea</button>
+                    <button onClick={() => handleAddTask('draft')} className="flex-1 py-4 bg-stone-200 text-stone-600 font-black rounded-2xl text-[11px] uppercase">Borrador</button>
+                    <button onClick={() => handleAddTask('published')} className="flex-[2] py-4 bg-[#064e3b] text-white font-black rounded-2xl text-[11px] uppercase shadow-lg">Publicar</button>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <button onClick={generateGeneralAgendaPDF} className="w-full py-4 bg-[#facc15] text-[#064e3b] font-black rounded-2xl text-[11px] uppercase shadow-md flex items-center justify-center gap-2">
-                     <FileText size={16}/> Descargar Agenda General (PDF)
-                  </button>
+                  <button onClick={generateGeneralAgendaPDF} className="w-full py-4 bg-[#facc15] text-[#064e3b] font-black rounded-2xl text-[11px] uppercase shadow-md flex items-center justify-center gap-2"><FileText size={16}/> Descargar Agenda (PDF)</button>
                   <div className="flex gap-2 mb-2 bg-stone-100 p-1 rounded-2xl">
                     <button onClick={()=>setAgendaTab('published')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${agendaTab==='published'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Publicadas</button>
                     <button onClick={()=>setAgendaTab('draft')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${agendaTab==='draft'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Borradores</button>
                     <button onClick={()=>setAgendaTab('archived')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${agendaTab==='archived'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Archivadas</button>
                   </div>
-                  {agendaItems.map(item => (
+                  {agendaItems.filter(item => {
+                    let show = false;
+                    if (agendaTab === 'archived') show = item.archived === true;
+                    else if (agendaTab === 'draft') show = item.status === 'draft' && !item.archived;
+                    else show = item.status !== 'draft' && !item.archived;
+                    return show;
+                  }).map(item => (
                     <div key={item.id} className={`earth-card p-5 border-l-[6px] ${item.status === 'draft' ? 'border-l-stone-400 bg-stone-50' : item.archived ? 'border-l-stone-500 bg-stone-100 opacity-75' : 'border-l-[#facc15]'}`}>
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -419,7 +413,7 @@
                       </div>
                       <h3 className="font-extrabold text-stone-900 text-sm uppercase">{item.title || '(Sin Título)'}</h3>
                       <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-stone-100">
-                        {!item.archived && <button onClick={() => archiveTask(item)} className="p-2 text-stone-400 hover:text-stone-600"><ArchiveIcon size={20}/></button>}
+                        {!item.archived && (<button onClick={() => archiveTask(item)} className="p-2 text-stone-400 hover:text-stone-600"><ArchiveIcon size={20}/></button>)}
                         <button onClick={()=>setEditingTask(item)} className="p-2 text-stone-400 hover:text-emerald-700"><EditIcon size={20}/></button>
                         <button onClick={async ()=>{ if((await Swal.fire({title:'¿Borrar?', showCancelButton:true})).isConfirmed) db.collection("agendaEscolar").doc(item.id).delete(); }} className="p-2 text-stone-400 hover:text-red-500"><TrashIcon size={20}/></button>
                       </div>
@@ -433,23 +427,16 @@
               <div className="space-y-6">
                 <div className="earth-card p-4 space-y-3 bg-stone-50">
                   <div className="grid grid-cols-2 gap-2">
-                    <select value={filterGrade} onChange={e=>{setFilterGrade(e.target.value); setFilterStudent('');}} className="p-3 text-xs font-black">
-                      {gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}
-                    </select>
-                    <select value={filterArea} onChange={e=>setFilterArea(e.target.value)} className="p-3 text-xs font-black">
-                      {areasList.map(a => <option key={a} value={a}>{a}</option>)}
-                    </select>
+                    <select value={filterGrade} onChange={e=>{setFilterGrade(e.target.value); setFilterStudent('');}} className="p-3 text-xs font-black">{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select>
+                    <select value={filterArea} onChange={e=>setFilterArea(e.target.value)} className="p-3 text-xs font-black">{areasList.map(a => <option key={a} value={a}>{a}</option>)}</select>
                   </div>
-                  <select value={filterStudent} onChange={e=>setFilterStudent(e.target.value)} className="w-full p-3 text-xs font-black">
-                    <option value="">Todos los Estudiantes...</option>
-                    {(studentLists[filterGrade] || []).map(name => <option key={name.split(' - ')[1]} value={name.split(' - ')[1]}>{name.split(' - ')[0]}</option>)}
-                  </select>
-                  <select value={filterActivity} onChange={e=>setFilterActivity(e.target.value)} className="w-full p-3 text-xs font-black">
-                    <option value="">Todas las Actividades...</option>
-                    {currentActivities.map(act => <option key={act} value={act}>{act}</option>)}
-                  </select>
+                  <select value={filterStudent} onChange={e=>setFilterStudent(e.target.value)} className="w-full p-3 text-xs font-black"><option value="">Todos los Estudiantes...</option>{(studentLists[filterGrade] || []).map(name => <option key={name.split(' - ')[1]} value={name.split(' - ')[1]}>{name.split(' - ')[0]}</option>)}</select>
+                  <select value={filterActivity} onChange={e=>setFilterActivity(e.target.value)} className="w-full p-3 text-xs font-black"><option value="">Todas las Actividades...</option>{currentActivities.map(act => <option key={act} value={act}>{act}</option>)}</select>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={generateReportPDF} className="p-4 bg-[#064e3b] text-[#facc15] font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95"><FileText size={16}/> DESCARGAR PDF</button>
+                    <button onClick={async ()=>{ if(!filterActivity) return; if((await Swal.fire({title:'¿Borrar Actividad?', icon:'warning', showCancelButton:true})).isConfirmed){ const b = db.batch(); filteredRecords.forEach(r => b.delete(db.collection("notasAcademicas").doc(r.id))); await b.commit(); setFilterActivity(''); } }} className="p-4 bg-red-800 text-white font-black text-[10px] uppercase rounded-xl shadow-lg active:scale-95">BORRAR ACTIVIDAD</button>
+                  </div>
                 </div>
-
                 <div className="overflow-x-auto no-scrollbar">
                   <table className="table-earth">
                     <thead><tr><th>Estudiante</th><th className="text-center">Nota</th><th className="text-right">Edit</th></tr></thead>
@@ -469,23 +456,28 @@
 
             {view === 'mailbox' && (
               <div className="space-y-4">
-                {inboxMessages.map(m => (
-                  <div key={m.id} className="earth-card p-5 border-r-[6px] border-r-[#facc15]">
-                    <p className="text-[10px] font-black text-[#064e3b] uppercase">{m.studentName}</p>
-                    <p className="text-[9px] font-bold text-stone-400 uppercase mb-4">{m.taskTitle}</p>
+                <div className="flex gap-2 mb-2 bg-stone-100 p-1 rounded-2xl">
+                    <button onClick={()=>setMailboxTab('active')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${mailboxTab==='active'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Recibidos</button>
+                    <button onClick={()=>setMailboxTab('archived')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${mailboxTab==='archived'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Archivados</button>
+                </div>
+                {inboxMessages.filter(m => mailboxTab === 'active' ? !m.archived : m.archived).map(m => (
+                  <div key={m.id} className={`earth-card p-5 border-r-[6px] ${m.archived ? 'border-r-stone-400 bg-stone-50' : 'border-r-[#facc15]'}`}>
+                    <div className="flex justify-between items-start mb-2">
+                        <div><p className="text-[10px] font-black text-[#064e3b] uppercase">{m.studentName}</p><p className="text-[9px] font-bold text-stone-400 uppercase truncate">{m.taskTitle}</p></div>
+                        <div className="flex gap-1">
+                            {!m.archived && <button onClick={async ()=> { if((await Swal.fire({title:'¿Archivar?', icon:'question', showCancelButton:true})).isConfirmed) await db.collection("mensajesAgenda").doc(m.id).update({ archived: true }); }} className="p-2 bg-stone-100 rounded-lg text-stone-400"><ArchiveIcon size={14}/></button>}
+                            {m.archived && <button onClick={async ()=> { if((await Swal.fire({title:'¿Restaurar?', icon:'question', showCancelButton:true})).isConfirmed) await db.collection("mensajesAgenda").doc(m.id).update({ archived: false }); }} className="p-2 bg-stone-200 rounded-lg text-emerald-600"><RestoreIcon size={14}/></button>}
+                            <button onClick={async ()=> { if((await Swal.fire({title:'¿Eliminar?', text:'No se podrá recuperar', icon:'warning', showCancelButton:true})).isConfirmed) await db.collection("mensajesAgenda").doc(m.id).delete(); }} className="p-2 bg-red-50 rounded-lg text-red-400"><TrashIcon size={14}/></button>
+                        </div>
+                    </div>
                     <div className="flex flex-col gap-2 mb-4">
-                      {m.conversacion && m.conversacion.map((chat, idx) => (
-                        <div key={idx} className={`chat-bubble ${chat.rol === 'docente' ? 'docente' : 'user'}`}>{chat.texto}</div>
-                      ))}
+                      {m.conversacion && m.conversacion.map((chat, idx) => (<div key={idx} className={`chat-bubble ${chat.rol === 'docente' ? 'docente' : 'user'}`}>{chat.texto}</div>))}
                     </div>
                     <div className="flex gap-2">
                       <input type="text" placeholder="Responder..." value={replyText[m.id]||''} onChange={e=>setReplyText({...replyText,[m.id]:e.target.value})} className="flex-1 px-4 text-xs font-black"/>
                       <button onClick={async () => {
                         if(!replyText[m.id]) return;
-                        await db.collection("mensajesAgenda").doc(m.id).update({
-                          conversacion: firebase.firestore.FieldValue.arrayUnion({ rol: 'docente', texto: replyText[m.id], timestamp: new Date().toISOString() }),
-                          lastUpdate: new Date().toISOString(), read: true
-                        });
+                        await db.collection("mensajesAgenda").doc(m.id).update({ conversacion: firebase.firestore.FieldValue.arrayUnion({ rol: 'docente', texto: replyText[m.id], timestamp: new Date().toISOString() }), lastUpdate: new Date().toISOString(), read: true });
                         setReplyText({...replyText, [m.id]: ''});
                       }} className="bg-[#064e3b] text-[#facc15] p-4 rounded-xl"><Send size={18}/></button>
                     </div>
@@ -503,6 +495,81 @@
             <button onClick={()=>setView('mailbox')} className={`flex flex-col items-center gap-1 ${view==='mailbox'?'nav-active':'text-stone-400'}`}><MessageCircle size={22}/><span className="text-[8px] uppercase">Buzón</span></button>
           </nav>
 
+          {/* CONFIGURACIÓN (Restaurado a original) */}
+          {isConfigOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-stone-900/80 backdrop-blur-sm" onClick={()=>setIsConfigOpen(false)} />
+              <div className="relative bg-white w-full max-w-md rounded-[32px] overflow-hidden flex flex-col border-t-8 border-[#064e3b]">
+                <div className="p-8 border-b flex justify-between items-center"><h2 className="text-xl font-black text-[#064e3b] uppercase tracking-tighter">Configuración</h2><button onClick={()=>setIsConfigOpen(false)}>✕</button></div>
+                <div className="p-8 space-y-8">
+                  <div>
+                    <label className="text-[10px] font-black text-stone-500 uppercase block mb-4">Periodo Registro (Global)</label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[1,2,3,4].map(p => <button key={p} onClick={() => updateGlobalPeriod(p)} className={`py-4 rounded-2xl font-black ${periodoActual === p ? 'bg-[#064e3b] text-[#facc15]' : 'bg-stone-100 text-stone-400'}`}>P{p}</button>)}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-stone-500 uppercase block mb-4">Ver Periodo (Visualizar)</label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[1,2,3,4].map(p => <button key={p} onClick={() => setPeriodoVisualizacion(p)} className={`py-4 rounded-2xl font-black border-2 ${periodoVisualizacion === p ? 'border-[#064e3b] bg-emerald-50 text-[#064e3b]' : 'border-stone-100 text-stone-400'}`}>P{p}</button>)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL NUEVO: GESTIÓN PERIÓDICO ESCOLAR */}
+          {isBoardOpen && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-stone-900/80 backdrop-blur-sm" onClick={()=>setIsBoardOpen(false)} />
+              <div className="relative bg-white w-full max-w-lg rounded-[32px] overflow-hidden flex flex-col border-t-8 border-[#064e3b] max-h-[85vh]">
+                <div className="p-6 border-b flex justify-between items-center"><h2 className="text-xl font-black text-[#064e3b] uppercase tracking-tighter">Gestión Periódico</h2><button onClick={()=>setIsBoardOpen(false)}>✕</button></div>
+                <div className="p-6 space-y-4 overflow-y-auto no-scrollbar flex-1">
+                    
+                    {/* FORMULARIO */}
+                    <div className="space-y-2 mb-4">
+                        <textarea value={noticeText} onChange={e=>setNoticeText(e.target.value)} className="w-full p-3 text-xs font-bold border border-stone-300 rounded-xl resize-none h-20" placeholder="Escribe el aviso..."></textarea>
+                        <input type="url" value={noticeVideo} onChange={e=>setNoticeVideo(e.target.value)} className="w-full p-2 text-[10px] font-bold border border-stone-300 rounded-lg" placeholder="Enlace YouTube (Opcional)"/>
+                        <div className="flex items-center gap-2">
+                            <label className="flex-1 bg-white p-2 rounded-lg border border-dashed border-stone-400 text-[10px] font-black text-center cursor-pointer">
+                                {noticeImage ? "✅ FOTO LISTA" : "📷 SUBIR FOTO"}
+                                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden"/>
+                            </label>
+                            {noticeImage && <button onClick={()=>setNoticeImage('')} className="text-red-500 font-bold text-xs">X</button>}
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                            <select value={noticeColor} onChange={e=>setNoticeColor(e.target.value)} className="p-2 text-xs font-black rounded-xl border border-stone-300 flex-1">
+                                <option value="yellow">Amarillo</option><option value="pink">Rosado</option><option value="blue">Azul</option><option value="green">Verde</option>
+                            </select>
+                            <button onClick={handlePublishNotice} className="flex-[2] bg-[#064e3b] text-[#facc15] font-black text-[10px] uppercase rounded-xl shadow-lg active:scale-95">
+                                {editingNoticeId ? 'ACTUALIZAR' : 'PUBLICAR'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* LISTADO DE AVISOS ACTIVOS */}
+                    <div className="space-y-2">
+                        {noticesList.map(n => (
+                            <div key={n.id} className={`flex justify-between items-center p-3 rounded-xl border ${n.archived ? 'bg-gray-100 border-gray-200 opacity-60' : 'bg-white border-stone-200'}`}>
+                                <div className="flex-1 min-w-0 pr-2">
+                                    <p className="text-[10px] font-black text-stone-700 truncate">{n.mensaje || 'Sin texto'}</p>
+                                    <p className="text-[8px] text-stone-400">{n.fecha} {n.archived ? '(Archivado)' : ''}</p>
+                                </div>
+                                <div className="flex gap-1">
+                                    <button onClick={()=>prepareEditNotice(n)} className="p-1.5 bg-blue-50 text-blue-600 rounded-lg"><EditIcon size={14}/></button>
+                                    <button onClick={()=>archiveNotice(n)} className="p-1.5 bg-stone-100 text-stone-500 rounded-lg"><ArchiveIcon size={14}/></button>
+                                    <button onClick={()=>deleteNotice(n.id)} className="p-1.5 bg-red-50 text-red-500 rounded-lg"><TrashIcon size={14}/></button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODALES NOTAS Y EDICIÓN (MANTENIDOS) */}
           {isFormOpen && (
             <div className="fixed inset-0 z-[100] flex items-end justify-center">
               <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-md" onClick={()=>setIsFormOpen(false)} />
@@ -510,27 +577,21 @@
                 <div className="p-8 border-b flex justify-between items-center"><div><h2 className="text-xl font-black text-stone-900 uppercase tracking-tighter">Notas P{periodoActual}</h2></div><button onClick={()=>setIsFormOpen(false)} className="h-10 w-10 bg-stone-100 rounded-2xl font-bold">✕</button></div>
                 <div className="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar">
                   <input type="text" name="actividad" placeholder="Actividad..." value={batchData.actividad} onChange={handleBatchConfigChange} className="w-full text-lg font-black outline-none border-b-2 border-stone-200 pb-2"/>
-                  <div className="grid grid-cols-2 gap-3">
-                    <select name="gradeLevel" value={batchData.gradeLevel} onChange={handleBatchConfigChange} className="p-4 text-xs font-black"><option value="">Grado...</option>{gradeLevels.map(g=><option key={g} value={g}>{g}</option>)}</select>
-                    <select name="area" value={batchData.area} onChange={handleBatchConfigChange} className="p-4 text-xs font-black"><option value="">Área...</option>{areasList.map(a=><option key={a} value={a}>{a}</option>)}</select>
-                  </div>
-                  <div className="space-y-4">
-                    {batchData.entries.map((en, idx) => (
-                      <div key={idx} className={`bg-stone-50 p-4 rounded-2xl border-2 transition-all ${en.saved ? 'border-emerald-500 bg-emerald-50' : 'border-stone-200'} space-y-3`}>
-                        <div className="flex justify-between items-start gap-4">
-                          <div className="flex-1"><span className="text-[11px] font-black text-stone-900 uppercase block mb-2">{en.name.split(' - ')[0]}</span></div>
-                          <div className="flex flex-col gap-2 items-center">
-                            <input type="text" placeholder="0.0" value={en.score} onChange={e => {
-                              const newEntries = [...batchData.entries]; newEntries[idx].score = e.target.value; setBatchData({...batchData, entries: newEntries});
-                            }} className="w-16 h-12 text-center bg-white border-2 border-stone-400 rounded-xl font-black text-xl"/>
-                            <button onClick={() => saveIndividualGrade(en, idx)} className={`p-3 rounded-xl shadow-md active:scale-90 transition-all ${en.saved ? 'bg-emerald-600 text-white' : 'bg-[#facc15] text-[#064e3b]'}`}><SaveIcon size={18} /></button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <div className="grid grid-cols-2 gap-3"><select name="gradeLevel" value={batchData.gradeLevel} onChange={handleBatchConfigChange} className="p-4 text-xs font-black"><option value="">Grado...</option>{gradeLevels.map(g=><option key={g} value={g}>{g}</option>)}</select><select name="area" value={batchData.area} onChange={handleBatchConfigChange} className="p-4 text-xs font-black"><option value="">Área...</option>{areasList.map(a=><option key={a} value={a}>{a}</option>)}</select></div>
+                  <div className="space-y-4">{batchData.entries.map((en, idx) => (<div key={idx} className={`bg-stone-50 p-4 rounded-2xl border-2 transition-all ${en.saved ? 'border-emerald-500 bg-emerald-50' : 'border-stone-200'} space-y-3`}><div className="flex justify-between items-start gap-4"><div className="flex-1"><span className="text-[11px] font-black text-stone-900 uppercase block mb-2">{en.name.split(' - ')[0]}</span><textarea placeholder="Observaciones..." value={en.observation} onChange={e => {const newEntries = [...batchData.entries]; newEntries[idx].observation = e.target.value; setBatchData({...batchData, entries: newEntries});}} className="w-full h-16 p-2 text-[10px] font-bold resize-none"/></div><div className="flex flex-col gap-2 items-center"><input type="text" placeholder="0.0" value={en.score} onChange={e => {const newEntries = [...batchData.entries]; newEntries[idx].score = e.target.value; setBatchData({...batchData, entries: newEntries});}} className="w-16 h-12 text-center bg-white border-2 border-stone-400 rounded-xl font-black text-xl"/><button onClick={() => saveIndividualGrade(en, idx)} className={`p-3 rounded-xl shadow-md active:scale-90 transition-all ${en.saved ? 'bg-emerald-600 text-white' : 'bg-[#facc15] text-[#064e3b]'}`}><SaveIcon size={18} /></button></div></div></div>))}</div>
                 </div>
                 <div className="p-8 border-t border-stone-100"><button onClick={saveGrades} className="w-full bg-[#064e3b] text-[#facc15] py-5 rounded-2xl font-black uppercase shadow-lg">Guardar Todo el Grupo</button></div>
+              </div>
+            </div>
+          )}
+
+          {editingTask && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-stone-900/80 backdrop-blur-sm" onClick={()=>setEditingTask(null)} />
+              <div className="relative bg-white w-full max-w-md rounded-[40px] shadow-2xl flex flex-col border-t-[10px] border-[#facc15] overflow-hidden">
+                <div className="p-6 border-b flex justify-between items-center"><h3 className="font-black text-lg uppercase">Editar Actividad</h3><button onClick={()=>setEditingTask(null)}>✕</button></div>
+                <div className="p-6 space-y-4 flex-1 overflow-y-auto no-scrollbar max-h-[65vh]"><input type="text" value={editingTask.title} onChange={e=>setEditingTask({...editingTask, title:e.target.value})} className="w-full p-4 text-sm font-black"/><div className="grid grid-cols-2 gap-3"><select value={editingTask.area} onChange={e=>setEditingTask({...editingTask, area:e.target.value})} className="w-full p-4 text-[10px] font-black">{areasList.map(a => <option key={a} value={a}>{a}</option>)}</select><input type="date" value={editingTask.date} onChange={e=>setEditingTask({...editingTask, date:e.target.value})} className="w-full p-4 text-[10px] font-black"/></div><input type="url" value={editingTask.videoLink || ''} onChange={e=>setEditingTask({...editingTask, videoLink:e.target.value})} className="w-full p-4 text-[10px] font-black bg-stone-50" placeholder="YouTube URL"/><input type="url" value={editingTask.pdfLink || ''} onChange={e=>setEditingTask({...editingTask, pdfLink:e.target.value})} className="w-full p-4 text-[10px] font-black bg-stone-50" placeholder="Drive URL"/><textarea value={editingTask.description} onChange={e=>setEditingTask({...editingTask, description:e.target.value})} className="w-full p-4 text-xs font-bold h-32 resize-none"></textarea><select value={editingTask.gradeLevel} onChange={e=>setEditingTask({...editingTask, gradeLevel:e.target.value})} className="w-full p-4 text-[10px] font-black">{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select></div>
+                <div className="p-6 bg-stone-50 flex flex-col gap-3"><div className="grid grid-cols-2 gap-3"><button onClick={()=>setEditingTask(null)} className="py-4 bg-stone-200 text-stone-600 font-black rounded-2xl text-[11px] uppercase">Cancelar</button><button onClick={async ()=>{ const publicStatus = editingTask.status === 'draft' ? false : true; await db.collection("agendaEscolar").doc(editingTask.id).update({ ...editingTask, publico: publicStatus }); setEditingTask(null); Swal.fire({icon:'success', title:'Edición Guardada', toast:true, position:'top-end', timer:2000, showConfirmButton:false}); }} className="py-4 bg-stone-800 text-white font-black rounded-2xl text-[11px] uppercase shadow-lg">Guardar Edición</button></div>{(editingTask.status === 'draft' || !editingTask.publico) && (<button onClick={async ()=>{ if(!editingTask.area || !editingTask.date || !editingTask.gradeLevel) return Swal.fire('Error','Grado, Área y Fecha son obligatorios para publicar','warning'); await db.collection("agendaEscolar").doc(editingTask.id).update({ ...editingTask, status: 'published', publico: true, archived: false }); setEditingTask(null); Swal.fire({icon:'success', title:'Tarea Publicada'}); }} className="w-full py-4 bg-emerald-600 text-white font-black rounded-2xl text-[11px] uppercase shadow-lg">Publicar Tarea</button>)}</div>
               </div>
             </div>
           )}
@@ -540,23 +601,8 @@
               <div className="absolute inset-0 bg-stone-900/70 backdrop-blur-md" onClick={()=>setEditingGradeEntry(null)} />
               <div className="relative bg-white w-full max-w-md rounded-[40px] shadow-2xl flex flex-col border-t-[10px] border-[#facc15] overflow-hidden">
                 <div className="p-6 border-b flex justify-between items-center"><h3 className="font-black text-lg uppercase truncate">{editingGradeEntry.nombreEstudiante}</h3><button onClick={()=>setEditingGradeEntry(null)}>✕</button></div>
-                <div className="p-6 space-y-4">
-                  <label className="text-[10px] font-black text-stone-400 uppercase">Actividad:</label>
-                  <input type="text" value={editingGradeEntry.actividad} onChange={e=>setEditingGradeEntry({...editingGradeEntry, actividad: e.target.value})} className="w-full p-4 text-sm font-black bg-stone-50 border-2 border-stone-200 rounded-2xl" />
-                  <label className="text-[10px] font-black text-stone-400 uppercase">Nota:</label>
-                  <input type="text" value={editingGradeEntry.score} onChange={e=>setEditingGradeEntry({...editingGradeEntry, score: e.target.value})} className="w-16 h-12 text-center bg-white border-2 border-stone-400 rounded-xl font-black text-xl"/>
-                </div>
-                <div className="p-6 bg-stone-50 flex gap-3">
-                  <button onClick={()=>setEditingGradeEntry(null)} className="flex-1 py-4 bg-stone-200 rounded-2xl text-[10px] font-black uppercase">Cancelar</button>
-                  <button onClick={async ()=>{
-                    await db.collection("notasAcademicas").doc(editingGradeEntry.id).update({ 
-                        actividad: editingGradeEntry.actividad.trim(),
-                        score: editingGradeEntry.score.replace(',','.'), 
-                        nota: parseFloat(editingGradeEntry.score.replace(',','.'))
-                    });
-                    setEditingGradeEntry(null); Swal.fire({icon:'success', title:'Actualizado', toast:true, position:'top-end', timer:1500});
-                  }} className="flex-[2] py-4 bg-[#064e3b] text-[#facc15] rounded-2xl text-[10px] font-black uppercase shadow-lg">Actualizar</button>
-                </div>
+                <div className="p-6 space-y-4"><label className="text-[10px] font-black text-stone-400 uppercase">Actividad:</label><input type="text" value={editingGradeEntry.actividad} onChange={e=>setEditingGradeEntry({...editingGradeEntry, actividad: e.target.value})} className="w-full p-4 text-sm font-black bg-stone-50 border-2 border-stone-200 rounded-2xl" /><label className="text-[10px] font-black text-stone-400 uppercase">Nota:</label><input type="text" value={editingGradeEntry.score} onChange={e=>setEditingGradeEntry({...editingGradeEntry, score: e.target.value})} className="w-full p-5 text-3xl text-center font-black bg-stone-50 border-2 border-[#064e3b] rounded-2xl"/><label className="text-[10px] font-black text-stone-400 uppercase">Observación:</label><textarea value={editingGradeEntry.observacion || ''} onChange={e=>setEditingGradeEntry({...editingGradeEntry, observacion: e.target.value})} className="w-full p-4 h-24 text-xs font-bold resize-none border-2 border-stone-200 rounded-2xl" placeholder="Observaciones del estudiante..."/></div>
+                <div className="p-6 bg-stone-50 flex gap-3"><button onClick={()=>setEditingGradeEntry(null)} className="flex-1 py-4 bg-stone-200 rounded-2xl text-[10px] font-black uppercase">Cancelar</button><button onClick={async ()=>{ await db.collection("notasAcademicas").doc(editingGradeEntry.id).update({ actividad: editingGradeEntry.actividad.trim(), score: editingGradeEntry.score.replace(',','.'), nota: parseFloat(editingGradeEntry.score.replace(',','.')), observacion: editingGradeEntry.observacion || '' }); setEditingGradeEntry(null); Swal.fire({icon:'success', title:'Actualizado', toast:true, position:'top-end', timer:1500}); }} className="flex-[2] py-4 bg-[#064e3b] text-[#facc15] rounded-2xl text-[10px] font-black uppercase shadow-lg">Actualizar</button></div>
               </div>
             </div>
           )}
