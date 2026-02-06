@@ -86,7 +86,7 @@
       const [agendaItems, setAgendaItems] = useState([]);
       const [assignmentType, setAssignmentType] = useState('group');
       const [selectedGrades, setSelectedGrades] = useState([]);
-      const [newTask, setNewTask] = useState({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '' });
+      const [newTask, setNewTask] = useState({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', publishAt: '' });
       const [editingTask, setEditingTask] = useState(null);
       const [inboxMessages, setInboxMessages] = useState([]);
       const [replyText, setReplyText] = useState({});
@@ -103,6 +103,10 @@
       const [targetStudentDoc, setTargetStudentDoc] = useState('');
       const [noticesList, setNoticesList] = useState([]);
       const [editingNoticeId, setEditingNoticeId] = useState(null);
+
+      // --- ESTADOS PARA FECHAS DE AVISOS ---
+      const [noticePublishAt, setNoticePublishAt] = useState('');
+      const [noticeExpiresAt, setNoticeExpiresAt] = useState('');
 
       const [filterGrade, setFilterGrade] = useState('Quinto');
       const [filterArea, setFilterArea] = useState('MATEMATICAS');
@@ -194,7 +198,10 @@
             fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
             timestamp: new Date().toISOString(),
             archived: false,
-            likes: []
+            likes: [],
+            // FECHAS MANUALES
+            publishAt: noticePublishAt || null,
+            expiresAt: noticeExpiresAt || null
         };
 
         try {
@@ -206,12 +213,15 @@
             }
             Swal.fire({ icon: 'success', title: 'Publicado', toast: true, position: 'top-end', timer: 1500 });
             setNoticeText(''); setNoticeImage(''); setNoticeVideo(''); setNoticeTargets(['Todos']); setTargetStudentDoc(''); setNoticeScope('General');
+            setNoticePublishAt(''); setNoticeExpiresAt('');
         } catch (e) { Swal.fire('Error', 'Error al guardar', 'error'); }
       };
 
       const prepareEditNotice = (n) => {
         setNoticeText(n.mensaje); setNoticeColor(n.color); setNoticeImage(n.imageUrl || ''); setNoticeVideo(n.videoUrl || '');
         setNoticeScope(n.scope || 'General'); setNoticeTargets(n.targetGrades || ['Todos']); setTargetStudentDoc(n.targetStudentDoc || '');
+        setNoticePublishAt(n.publishAt || '');
+        setNoticeExpiresAt(n.expiresAt || '');
         setEditingNoticeId(n.id);
       };
 
@@ -229,8 +239,19 @@
         const isPublished = status === 'published';
         const gradeReady = assignmentType === 'group' ? selectedGrades.length > 0 : !!newTask.gradeLevel;
         if(!gradeReady) return Swal.fire('Error','Debes seleccionar el grado','warning');
+        
         const batch = db.batch();
-        const baseTask = { ...newTask, status, publico: isPublished, archived: false, createdAt: Date.now(), periodo: periodoActual };
+        const baseTask = { 
+            ...newTask, 
+            status, 
+            publico: isPublished, 
+            archived: false, 
+            createdAt: Date.now(), 
+            periodo: periodoActual,
+            publishAt: newTask.publishAt || null 
+        };
+        
+        // 1. Crear Tareas en Agenda
         if(assignmentType === 'group') {
           selectedGrades.forEach(g => {
             const ref = db.collection("agendaEscolar").doc();
@@ -239,10 +260,58 @@
         } else {
           batch.set(db.collection("agendaEscolar").doc(), baseTask);
         }
+
+        // 2. MODIFICACIÓN QUIRÚRGICA: AVISOS AUTOMÁTICOS CON 24H DE EXPIRACIÓN
+        if (isPublished) {
+            const noticeRef = db.collection("tableroAvisos").doc();
+            
+            let autoNoticeScope = 'General';
+            let autoNoticeTargets = [];
+            let autoNoticeStudent = null;
+
+            if (assignmentType === 'group') {
+                autoNoticeScope = 'Grado';
+                autoNoticeTargets = selectedGrades;
+            } else {
+                autoNoticeScope = 'Individual';
+                autoNoticeStudent = newTask.targetStudent;
+            }
+
+            // --- LÓGICA DE TIEMPO AUTOMÁTICA ---
+            const pubDate = newTask.publishAt ? new Date(newTask.publishAt) : new Date();
+            const expDate = new Date(pubDate);
+            expDate.setHours(expDate.getHours() + 24); // EXACTAMENTE 24H DESPUÉS DE LA PUBLICACIÓN
+
+            const autoNoticeData = {
+                mensaje: `Nueva tarea registrada (${newTask.area || 'General'}): “${newTask.title}”. Ingresa a la agenda para ver la descripción completa.`,
+                color: 'blue', 
+                imageUrl: '',
+                videoUrl: newTask.videoLink || '',
+                scope: autoNoticeScope,
+                targetGrades: autoNoticeTargets,
+                targetStudentDoc: autoNoticeStudent,
+                fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
+                timestamp: new Date().toISOString(),
+                archived: false,
+                likes: [],
+                isSystemNotice: true,
+                publishAt: pubDate.toISOString(), // Fecha de inicio
+                expiresAt: expDate.toISOString()  // Fecha de fin automática (24h)
+            };
+            batch.set(noticeRef, autoNoticeData);
+        }
+
         await batch.commit();
-        setNewTask({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '' });
+        setNewTask({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', publishAt: '' });
         setSelectedGrades([]);
-        Swal.fire({icon:'success', title: isPublished ? 'Publicada' : 'Guardada'});
+        Swal.fire({icon:'success', title: isPublished ? (newTask.publishAt ? 'Programada' : 'Publicada y Aviso Creado') : 'Guardada'});
+      };
+
+      const deleteSingleGrade = async (id) => {
+        if((await Swal.fire({title:'¿Eliminar Nota?', text: 'Se eliminará solo este registro.', icon:'warning', showCancelButton:true})).isConfirmed){
+            await db.collection("notasAcademicas").doc(id).delete();
+            Swal.fire({icon:'success', title:'Eliminado', timer:1500, showConfirmButton:false, toast:true, position:'top-end'});
+        }
       };
 
       const saveIndividualGrade = async (en, idx) => {
@@ -369,6 +438,13 @@
                   <input type="url" placeholder="YouTube URL" value={newTask.videoLink} onChange={e=>setNewTask({...newTask,videoLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
                   <input type="url" placeholder="Drive URL" value={newTask.pdfLink} onChange={e=>setNewTask({...newTask,pdfLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
                   <textarea placeholder="Descripción..." value={newTask.description} onChange={e=>setNewTask({...newTask,description:e.target.value})} className="w-full p-4 text-sm font-bold h-24 resize-none"></textarea>
+                  
+                  {/* NUEVO CAMPO DE PROGRAMACIÓN */}
+                  <div className="bg-stone-50 p-3 rounded-xl border border-stone-200">
+                    <label className="block text-[9px] font-black text-stone-500 uppercase mb-2">Programar Publicación (Opcional)</label>
+                    <input type="datetime-local" value={newTask.publishAt} onChange={e=>setNewTask({...newTask, publishAt:e.target.value})} className="w-full p-3 text-[10px] font-black bg-white rounded-lg border border-stone-300"/>
+                  </div>
+
                   <div className="flex gap-2"><button onClick={() => handleAddTask('draft')} className="flex-1 py-4 bg-stone-200 text-stone-600 font-black rounded-2xl text-[11px] uppercase">Borrador</button><button onClick={() => handleAddTask('published')} className="flex-[2] py-4 bg-[#064e3b] text-white font-black rounded-2xl text-[11px] uppercase shadow-lg">Publicar</button></div>
                 </div>
 
@@ -406,6 +482,14 @@
                   }).map(item => (
                     <div key={item.id} className={`earth-card p-5 border-l-[6px] ${item.archived ? 'border-l-stone-400 bg-stone-100 opacity-70' : 'border-l-[#facc15]'}`}>
                       <div className="flex justify-between items-start mb-2"><span className="text-[9px] font-black bg-stone-900 text-white px-2 py-0.5 rounded uppercase">{item.gradeLevel}</span><span className="text-[10px] font-black text-[#064e3b]">{item.date}</span></div>
+                      
+                      {/* INDICADOR VISUAL DE TAREA PROGRAMADA */}
+                      {item.publishAt && new Date(item.publishAt) > new Date() && (
+                          <div className="bg-blue-50 text-blue-700 text-[9px] font-black px-2 py-1 rounded-lg mb-2 inline-flex items-center gap-1 border border-blue-200">
+                              <span>🕒 Programada: {new Date(item.publishAt).toLocaleString()}</span>
+                          </div>
+                      )}
+
                       <h3 className="font-extrabold text-stone-900 text-sm uppercase">{item.title}</h3>
                       <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-stone-100">
                         <button onClick={()=>archiveTask(item)} className="p-2 text-stone-400"><ArchiveIcon size={20}/></button>
@@ -438,7 +522,10 @@
                     <tr key={s.id}>
                       <td><p className="text-xs font-black">{s.nombreEstudiante}</p><p className="text-[9px] text-stone-400">{s.actividad}</p></td>
                       <td className="text-center font-black text-lg">{(s.score||'0').replace('.',',')}</td>
-                      <td className="text-right"><button onClick={()=>setEditingGradeEntry(s)} className="p-2 bg-stone-100 rounded-lg"><EditIcon size={14}/></button></td>
+                      <td className="text-right flex justify-end gap-1">
+                        <button onClick={()=>setEditingGradeEntry(s)} className="p-2 bg-stone-100 rounded-lg"><EditIcon size={14}/></button>
+                        <button onClick={()=>deleteSingleGrade(s.id)} className="p-2 bg-red-50 text-red-500 rounded-lg"><TrashIcon size={14}/></button>
+                      </td>
                     </tr>
                   ))}</tbody>
                 </table></div>
@@ -537,6 +624,18 @@
                                 })}
                             </select>
                         )}
+                    </div>
+                    
+                    {/* SECCIÓN QUIRÚRGICA: FECHAS */}
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                        <div className="bg-stone-50 p-2 rounded-xl border border-stone-200">
+                            <label className="block text-[8px] font-black text-stone-500 uppercase">Publicar</label>
+                            <input type="datetime-local" value={noticePublishAt} onChange={e=>setNoticePublishAt(e.target.value)} className="w-full text-[9px] font-black bg-transparent border-none p-0 focus:ring-0"/>
+                        </div>
+                        <div className="bg-stone-50 p-2 rounded-xl border border-stone-200">
+                            <label className="block text-[8px] font-black text-stone-500 uppercase">Expirar/Eliminar</label>
+                            <input type="datetime-local" value={noticeExpiresAt} onChange={e=>setNoticeExpiresAt(e.target.value)} className="w-full text-[9px] font-black bg-transparent border-none p-0 focus:ring-0"/>
+                        </div>
                     </div>
 
                     <div className="flex gap-2 mt-2">
