@@ -182,7 +182,6 @@
         }
       };
 
-      // AJUSTE DE PRIVACIDAD EN PUBLICACIÓN
       const handlePublishNotice = async () => {
         if(!noticeText.trim() && !noticeImage) return Swal.fire('Error', 'Escribe o sube foto', 'warning');
         if(noticeScope === 'Individual' && !targetStudentDoc) return Swal.fire('Error', 'Selecciona un estudiante', 'warning');
@@ -378,6 +377,7 @@
                   <div className="flex gap-2 bg-stone-100 p-1 rounded-2xl">
                     <button onClick={()=>setAgendaTab('published')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl ${agendaTab==='published'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Publicadas</button>
                     <button onClick={()=>setAgendaTab('draft')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl ${agendaTab==='draft'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Borradores</button>
+                    <button onClick={()=>setAgendaTab('archived')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl ${agendaTab==='archived'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Archivadas</button>
                   </div>
                   
                   {/* BARRA DE FILTROS RESTAURADA */}
@@ -394,22 +394,23 @@
                   </div>
 
                   {agendaItems.filter(item => {
-                    let show = false;
-                    if (agendaTab === 'draft') show = item.status === 'draft' && !item.archived;
-                    else show = item.status !== 'draft' && !item.archived;
-                    
-                    if (show && agendaFilterGrade && item.gradeLevel !== agendaFilterGrade) show = false;
-                    if (show && agendaFilterArea && item.area !== agendaFilterArea) show = false;
-                    if (show && agendaFilterDate && item.date !== agendaFilterDate) show = false;
+                    if (agendaTab === 'archived') return item.archived;
+                    if (agendaTab === 'draft') return item.status === 'draft' && !item.archived;
+                    return item.status !== 'draft' && !item.archived;
+                  }).filter(item => {
+                    let show = true;
+                    if (agendaFilterGrade && item.gradeLevel !== agendaFilterGrade) show = false;
+                    if (agendaFilterArea && item.area !== agendaFilterArea) show = false;
+                    if (agendaFilterDate && item.date !== agendaFilterDate) show = false;
                     return show;
                   }).map(item => (
-                    <div key={item.id} className="earth-card p-5 border-l-[6px] border-l-[#facc15]">
+                    <div key={item.id} className={`earth-card p-5 border-l-[6px] ${item.archived ? 'border-l-stone-400 bg-stone-100 opacity-70' : 'border-l-[#facc15]'}`}>
                       <div className="flex justify-between items-start mb-2"><span className="text-[9px] font-black bg-stone-900 text-white px-2 py-0.5 rounded uppercase">{item.gradeLevel}</span><span className="text-[10px] font-black text-[#064e3b]">{item.date}</span></div>
                       <h3 className="font-extrabold text-stone-900 text-sm uppercase">{item.title}</h3>
                       <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-stone-100">
                         <button onClick={()=>archiveTask(item)} className="p-2 text-stone-400"><ArchiveIcon size={20}/></button>
                         <button onClick={()=>setEditingTask(item)} className="p-2 text-stone-400"><EditIcon size={20}/></button>
-                        <button onClick={()=>db.collection("agendaEscolar").doc(item.id).delete()} className="p-2 text-stone-400"><TrashIcon size={20}/></button>
+                        <button onClick={async ()=>{ if((await Swal.fire({title:'¿Eliminar?', icon:'warning', showCancelButton:true})).isConfirmed) db.collection("agendaEscolar").doc(item.id).delete(); }} className="p-2 text-stone-400"><TrashIcon size={20}/></button>
                       </div>
                     </div>
                   ))}
@@ -446,9 +447,19 @@
 
             {view === 'mailbox' && (
               <div className="space-y-4">
-                {inboxMessages.map(m => (
-                  <div key={m.id} className="earth-card p-5 border-r-[6px] border-r-[#facc15]">
-                    <div className="mb-2"><p className="text-[10px] font-black text-[#064e3b] uppercase">{m.studentName}</p><p className="text-[9px] font-bold text-stone-400">{m.taskTitle}</p></div>
+                <div className="flex gap-2 mb-2 bg-stone-100 p-1 rounded-2xl">
+                    <button onClick={()=>setMailboxTab('active')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl ${mailboxTab==='active'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Recibidos</button>
+                    <button onClick={()=>setMailboxTab('archived')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl ${mailboxTab==='archived'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Archivados</button>
+                </div>
+                {inboxMessages.filter(m => mailboxTab === 'active' ? !m.archived : m.archived).map(m => (
+                  <div key={m.id} className={`earth-card p-5 border-r-[6px] ${m.archived ? 'border-r-stone-400 bg-stone-50' : 'border-r-[#facc15]'}`}>
+                    <div className="mb-2 flex justify-between">
+                        <div><p className="text-[10px] font-black text-[#064e3b] uppercase">{m.studentName}</p><p className="text-[9px] font-bold text-stone-400">{m.taskTitle}</p></div>
+                        <div className="flex gap-1">
+                            {!m.archived ? <button onClick={async ()=>await db.collection("mensajesAgenda").doc(m.id).update({ archived: true })} className="p-2 bg-stone-100 rounded-lg"><ArchiveIcon size={14}/></button> : <button onClick={async ()=>await db.collection("mensajesAgenda").doc(m.id).update({ archived: false })} className="p-2 bg-emerald-100 text-emerald-700 rounded-lg"><RestoreIcon size={14}/></button>}
+                            <button onClick={async ()=>{ if((await Swal.fire({title:'¿Eliminar?', icon:'warning', showCancelButton:true})).isConfirmed) await db.collection("mensajesAgenda").doc(m.id).delete(); }} className="p-2 bg-red-50 text-red-400 rounded-lg"><TrashIcon size={14}/></button>
+                        </div>
+                    </div>
                     <div className="flex flex-col gap-2 mb-4">{m.conversacion && m.conversacion.map((chat, idx) => (<div key={idx} className={`chat-bubble ${chat.rol === 'docente' ? 'docente' : 'user'}`}>{chat.texto}</div>))}</div>
                     <div className="flex gap-2">
                       <input type="text" placeholder="Responder..." value={replyText[m.id]||''} onChange={e=>setReplyText({...replyText,[m.id]:e.target.value})} className="flex-1 px-4 text-xs font-black"/>
@@ -600,8 +611,20 @@
               <div className="absolute inset-0 bg-stone-900/70" onClick={()=>setEditingGradeEntry(null)} />
               <div className="relative bg-white w-full max-w-md rounded-[40px] p-6 border-t-[10px] border-[#facc15]">
                 <h3 className="font-black mb-4 uppercase">{editingGradeEntry.nombreEstudiante}</h3>
+                {/* CAMPO DE NOTA RESTAURADO */}
                 <input type="text" value={editingGradeEntry.score} onChange={e=>setEditingGradeEntry({...editingGradeEntry, score: e.target.value})} className="w-full p-5 text-3xl text-center font-black border-2 border-[#064e3b] rounded-2xl mb-4"/>
-                <button onClick={async ()=>{ await db.collection("notasAcademicas").doc(editingGradeEntry.id).update({ score: editingGradeEntry.score, nota: parseFloat(editingGradeEntry.score.replace(',','.')) }); setEditingGradeEntry(null); }} className="w-full py-4 bg-[#064e3b] text-[#facc15] rounded-2xl font-black uppercase">Actualizar Nota</button>
+                
+                {/* CAMPO DE OBSERVACIÓN (RESTAURADO/AÑADIDO COMO SOLICITASTE) */}
+                <textarea value={editingGradeEntry.observacion || ''} onChange={e=>setEditingGradeEntry({...editingGradeEntry, observacion: e.target.value})} className="w-full p-3 border-2 border-stone-200 rounded-2xl mb-4 h-24 resize-none" placeholder="Editar observación..."></textarea>
+                
+                <button onClick={async ()=>{ 
+                    await db.collection("notasAcademicas").doc(editingGradeEntry.id).update({ 
+                        score: editingGradeEntry.score, 
+                        nota: parseFloat(editingGradeEntry.score.replace(',','.')),
+                        observacion: editingGradeEntry.observacion || '' 
+                    }); 
+                    setEditingGradeEntry(null); 
+                }} className="w-full py-4 bg-[#064e3b] text-[#facc15] rounded-2xl font-black uppercase">Actualizar Nota y Observación</button>
               </div>
             </div>
           )}
