@@ -33,8 +33,7 @@
     .chat-bubble { max-width: 85%; padding: 10px; border-radius: 14px; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
     .chat-bubble.user { background: #f3f4f6; color: #1f2937; border: 1px solid #e5e7eb; border-bottom-left-radius: 2px; }
     .chat-bubble.docente { background: var(--dark-green); color: var(--vibrant-yellow); align-self: flex-end; border-bottom-right-radius: 2px; }
-    /* Estilo para botón deshabilitado */
-    button:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+    button:disabled { opacity: 0.6; cursor: progress; }
   </style>
 </head>
 
@@ -53,12 +52,12 @@
     const db = firebase.firestore();
 
     const Icon = ({ children, size = 24, className = "" }) => ( <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg> );
-    const Home = (p)=><Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
+    const Home = (p)=><Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
     const Book = (p)=><Icon {...p}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></Icon>;
     const Plus = (p)=><Icon {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Icon>;
     const MessageCircle = (p)=><Icon {...p}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></Icon>;
     const Database = (p)=><Icon {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></Icon>;
-    const Settings = (p)=><Icon {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></Icon>;
+    const Settings = (p)=><Icon {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></Icon>;
     const EditIcon = (p)=><Icon {...p}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></Icon>;
     const TrashIcon = (p)=><Icon {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1-2-2h4a2 2 0 0 1 2 2v2"/></Icon>;
     const Send = (p)=><Icon {...p}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Icon>;
@@ -80,7 +79,7 @@
       const [studentLists, setStudentLists] = useState({});
       const [periodoActual, setPeriodoActual] = useState(1);
       const [periodoVisualizacion, setPeriodoVisualizacion] = useState(1);
-      const [isSaving, setIsSaving] = useState(false); // CANDADO ANTI-DOBLE CLICK
+      const [isSaving, setIsSaving] = useState(false);
       
       const [isFormOpen, setIsFormOpen] = useState(false);
       const [isConfigOpen, setIsConfigOpen] = useState(false);
@@ -189,7 +188,7 @@
       };
 
       const handlePublishNotice = async () => {
-        if(isSaving) return; // BLOQUEO
+        if(isSaving) return;
         if(!noticeText.trim() && !noticeImage) return Swal.fire('Error', 'Escribe o sube foto', 'warning');
         if(noticeScope === 'Individual' && !targetStudentDoc) return Swal.fire('Error', 'Selecciona un estudiante', 'warning');
         
@@ -284,7 +283,7 @@
       };
 
       const handleAddTask = async (status = 'published') => {
-        if(isSaving) return; // BLOQUEO
+        if(isSaving) return;
         const isPublished = status === 'published';
         const gradeReady = assignmentType === 'group' ? selectedGrades.length > 0 : !!newTask.gradeLevel;
         if(!gradeReady) return Swal.fire('Error','Debes seleccionar el grado','warning');
@@ -610,6 +609,7 @@
                   <div key={s.id} className="earth-card p-5 flex justify-between items-center">
                     <div className="min-w-0 pr-4">
                       <div className="flex gap-2 mb-1">
+                        {/* RÓTULOS ÁREA EN HISTORIAL */}
                         <span className="text-[9px] font-black bg-stone-100 px-2 py-0.5 rounded uppercase">{s.gradeLevel}</span>
                         <span className="text-[9px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded uppercase">{s.area}</span>
                       </div>
@@ -970,7 +970,7 @@
             </div>
           )}
 
-          {/* EDITING MODALS (Restaurados) */}
+          {/* EDITING MODALS (CORREGIDO: Selector de Grado y Estudiante) */}
           {editingTask && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-stone-900/80" onClick={()=>setEditingTask(null)} />
@@ -979,15 +979,29 @@
                 <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-2">
                         <div>
+                            <label className="text-[9px] font-black text-stone-400 uppercase">Grado</label>
+                            <select value={editingTask.gradeLevel || 'Quinto'} onChange={e=>setEditingTask({...editingTask, gradeLevel:e.target.value, targetStudent: ''})} className="w-full p-3 text-xs font-black">
+                                {gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}
+                            </select>
+                        </div>
+                        <div>
                             <label className="text-[9px] font-black text-stone-400 uppercase">Área</label>
                             <select value={editingTask.area} onChange={e=>setEditingTask({...editingTask, area:e.target.value})} className="w-full p-3 text-xs font-black">
                                 {areasList.map(a => <option key={a} value={a}>{a}</option>)}
                             </select>
                         </div>
-                        <div>
-                            <label className="text-[9px] font-black text-stone-400 uppercase">Fecha Entrega</label>
-                            <input type="date" value={editingTask.date} onChange={e=>setEditingTask({...editingTask, date:e.target.value})} className="w-full p-3 text-xs font-black"/>
-                        </div>
+                    </div>
+                    {/* NUEVO: SELECTOR DE ESTUDIANTE EN EDICIÓN */}
+                    <div>
+                        <label className="text-[9px] font-black text-stone-400 uppercase">Asignar a (Opcional)</label>
+                        <select value={editingTask.targetStudent || ''} onChange={e=>setEditingTask({...editingTask, targetStudent:e.target.value})} className="w-full p-3 text-xs font-black bg-stone-50">
+                            <option value="">Todos (Grupal)</option>
+                            {(studentLists[editingTask.gradeLevel || 'Quinto'] || []).map(name => <option key={name.split(' - ')[1]} value={name.split(' - ')[1]}>{name.split(' - ')[0]}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="text-[9px] font-black text-stone-400 uppercase">Fecha Entrega</label>
+                        <input type="date" value={editingTask.date} onChange={e=>setEditingTask({...editingTask, date:e.target.value})} className="w-full p-3 text-xs font-black"/>
                     </div>
                     <div>
                         <label className="text-[9px] font-black text-stone-400 uppercase">Título de la Actividad</label>
@@ -1014,7 +1028,7 @@
             </div>
           )}
 
-          {/* MODAL NOTA INDIVIDUAL (CON ALERTA EN EDICIÓN) */}
+          {/* MODAL NOTA INDIVIDUAL (CON ALERTA EN EDICIÓN Y EDICIÓN COMPLETA) */}
           {editingGradeEntry && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-stone-900/70" onClick={()=>setEditingGradeEntry(null)} />
@@ -1028,46 +1042,51 @@
                 <textarea value={editingGradeEntry.observacion || ''} onChange={e=>setEditingGradeEntry({...editingGradeEntry, observacion: e.target.value})} className="w-full p-3 border-2 border-stone-200 rounded-2xl mb-4 h-24 resize-none" placeholder="Editar observación..."></textarea>
                 
                 <button onClick={async ()=>{ 
-                    // LÓGICA DE RECUPERACIÓN + ALERTA EN EDICIÓN
-                    const newNota = parseFloat(editingGradeEntry.score.replace(',','.'));
-                    const isJustRecovered = editingGradeEntry.originalNota < 3 && newNota >= 3;
-                    const isRecovery = isJustRecovered || editingGradeEntry.recuperada;
+                    if(isSaving) return;
+                    setIsSaving(true);
+                    try {
+                        // LÓGICA DE RECUPERACIÓN + ALERTA EN EDICIÓN
+                        const newNota = parseFloat(editingGradeEntry.score.replace(',','.'));
+                        const isJustRecovered = editingGradeEntry.originalNota < 3 && newNota >= 3;
+                        const isRecovery = isJustRecovered || editingGradeEntry.recuperada;
 
-                    const updateData = {
-                        actividad: editingGradeEntry.actividad,
-                        score: editingGradeEntry.score,
-                        nota: newNota,
-                        observacion: editingGradeEntry.observacion || '',
-                        recuperada: isRecovery
-                    };
+                        const updateData = {
+                            actividad: editingGradeEntry.actividad,
+                            score: editingGradeEntry.score,
+                            nota: newNota,
+                            observacion: editingGradeEntry.observacion || '', // Asegura guardar observación actualizada
+                            recuperada: isRecovery
+                        };
 
-                    if(isJustRecovered) {
-                        updateData.notaAnterior = editingGradeEntry.originalNota;
-                    }
+                        if(isJustRecovered) {
+                            updateData.notaAnterior = editingGradeEntry.originalNota;
+                        }
 
-                    await db.collection("notasAcademicas").doc(editingGradeEntry.id).update(updateData);
+                        await db.collection("notasAcademicas").doc(editingGradeEntry.id).update(updateData);
 
-                    // --- NUEVA LÓGICA QUIRÚRGICA: ALERTA AL EDITAR SI BAJA DE 3.0 ---
-                    if (newNota < 3.0) {
-                        await db.collection("tableroAvisos").add({
-                            mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${editingGradeEntry.area}\n📝 ACTIVIDAD: ${editingGradeEntry.actividad}\n📉 NOTA: ${newNota}\n\nPor favor revisar la sección de Alertas dentro de Pizarra Escolar para ampliar la información.`,
-                            color: 'red',
-                            imageUrl: "https://cdn-icons-png.flaticon.com/512/564/564619.png", // IMAGEN ESTABLE
-                            videoUrl: "",
-                            scope: 'Individual',
-                            targetGrades: [],
-                            targetStudentDoc: editingGradeEntry.documentoEstudiante,
-                            fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
-                            timestamp: new Date().toISOString(),
-                            archived: false,
-                            likes: [],
-                            isSystemNotice: false 
-                        });
-                    }
-                    // ----------------------------------------------------------------
+                        // --- NUEVA LÓGICA QUIRÚRGICA: ALERTA AL EDITAR SI BAJA DE 3.0 ---
+                        if (newNota < 3.0) {
+                            await db.collection("tableroAvisos").add({
+                                mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${editingGradeEntry.area}\n📝 ACTIVIDAD: ${editingGradeEntry.actividad}\n📉 NOTA: ${newNota}\n\nPor favor revisar la sección de Alertas dentro de Pizarra Escolar para ampliar la información.`,
+                                color: 'red',
+                                imageUrl: "https://cdn-icons-png.flaticon.com/512/564/564619.png", // IMAGEN ESTABLE
+                                videoUrl: "",
+                                scope: 'Individual',
+                                targetGrades: [],
+                                targetStudentDoc: editingGradeEntry.documentoEstudiante,
+                                fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
+                                timestamp: new Date().toISOString(),
+                                archived: false,
+                                likes: [],
+                                isSystemNotice: false 
+                            });
+                        }
+                        // ----------------------------------------------------------------
 
-                    setEditingGradeEntry(null); 
-                }} className="w-full py-4 bg-[#064e3b] text-[#facc15] rounded-2xl font-black uppercase">Actualizar Nota y Observación</button>
+                        setEditingGradeEntry(null); 
+                    } catch(e) { Swal.fire('Error', 'No se pudo actualizar', 'error'); }
+                    finally { setIsSaving(false); }
+                }} disabled={isSaving} className="w-full py-4 bg-[#064e3b] text-[#facc15] rounded-2xl font-black uppercase">Actualizar Nota y Observación</button>
               </div>
             </div>
           )}
