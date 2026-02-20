@@ -390,36 +390,38 @@
         }
       };
 
+      // MODIFICADO PARA EVITAR DUPLICADOS USANDO ID DETERMINÍSTICO
       const saveIndividualGrade = async (en, idx) => {
         if(isSaving) return;
-        if (!batchData.area) return Swal.fire('Error', 'Debe seleccionar un Área', 'warning');
+        if (!batchData.area || !batchData.actividad) return Swal.fire('Error', 'Área y Actividad obligatorias', 'warning');
         
         setIsSaving(true);
         try {
-            const nameParts = en.name.lastIndexOf(" - ");
+            const posIdx = en.name.lastIndexOf(" - ");
+            const docEstudiante = en.name.slice(posIdx + 3).trim();
+            const nombreEstudiante = en.name.slice(0, posIdx).trim();
             const finalNota = parseFloat(en.score.replace(',', '.'));
+            
+            // GENERACIÓN DE ID ÚNICO: PERIODO_GRADO_AREA_ACTIVIDAD_DOCUMENTO
+            const customDocId = `${periodoActual}_${batchData.gradeLevel}_${batchData.area}_${batchData.actividad.trim().replace(/\s+/g, '_')}_${docEstudiante}`;
+
             const studentObj = {
-            gradeLevel: batchData.gradeLevel, area: batchData.area, actividad: batchData.actividad.trim(),
-            name: en.name, nombreEstudiante: en.name.slice(0, nameParts).trim(), documentoEstudiante: en.name.slice(nameParts + 3).trim(),
-            score: en.score.replace(',', '.'), nota: finalNota,
-            observacion: en.observation || '', periodo: periodoActual || 1, createdAt: Date.now()
+                gradeLevel: batchData.gradeLevel, area: batchData.area, actividad: batchData.actividad.trim(),
+                name: en.name, nombreEstudiante: nombreEstudiante, documentoEstudiante: docEstudiante,
+                score: en.score.replace(',', '.'), nota: finalNota,
+                observacion: en.observation || '', periodo: periodoActual || 1, createdAt: Date.now()
             };
-            await db.collection("notasAcademicas").add(studentObj);
+            
+            // USAR SET CON MERGE PARA EVITAR DUPLICADOS
+            await db.collection("notasAcademicas").doc(customDocId).set(studentObj, { merge: true });
             
             if (finalNota < 3.0) {
                 await db.collection("tableroAvisos").add({
                     mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${studentObj.area}\n📝 ACTIVIDAD: ${studentObj.actividad}\n📉 NOTA: ${finalNota}\n\nPor favor revisar la sección de Alertas dentro de Pizarra Escolar para ampliar la información.`,
-                    color: 'red',
-                    imageUrl: URL_IMAGEN_ALERTA, 
-                    videoUrl: "",
-                    scope: 'Individual', // PRIVADO
-                    targetGrades: [],
-                    targetStudentDoc: studentObj.documentoEstudiante, // SOLO PARA ESTE ESTUDIANTE
+                    color: 'red', imageUrl: URL_IMAGEN_ALERTA, videoUrl: "",
+                    scope: 'Individual', targetGrades: [], targetStudentDoc: docEstudiante,
                     fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
-                    timestamp: new Date().toISOString(),
-                    archived: false,
-                    likes: [],
-                    isSystemNotice: false 
+                    timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false 
                 });
             }
 
@@ -428,44 +430,40 @@
         finally { setIsSaving(false); }
       };
 
+      // MODIFICADO PARA EVITAR DUPLICADOS EN GUARDADO MASIVO
       const saveGrades = async () => {
         if(isSaving) return;
-        if (!batchData.area) return Swal.fire('Error', 'Debe seleccionar un Área', 'warning');
+        if (!batchData.area || !batchData.actividad) return Swal.fire('Error', 'Área y Actividad obligatorias', 'warning');
 
         setIsSaving(true);
         try {
             const valid = batchData.entries.filter(e => e.score !== '');
             const batch = db.batch();
             valid.forEach(en => {
-            const idx = en.name.lastIndexOf(" - ");
-            const finalNota = parseFloat(en.score.replace(',','.'));
-            const docEstudiante = en.name.slice(idx+3).trim();
-            const nombreEstudiante = en.name.slice(0,idx).trim();
-            
-            batch.set(db.collection("notasAcademicas").doc(), {
-                gradeLevel: batchData.gradeLevel, area: batchData.area, actividad: batchData.actividad.trim(),
-                name: en.name, nombreEstudiante: nombreEstudiante, documentoEstudiante: docEstudiante,
-                score: en.score.replace(',','.'), nota: finalNota,
-                observacion: en.observation || '', periodo: periodoActual || 1, createdAt: Date.now()
-            });
+                const idx = en.name.lastIndexOf(" - ");
+                const finalNota = parseFloat(en.score.replace(',','.'));
+                const docEstudiante = en.name.slice(idx+3).trim();
+                const nombreEstudiante = en.name.slice(0,idx).trim();
+                
+                const customDocId = `${periodoActual}_${batchData.gradeLevel}_${batchData.area}_${batchData.actividad.trim().replace(/\s+/g, '_')}_${docEstudiante}`;
 
-            if (finalNota < 3.0) {
-                const noticeRef = db.collection("tableroAvisos").doc();
-                batch.set(noticeRef, {
-                    mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${batchData.area}\n📝 ACTIVIDAD: ${batchData.actividad}\n📉 NOTA: ${finalNota}\n\nPor favor revisar la sección de Alertas dentro de Pizarra Escolar para ampliar la información.`,
-                    color: 'red',
-                    imageUrl: URL_IMAGEN_ALERTA,
-                    videoUrl: "",
-                    scope: 'Individual',
-                    targetGrades: [],
-                    targetStudentDoc: docEstudiante,
-                    fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
-                    timestamp: new Date().toISOString(),
-                    archived: false,
-                    likes: [],
-                    isSystemNotice: false
-                });
-            }
+                batch.set(db.collection("notasAcademicas").doc(customDocId), {
+                    gradeLevel: batchData.gradeLevel, area: batchData.area, actividad: batchData.actividad.trim(),
+                    name: en.name, nombreEstudiante: nombreEstudiante, documentoEstudiante: docEstudiante,
+                    score: en.score.replace(',','.'), nota: finalNota,
+                    observacion: en.observation || '', periodo: periodoActual || 1, createdAt: Date.now()
+                }, { merge: true });
+
+                if (finalNota < 3.0) {
+                    const noticeRef = db.collection("tableroAvisos").doc();
+                    batch.set(noticeRef, {
+                        mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${batchData.area}\n📝 ACTIVIDAD: ${batchData.actividad}\n📉 NOTA: ${finalNota}\n\nPor favor revisar la sección de Alertas dentro de Pizarra Escolar para ampliar la información.`,
+                        color: 'red', imageUrl: URL_IMAGEN_ALERTA, videoUrl: "",
+                        scope: 'Individual', targetGrades: [], targetStudentDoc: docEstudiante,
+                        fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
+                        timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false
+                    });
+                }
             });
             await batch.commit();
             setIsFormOpen(false);
@@ -609,7 +607,6 @@
                   <div key={s.id} className="earth-card p-5 flex justify-between items-center">
                     <div className="min-w-0 pr-4">
                       <div className="flex gap-2 mb-1">
-                        {/* RÓTULOS ÁREA EN HISTORIAL */}
                         <span className="text-[9px] font-black bg-stone-100 px-2 py-0.5 rounded uppercase">{s.gradeLevel}</span>
                         <span className="text-[9px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded uppercase">{s.area}</span>
                       </div>
@@ -681,20 +678,11 @@
                      <input type="date" value={agendaFilterDate} onChange={e=>setAgendaFilterDate(e.target.value)} className="w-full p-2 text-[9px] font-black border-none bg-white rounded-xl shadow-sm col-span-2 md:col-span-1" />
                   </div>
 
-                  {/* LÓGICA DE FILTRADO REVISADA Y CORRECTA */}
                   {agendaItems.filter(item => {
-                    const expired = isExpired(item.date); // Tarea vencida?
-
-                    if (agendaTab === 'archived') {
-                        // Muestra si está archivada manualmente O si ya venció (automática)
-                        return item.archived || (item.status !== 'draft' && expired);
-                    }
-                    if (agendaTab === 'draft') {
-                        return item.status === 'draft' && !item.archived;
-                    }
-                    // Published: No archivada manual Y no vencida
+                    const expired = isExpired(item.date); 
+                    if (agendaTab === 'archived') return item.archived || (item.status !== 'draft' && expired);
+                    if (agendaTab === 'draft') return item.status === 'draft' && !item.archived;
                     return item.status !== 'draft' && !item.archived && !expired;
-
                   }).filter(item => {
                     let show = true;
                     if (agendaFilterGrade && item.gradeLevel !== agendaFilterGrade) show = false;
@@ -707,7 +695,6 @@
                         <div className="flex flex-wrap gap-1">
                             <span className="text-[8px] font-black bg-stone-900 text-white px-2 py-0.5 rounded uppercase">{item.gradeLevel}</span>
                             <span className="text-[8px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded uppercase">{item.area}</span>
-                            {/* ICONOS DRIVE Y YOUTUBE REFORZADOS */}
                             {item.videoLink && <span className="text-[8px] font-black bg-red-100 text-red-600 px-1.5 py-0.5 rounded flex items-center gap-1"><VideoIcon size={8}/> VIDEO</span>}
                             {item.pdfLink && <span className="text-[8px] font-black bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded flex items-center gap-1"><FileText size={8}/> DRIVE</span>}
                         </div>
@@ -722,7 +709,6 @@
 
                       <h3 className="font-extrabold text-stone-900 text-sm uppercase">{item.title}</h3>
                       <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-stone-100">
-                        {/* LÓGICA DE BOTONES INTELIGENTE */}
                         {item.status === 'draft' ? (
                             <button onClick={()=>publishDraft(item)} disabled={isSaving} className="p-2 text-blue-600 bg-blue-50 rounded-lg" title="Publicar Borrador"><Send size={20}/></button>
                         ) : (
@@ -732,7 +718,6 @@
                                 <button onClick={()=>archiveTask(item)} disabled={isSaving} className="p-2 text-stone-400" title="Archivar"><ArchiveIcon size={20}/></button>
                             )
                         )}
-                        
                         <button onClick={()=>setEditingTask(item)} className="p-2 text-stone-400"><EditIcon size={20}/></button>
                         <button onClick={async ()=>{ if((await Swal.fire({title:'¿Eliminar?', icon:'warning', showCancelButton:true})).isConfirmed) db.collection("agendaEscolar").doc(item.id).delete(); }} className="p-2 text-stone-400"><TrashIcon size={20}/></button>
                       </div>
@@ -747,43 +732,66 @@
                 <div className="earth-card p-4 space-y-3 bg-stone-50">
                   <div className="grid grid-cols-2 gap-2">
                     <select value={filterGrade} onChange={e=>{setFilterGrade(e.target.value); setFilterStudent('');}} className="p-3 text-xs font-black">{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select>
-                    
-                    {/* MODIFICACIÓN: SELECTOR DE ÁREA CON OPCIÓN "SIN ÁREA" */}
                     <select value={filterArea} onChange={e=>setFilterArea(e.target.value)} className="p-3 text-xs font-black">
                         <option value="">Seleccionar Área...</option>
-                        <option value="SIN_AREA">⚠️ SIN ÁREA (ERRORES/HUÉRFANOS)</option>
+                        <option value="SIN_AREA">⚠️ SIN ÁREA</option>
                         {areasList.map(a => <option key={a} value={a}>{a}</option>)}
                     </select>
-                    {/* --------------------------------------------------- */}
-
                   </div>
                   <select value={filterStudent} onChange={e=>setFilterStudent(e.target.value)} className="w-full p-3 text-xs font-black"><option value="">Todos los Estudiantes...</option>{(studentLists[filterGrade] || []).map(name => <option key={name.split(' - ')[1]} value={name.split(' - ')[1]}>{name.split(' - ')[0]}</option>)}</select>
                   <select value={filterActivity} onChange={e=>setFilterActivity(e.target.value)} className="w-full p-3 text-xs font-black"><option value="">Todas las Actividades...</option>{currentActivities.map(act => <option key={act} value={act}>{act}</option>)}</select>
                   <div className="grid grid-cols-2 gap-2">
                     <button onClick={generateReportPDF} className="p-4 bg-[#064e3b] text-[#facc15] font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95"><FileText size={16}/> DESCARGAR PDF</button>
                     <button onClick={generateObservationsPDF} className="p-4 bg-stone-700 text-white font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95"><FileText size={16}/> PDF OBS./ALERTAS</button>
-                    
                     <button onClick={generateStudentReportPDF} className="p-4 bg-blue-800 text-white font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 col-span-2 md:col-span-1"><FileText size={16}/> PDF ESTUDIANTE</button>
-                    
                     <button onClick={async ()=>{ if(!filterActivity) return; if((await Swal.fire({title:'¿Borrar Actividad?', icon:'warning', showCancelButton:true})).isConfirmed){ const b = db.batch(); filteredRecords.forEach(r => b.delete(db.collection("notasAcademicas").doc(r.id))); await b.commit(); setFilterActivity(''); } }} className="p-4 bg-red-800 text-white font-black text-[10px] uppercase rounded-xl shadow-lg active:scale-95">BORRAR ACTIVIDAD</button>
                   </div>
                 </div>
-                <div className="overflow-x-auto"><table className="table-earth">
-                  <thead><tr><th>Estudiante</th><th className="text-center">Nota</th><th className="text-right">Acción</th></tr></thead>
-                  <tbody>{filteredRecords.map(s => (
-                    <tr key={s.id}>
-                      <td><p className="text-xs font-black">{s.nombreEstudiante}</p><p className="text-[9px] text-stone-400">{s.actividad}</p></td>
-                      <td className="text-center font-black text-lg">
-                        {(s.score||'0').replace('.',',')}
-                        {s.recuperada && <span className="block text-[8px] text-red-600 font-bold">(Recuperó)</span>}
-                      </td>
-                      <td className="text-right flex justify-end gap-1">
-                        <button onClick={()=>setEditingGradeEntry({...s, originalNota: parseFloat(s.score.replace(',','.'))})} className="p-2 bg-stone-100 rounded-lg"><EditIcon size={14}/></button>
-                        <button onClick={()=>deleteSingleGrade(s.id)} className="p-2 bg-red-50 text-red-500 rounded-lg"><TrashIcon size={14}/></button>
-                      </td>
-                    </tr>
-                  ))}</tbody>
-                </table></div>
+                
+                <div className="overflow-x-auto">
+                    <table className="table-earth">
+                        <thead><tr><th>Estudiante</th><th className="text-center">Nota</th><th className="text-right">Acción</th></tr></thead>
+                        <tbody>
+                            {(studentLists[filterGrade] || []).map(studentNameDoc => {
+                                const [name, doc] = studentNameDoc.split(' - ');
+                                const record = filteredRecords.find(r => r.documentoEstudiante === doc);
+                                
+                                // SI HAY RECORD, MOSTRAR NORMAL
+                                if (record) {
+                                    return (
+                                        <tr key={record.id}>
+                                            <td><p className="text-xs font-black">{record.nombreEstudiante}</p><p className="text-[9px] text-stone-400">{record.actividad}</p></td>
+                                            <td className="text-center font-black text-lg">
+                                                {(record.score||'0').replace('.',',')}
+                                                {record.recuperada && <span className="block text-[8px] text-red-600 font-bold">(Recuperó)</span>}
+                                            </td>
+                                            <td className="text-right flex justify-end gap-1">
+                                                <button onClick={()=>setEditingGradeEntry({...record, originalNota: parseFloat(record.score.replace(',','.'))})} className="p-2 bg-stone-100 rounded-lg"><EditIcon size={14}/></button>
+                                                <button onClick={()=>deleteSingleGrade(record.id)} className="p-2 bg-red-50 text-red-500 rounded-lg"><TrashIcon size={14}/></button>
+                                            </td>
+                                        </tr>
+                                    );
+                                } 
+                                // SI NO HAY RECORD Y HAY ACTIVIDAD SELECCIONADA, MOSTRAR PENDIENTE
+                                else if (filterActivity) {
+                                    return (
+                                        <tr key={doc} className="opacity-60 bg-stone-50">
+                                            <td><p className="text-xs font-black text-stone-400">{name}</p><p className="text-[8px] font-bold text-red-500 uppercase tracking-tighter">⚠️ Pendiente de nota</p></td>
+                                            <td className="text-center text-stone-300 font-black">-,-</td>
+                                            <td className="text-right">
+                                                <button onClick={() => setEditingGradeEntry({ 
+                                                    id: `${periodoActual}_${filterGrade}_${filterArea}_${filterActivity.trim().replace(/\s+/g, '_')}_${doc}`,
+                                                    nombreEstudiante: name, documentoEstudiante: doc, gradeLevel: filterGrade, area: filterArea, actividad: filterActivity, score: '', observacion: '', originalNota: 0, isNew: true 
+                                                })} className="p-2 bg-[#facc15] text-[#064e3b] rounded-lg"><Plus size={14}/></button>
+                                            </td>
+                                        </tr>
+                                    );
+                                }
+                                return null;
+                            })}
+                        </tbody>
+                    </table>
+                </div>
               </div>
             )}
 
@@ -806,7 +814,7 @@
                     <div className="flex gap-2">
                       <input type="text" placeholder="Responder..." value={replyText[m.id]||''} onChange={e=>setReplyText({...replyText,[m.id]:e.target.value})} className="flex-1 px-4 text-xs font-black"/>
                       <button onClick={async () => {
-                        await db.collection("mensajesAgenda").doc(m.id).update({ conversacion: firebase.firestore.FieldValue.arrayUnion({ rol: 'docente', texto: replyText[m.id], timestamp: new Date().toISOString() }), read: true });
+                        await db.collection("mensajesAgenda").doc(m.id).update({ conversacion: firebase.firestore.FieldValue.arrayUnion({ rol: 'docente', texto: replyText[m.id], timestamp: new Date().toISOString() }), lastUpdate: new Date().toISOString(), read: true });
                         setReplyText({...replyText, [m.id]: ''});
                       }} className="bg-[#064e3b] text-[#facc15] p-4 rounded-xl"><Send size={18}/></button>
                     </div>
@@ -824,7 +832,6 @@
             <button onClick={()=>setView('mailbox')} className={`flex flex-col items-center gap-1 ${view==='mailbox'?'nav-active':'text-stone-400'}`}><MessageCircle size={22}/><span className="text-[8px] uppercase">Buzón</span></button>
           </nav>
 
-          {/* CONFIGURACIÓN */}
           {isConfigOpen && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-stone-900/80 backdrop-blur-sm" onClick={()=>setIsConfigOpen(false)} />
@@ -837,41 +844,27 @@
             </div>
           )}
 
-          {/* MODAL PERIÓDICO (AJUSTADO QUIRÚRGICAMENTE) */}
           {isBoardOpen && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-stone-900/80 backdrop-blur-sm" onClick={()=>setIsBoardOpen(false)} />
               <div className="relative bg-white w-full max-w-lg rounded-[32px] overflow-hidden flex flex-col border-t-8 border-[#064e3b] max-h-[85vh]">
                 <div className="p-6 border-b flex justify-between items-center"><h2 className="text-xl font-black text-[#064e3b] uppercase tracking-tighter">Gestión Periódico</h2><button onClick={()=>setIsBoardOpen(false)}>✕</button></div>
-                
-                {/* AQUI ESTÁ EL ID QUE ARREGLA EL SCROLL */}
                 <div id="board-scroll-container" class="p-6 space-y-4 overflow-y-auto no-scrollbar flex-1">
-                    
-                    {/* BARRA DE SEÑALES RÁPIDAS (NUEVO) */}
                     <div className="flex flex-wrap gap-2 mb-1">
                         <button onClick={() => setNoticeText(prev => "🚨 ¡IMPORTANTE! " + prev)} className="px-2 py-1 bg-red-100 text-red-700 rounded-lg text-[9px] font-black border border-red-200">🚨 IMPORTANTE</button>
                         <button onClick={() => setNoticeText(prev => "💡 TENER EN CUENTA: " + prev)} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-[9px] font-black border border-blue-200">💡 RECORDATORIO</button>
-                        <button onClick={() => setNoticeText(prev => "✨ ¡ÁNIMO! " + prev)} className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg text-[9px] font-black border border-yellow-200">✨ ÁNIMO</button>
                         <button onClick={() => setNoticeText(prev => "📢 AVISO: " + prev)} className="px-2 py-1 bg-green-100 text-green-700 rounded-lg text-[9px] font-black border border-green-200">📢 AVISO</button>
-                        {/* BOTONES NUEVOS */}
-                        <button onClick={() => setNoticeText(prev => "🔥 URGENTE: " + prev)} className="px-2 py-1 bg-orange-100 text-orange-700 rounded-lg text-[9px] font-black border border-orange-200">🔥 URGENTE</button>
-                        <button onClick={() => setNoticeText(prev => "⭐ IMPORTANTE: " + prev)} className="px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-[9px] font-black border border-purple-200">⭐ IMPORTANTE</button>
-                        <button onClick={() => setNoticeText(prev => "🧠 NO OLVIDAR: " + prev)} className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-lg text-[9px] font-black border border-indigo-200">🧠 NO OLVIDAR</button>
                     </div>
-
                     <textarea value={noticeText} onChange={e=>setNoticeText(e.target.value)} className="w-full p-3 text-xs font-bold border border-stone-300 rounded-xl resize-none h-20" placeholder="Escribe el aviso..."></textarea>
                     <input type="url" value={noticeVideo} onChange={e=>setNoticeVideo(e.target.value)} className="w-full p-2 text-[10px] border rounded-lg" placeholder="YouTube URL"/>
                     <label className="block bg-white p-2 rounded-lg border border-dashed border-stone-400 text-[10px] font-black text-center cursor-pointer">
                         {noticeImage ? "📷 FOTO CARGADA" : "📷 SUBIR FOTO"}<input type="file" accept="image/*" onChange={handleFileChange} className="hidden"/>
                     </label>
-                    
                     <div className="space-y-3 p-3 bg-stone-100 rounded-2xl">
-                        {/* PESTAÑAS DEL TABLERO */}
                         <div className="flex gap-2 bg-white p-1 rounded-xl shadow-sm mb-2">
                             <button onClick={()=>setNoticeTab('active')} className={`flex-1 py-2 text-[10px] font-black rounded-lg ${noticeTab==='active'?'bg-[#064e3b] text-white':'text-stone-400'}`}>ACTIVOS</button>
                             <button onClick={()=>setNoticeTab('archived')} className={`flex-1 py-2 text-[10px] font-black rounded-lg ${noticeTab==='archived'?'bg-[#064e3b] text-white':'text-stone-400'}`}>ARCHIVADOS</button>
                         </div>
-                    
                         <div className="flex gap-2 bg-white p-1 rounded-xl shadow-sm">
                             {['General', 'Grado', 'Individual'].map(s => (
                                 <button key={s} onClick={()=>setNoticeScope(s)} className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${noticeScope===s?'bg-[#064e3b] text-white':'text-stone-400'}`}>{s}</button>
@@ -892,42 +885,30 @@
                             </select>
                         )}
                     </div>
-                    
-                    {/* SECCIÓN QUIRÚRGICA: FECHAS */}
                     <div className="grid grid-cols-2 gap-2 mt-2">
                         <div className="bg-stone-50 p-2 rounded-xl border border-stone-200">
                             <label className="block text-[8px] font-black text-stone-500 uppercase">Publicar</label>
                             <input type="datetime-local" value={noticePublishAt} onChange={e=>setNoticePublishAt(e.target.value)} className="w-full text-[9px] font-black bg-transparent border-none p-0 focus:ring-0"/>
                         </div>
                         <div className="bg-stone-50 p-2 rounded-xl border border-stone-200">
-                            <label className="block text-[8px] font-black text-stone-500 uppercase">Expirar/Eliminar</label>
+                            <label className="block text-[8px] font-black text-stone-500 uppercase">Expirar</label>
                             <input type="datetime-local" value={noticeExpiresAt} onChange={e=>setNoticeExpiresAt(e.target.value)} className="w-full text-[9px] font-black bg-transparent border-none p-0 focus:ring-0"/>
                         </div>
                     </div>
-
                     <div className="flex gap-2 mt-2">
                         <select value={noticeColor} onChange={e=>setNoticeColor(e.target.value)} className="p-2 text-xs font-black rounded-xl border border-stone-300 flex-1">
                             <option value="yellow">Amarillo</option><option value="pink">Rosado</option><option value="blue">Azul</option><option value="green">Verde</option>
-                            {/* NUEVOS COLORES */}
-                            <option value="orange">Naranja</option>
-                            <option value="purple">Lavanda</option>
-                            <option value="teal">Turquesa</option>
-                            <option value="lime">Lima</option>
-                            <option value="white">Blanco</option>
-                            <option value="brown">Kraft</option>
+                            <option value="orange">Naranja</option><option value="white">Blanco</option>
                         </select>
                         <button onClick={handlePublishNotice} className="flex-[2] bg-[#064e3b] text-[#facc15] font-black text-[10px] uppercase rounded-xl shadow-lg">{editingNoticeId ? 'GUARDAR CAMBIOS' : 'PUBLICAR'}</button>
                     </div>
-
                     <div className="space-y-2 mt-4">
                         {noticesList.filter(n => noticeTab === 'active' ? !n.archived : n.archived).map(n => (
                             <div key={n.id} className="flex justify-between items-center p-3 rounded-xl border bg-white border-stone-200">
                                 <p className="text-[10px] font-black text-stone-700 truncate flex-1">{n.mensaje}</p>
                                 <div className="flex gap-1">
                                     {noticeTab === 'active' && <button onClick={()=>prepareEditNotice(n)} className="p-1.5 text-blue-600"><EditIcon size={14}/></button>}
-                                    <button onClick={()=>archiveNotice(n)} className="p-1.5 text-stone-500">
-                                        {noticeTab === 'active' ? <ArchiveIcon size={14}/> : <RestoreIcon size={14}/>}
-                                    </button>
+                                    <button onClick={()=>archiveNotice(n)} className="p-1.5 text-stone-500">{noticeTab === 'active' ? <ArchiveIcon size={14}/> : <RestoreIcon size={14}/>}</button>
                                     <button onClick={()=>deleteNotice(n.id)} className="p-1.5 text-red-500"><TrashIcon size={14}/></button>
                                 </div>
                             </div>
@@ -938,7 +919,6 @@
             </div>
           )}
 
-          {/* MODAL AGREGAR NOTAS (RESTAURADO COMPLETO CON OBSERVACIÓN) */}
           {isFormOpen && (
             <div className="fixed inset-0 z-[100] flex items-end justify-center">
               <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-md" onClick={()=>setIsFormOpen(false)} />
@@ -970,123 +950,87 @@
             </div>
           )}
 
-          {/* EDITING MODALS (CORREGIDO: Selector de Grado y Estudiante) */}
           {editingTask && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-stone-900/80" onClick={()=>setEditingTask(null)} />
               <div className="relative bg-white w-full max-w-md rounded-[40px] p-6 border-t-[10px] border-[#facc15] max-h-[90vh] overflow-y-auto no-scrollbar">
-                <h3 className="font-black mb-4 uppercase text-emerald-900">Editar Tarea Completa</h3>
+                <h3 className="font-black mb-4 uppercase text-emerald-900">Editar Tarea</h3>
                 <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-2">
-                        <div>
-                            <label className="text-[9px] font-black text-stone-400 uppercase">Grado</label>
-                            <select value={editingTask.gradeLevel || 'Quinto'} onChange={e=>setEditingTask({...editingTask, gradeLevel:e.target.value, targetStudent: ''})} className="w-full p-3 text-xs font-black">
-                                {gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="text-[9px] font-black text-stone-400 uppercase">Área</label>
-                            <select value={editingTask.area} onChange={e=>setEditingTask({...editingTask, area:e.target.value})} className="w-full p-3 text-xs font-black">
-                                {areasList.map(a => <option key={a} value={a}>{a}</option>)}
-                            </select>
-                        </div>
+                        <select value={editingTask.gradeLevel || 'Quinto'} onChange={e=>setEditingTask({...editingTask, gradeLevel:e.target.value, targetStudent: ''})} className="w-full p-3 text-xs font-black">{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select>
+                        <select value={editingTask.area} onChange={e=>setEditingTask({...editingTask, area:e.target.value})} className="w-full p-3 text-xs font-black">{areasList.map(a => <option key={a} value={a}>{a}</option>)}</select>
                     </div>
-                    {/* NUEVO: SELECTOR DE ESTUDIANTE EN EDICIÓN */}
-                    <div>
-                        <label className="text-[9px] font-black text-stone-400 uppercase">Asignar a (Opcional)</label>
-                        <select value={editingTask.targetStudent || ''} onChange={e=>setEditingTask({...editingTask, targetStudent:e.target.value})} className="w-full p-3 text-xs font-black bg-stone-50">
-                            <option value="">Todos (Grupal)</option>
-                            {(studentLists[editingTask.gradeLevel || 'Quinto'] || []).map(name => <option key={name.split(' - ')[1]} value={name.split(' - ')[1]}>{name.split(' - ')[0]}</option>)}
-                        </select>
-                    </div>
-                    <div>
-                        <label className="text-[9px] font-black text-stone-400 uppercase">Fecha Entrega</label>
-                        <input type="date" value={editingTask.date} onChange={e=>setEditingTask({...editingTask, date:e.target.value})} className="w-full p-3 text-xs font-black"/>
-                    </div>
-                    <div>
-                        <label className="text-[9px] font-black text-stone-400 uppercase">Título de la Actividad</label>
-                        <input type="text" value={editingTask.title} onChange={e=>setEditingTask({...editingTask, title:e.target.value})} className="w-full p-3 text-xs font-black"/>
-                    </div>
-                    <div>
-                        <label className="text-[9px] font-black text-stone-400 uppercase">YouTube Link</label>
-                        <input type="url" value={editingTask.videoLink || ''} onChange={e=>setEditingTask({...editingTask, videoLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
-                    </div>
-                    <div>
-                        <label className="text-[9px] font-black text-stone-400 uppercase">Drive/PDF Link</label>
-                        <input type="url" value={editingTask.pdfLink || ''} onChange={e=>setEditingTask({...editingTask, pdfLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
-                    </div>
-                    <div>
-                        <label className="text-[9px] font-black text-stone-400 uppercase">Descripción / Instrucciones</label>
-                        <textarea value={editingTask.description} onChange={e=>setEditingTask({...editingTask, description:e.target.value})} className="w-full p-3 text-xs font-bold h-32 resize-none"></textarea>
-                    </div>
+                    <select value={editingTask.targetStudent || ''} onChange={e=>setEditingTask({...editingTask, targetStudent:e.target.value})} className="w-full p-3 text-xs font-black bg-stone-50">
+                        <option value="">Todos (Grupal)</option>
+                        {(studentLists[editingTask.gradeLevel || 'Quinto'] || []).map(name => <option key={name.split(' - ')[1]} value={name.split(' - ')[1]}>{name.split(' - ')[0]}</option>)}
+                    </select>
+                    <input type="date" value={editingTask.date} onChange={e=>setEditingTask({...editingTask, date:e.target.value})} className="w-full p-3 text-xs font-black"/>
+                    <input type="text" value={editingTask.title} onChange={e=>setEditingTask({...editingTask, title:e.target.value})} className="w-full p-3 text-xs font-black" placeholder="Título"/>
+                    <textarea value={editingTask.description} onChange={e=>setEditingTask({...editingTask, description:e.target.value})} className="w-full p-3 text-xs font-bold h-32 resize-none" placeholder="Descripción"></textarea>
                 </div>
                 <div className="flex gap-2 mt-6">
                     <button onClick={()=>setEditingTask(null)} className="flex-1 py-4 bg-stone-200 rounded-2xl font-black uppercase text-xs">Cancelar</button>
-                    <button onClick={async ()=>{ await db.collection("agendaEscolar").doc(editingTask.id).update(editingTask); setEditingTask(null); Swal.fire({icon:'success', title:'Tarea Actualizada', toast:true, position:'top-end', timer:1500, showConfirmButton:false}); }} className="flex-[2] py-4 bg-emerald-900 text-[#facc15] rounded-2xl font-black uppercase text-xs shadow-lg">Guardar Cambios</button>
+                    <button onClick={async ()=>{ await db.collection("agendaEscolar").doc(editingTask.id).update(editingTask); setEditingTask(null); }} className="flex-[2] py-4 bg-emerald-900 text-[#facc15] rounded-2xl font-black uppercase text-xs">Guardar</button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* MODAL NOTA INDIVIDUAL (CON ALERTA EN EDICIÓN Y EDICIÓN COMPLETA) */}
+          {/* MODAL DE EDICIÓN QUIRÚRGICA: CORRECCIÓN DE ERROR AL ACTUALIZAR */}
           {editingGradeEntry && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-stone-900/70" onClick={()=>setEditingGradeEntry(null)} />
               <div className="relative bg-white w-full max-w-md rounded-[40px] p-6 border-t-[10px] border-[#facc15]">
                 <h3 className="font-black mb-4 uppercase">{editingGradeEntry.nombreEstudiante}</h3>
                 
-                {/* CAMBIO 1: EDITAR NOMBRE ACTIVIDAD */}
                 <input type="text" value={editingGradeEntry.actividad} onChange={e=>setEditingGradeEntry({...editingGradeEntry, actividad: e.target.value})} className="w-full p-3 mb-3 border-b-2 border-stone-200 font-bold text-center outline-none" placeholder="Nombre de la Actividad"/>
-                
-                <input type="text" value={editingGradeEntry.score} onChange={e=>setEditingGradeEntry({...editingGradeEntry, score: e.target.value.replace(/,/g, '.')})} className="w-full p-5 text-3xl text-center font-black border-2 border-[#064e3b] rounded-2xl mb-4"/>
+                <input type="text" value={editingGradeEntry.score} onChange={e=>setEditingGradeEntry({...editingGradeEntry, score: e.target.value.replace(/,/g, '.')})} className="w-full p-5 text-3xl text-center font-black border-2 border-[#064e3b] rounded-2xl mb-4" placeholder="0.0"/>
                 <textarea value={editingGradeEntry.observacion || ''} onChange={e=>setEditingGradeEntry({...editingGradeEntry, observacion: e.target.value})} className="w-full p-3 border-2 border-stone-200 rounded-2xl mb-4 h-24 resize-none" placeholder="Editar observación..."></textarea>
                 
                 <button onClick={async ()=>{ 
                     if(isSaving) return;
                     setIsSaving(true);
                     try {
-                        // LÓGICA DE RECUPERACIÓN + ALERTA EN EDICIÓN
                         const newNota = parseFloat(editingGradeEntry.score.replace(',','.'));
                         const isJustRecovered = editingGradeEntry.originalNota < 3 && newNota >= 3;
-                        const isRecovery = isJustRecovered || editingGradeEntry.recuperada;
+                        const isRecovery = isJustRecovered || (editingGradeEntry.recuperada || false);
 
                         const updateData = {
                             actividad: editingGradeEntry.actividad,
                             score: editingGradeEntry.score,
                             nota: newNota,
-                            observacion: editingGradeEntry.observacion || '', // Asegura guardar observación actualizada
-                            recuperada: isRecovery
+                            observacion: editingGradeEntry.observacion || '',
+                            recuperada: isRecovery,
+                            periodo: periodoActual,
+                            gradeLevel: editingGradeEntry.gradeLevel,
+                            area: editingGradeEntry.area,
+                            nombreEstudiante: editingGradeEntry.nombreEstudiante,
+                            documentoEstudiante: editingGradeEntry.documentoEstudiante,
+                            lastUpdate: Date.now()
                         };
 
-                        if(isJustRecovered) {
-                            updateData.notaAnterior = editingGradeEntry.originalNota;
-                        }
+                        if(isJustRecovered) updateData.notaAnterior = editingGradeEntry.originalNota;
 
-                        await db.collection("notasAcademicas").doc(editingGradeEntry.id).update(updateData);
+                        // USO DE SET CON MERGE PARA ASEGURAR PERSISTENCIA Y EVITAR ERRORES DE DOCUMENTO NO ENCONTRADO
+                        await db.collection("notasAcademicas").doc(editingGradeEntry.id).set(updateData, { merge: true });
 
-                        // --- NUEVA LÓGICA QUIRÚRGICA: ALERTA AL EDITAR SI BAJA DE 3.0 ---
                         if (newNota < 3.0) {
                             await db.collection("tableroAvisos").add({
-                                mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${editingGradeEntry.area}\n📝 ACTIVIDAD: ${editingGradeEntry.actividad}\n📉 NOTA: ${newNota}\n\nPor favor revisar la sección de Alertas dentro de Pizarra Escolar para ampliar la información.`,
-                                color: 'red',
-                                imageUrl: "https://cdn-icons-png.flaticon.com/512/564/564619.png", // IMAGEN ESTABLE
-                                videoUrl: "",
-                                scope: 'Individual',
-                                targetGrades: [],
-                                targetStudentDoc: editingGradeEntry.documentoEstudiante,
+                                mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${editingGradeEntry.area}\n📝 ACTIVIDAD: ${editingGradeEntry.actividad}\n📉 NOTA: ${newNota}\n\nRevisar Alertas en Pizarra Escolar.`,
+                                color: 'red', imageUrl: URL_IMAGEN_ALERTA, videoUrl: "",
+                                scope: 'Individual', targetGrades: [], targetStudentDoc: editingGradeEntry.documentoEstudiante,
                                 fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
-                                timestamp: new Date().toISOString(),
-                                archived: false,
-                                likes: [],
-                                isSystemNotice: false 
+                                timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false 
                             });
                         }
-                        // ----------------------------------------------------------------
-
                         setEditingGradeEntry(null); 
-                    } catch(e) { Swal.fire('Error', 'No se pudo actualizar', 'error'); }
+                        Swal.fire({ icon: 'success', title: 'Registro actualizado', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
+                    } catch(e) { 
+                        console.error(e);
+                        Swal.fire('Error', 'No se pudo actualizar el registro', 'error'); 
+                    }
                     finally { setIsSaving(false); }
-                }} disabled={isSaving} className="w-full py-4 bg-[#064e3b] text-[#facc15] rounded-2xl font-black uppercase">Actualizar Nota y Observación</button>
+                }} disabled={isSaving} className="w-full py-4 bg-[#064e3b] text-[#facc15] rounded-2xl font-black uppercase">Guardar Registro</button>
               </div>
             </div>
           )}
