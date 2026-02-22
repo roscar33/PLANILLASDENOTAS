@@ -55,7 +55,6 @@
     const Home = (p)=><Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
     const Book = (p)=><Icon {...p}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></Icon>;
     const Plus = (p)=><Icon {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Icon>;
-    const MessageCircle = (p)=><Icon {...p}><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></Icon>;
     const Database = (p)=><Icon {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></Icon>;
     const Settings = (p)=><Icon {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></Icon>;
     const EditIcon = (p)=><Icon {...p}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></Icon>;
@@ -67,6 +66,8 @@
     const RestoreIcon = (p)=><Icon {...p}><polyline points="16 14 12 9 8 14"/><path d="M12 9v12"/><path d="M20 20h-8a6 6 0 0 1-6-6V8"/><path d="M4 8h16"/></Icon>;
     const SaveIcon = (p)=><Icon {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></Icon>;
     const BoardIcon = (p)=><Icon {...p}><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></Icon>;
+    const LayoutIcon = (p)=><Icon {...p}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></Icon>;
+    const ExternalLink = (p)=><Icon {...p}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></Icon>;
 
     const gradeLevels = ['Primero', 'Segundo', 'Tercero', 'Cuarto', 'Quinto'];
     const areasList = ['INGLES', 'CIENCIAS NATURALES', 'CIENCIAS SOCIALES', 'ARTISTICA', 'EDUCACION FISICA', 'ETICA Y VALORES', 'RELIGION', 'ESPAÑOL (LENGUAJE)', 'MATEMATICAS', 'TECNOLOGIA E INFORMATICA'];
@@ -390,7 +391,6 @@
         }
       };
 
-      // MODIFICADO PARA EVITAR DUPLICADOS USANDO ID DETERMINÍSTICO
       const saveIndividualGrade = async (en, idx) => {
         if(isSaving) return;
         if (!batchData.area || !batchData.actividad) return Swal.fire('Error', 'Área y Actividad obligatorias', 'warning');
@@ -401,8 +401,6 @@
             const docEstudiante = en.name.slice(posIdx + 3).trim();
             const nombreEstudiante = en.name.slice(0, posIdx).trim();
             const finalNota = parseFloat(en.score.replace(',', '.'));
-            
-            // GENERACIÓN DE ID ÚNICO: PERIODO_GRADO_AREA_ACTIVIDAD_DOCUMENTO
             const customDocId = `${periodoActual}_${batchData.gradeLevel}_${batchData.area}_${batchData.actividad.trim().replace(/\s+/g, '_')}_${docEstudiante}`;
 
             const studentObj = {
@@ -412,7 +410,6 @@
                 observacion: en.observation || '', periodo: periodoActual || 1, createdAt: Date.now()
             };
             
-            // USAR SET CON MERGE PARA EVITAR DUPLICADOS
             await db.collection("notasAcademicas").doc(customDocId).set(studentObj, { merge: true });
             
             if (finalNota < 3.0) {
@@ -430,7 +427,6 @@
         finally { setIsSaving(false); }
       };
 
-      // MODIFICADO PARA EVITAR DUPLICADOS EN GUARDADO MASIVO
       const saveGrades = async () => {
         if(isSaving) return;
         if (!batchData.area || !batchData.actividad) return Swal.fire('Error', 'Área y Actividad obligatorias', 'warning');
@@ -444,7 +440,6 @@
                 const finalNota = parseFloat(en.score.replace(',','.'));
                 const docEstudiante = en.name.slice(idx+3).trim();
                 const nombreEstudiante = en.name.slice(0,idx).trim();
-                
                 const customDocId = `${periodoActual}_${batchData.gradeLevel}_${batchData.area}_${batchData.actividad.trim().replace(/\s+/g, '_')}_${docEstudiante}`;
 
                 batch.set(db.collection("notasAcademicas").doc(customDocId), {
@@ -755,8 +750,6 @@
                             {(studentLists[filterGrade] || []).map(studentNameDoc => {
                                 const [name, doc] = studentNameDoc.split(' - ');
                                 const record = filteredRecords.find(r => r.documentoEstudiante === doc);
-                                
-                                // SI HAY RECORD, MOSTRAR NORMAL
                                 if (record) {
                                     return (
                                         <tr key={record.id}>
@@ -772,7 +765,6 @@
                                         </tr>
                                     );
                                 } 
-                                // SI NO HAY RECORD Y HAY ACTIVIDAD SELECCIONADA, MOSTRAR PENDIENTE
                                 else if (filterActivity) {
                                     return (
                                         <tr key={doc} className="opacity-60 bg-stone-50">
@@ -795,31 +787,25 @@
               </div>
             )}
 
-            {view === 'mailbox' && (
+            {view === 'panels' && (
               <div className="space-y-4">
-                <div className="flex gap-2 mb-2 bg-stone-100 p-1 rounded-2xl">
-                    <button onClick={()=>setMailboxTab('active')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl ${mailboxTab==='active'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Recibidos</button>
-                    <button onClick={()=>setMailboxTab('archived')} className={`flex-1 py-3 text-[10px] font-black uppercase rounded-xl ${mailboxTab==='archived'?'bg-[#064e3b] text-[#facc15] shadow-md':'text-stone-400'}`}>Archivados</button>
-                </div>
-                {inboxMessages.filter(m => mailboxTab === 'active' ? !m.archived : m.archived).map(m => (
-                  <div key={m.id} className={`earth-card p-5 border-r-[6px] ${m.archived ? 'border-r-stone-400 bg-stone-50' : 'border-r-[#facc15]'}`}>
-                    <div className="mb-2 flex justify-between">
-                        <div><p className="text-[10px] font-black text-[#064e3b] uppercase">{m.studentName}</p><p className="text-[9px] font-bold text-stone-400">{m.taskTitle}</p></div>
-                        <div className="flex gap-1">
-                            {!m.archived ? <button onClick={async ()=>await db.collection("mensajesAgenda").doc(m.id).update({ archived: true })} className="p-2 bg-stone-100 rounded-lg"><ArchiveIcon size={14}/></button> : <button onClick={async ()=>await db.collection("mensajesAgenda").doc(m.id).update({ archived: false })} className="p-2 bg-emerald-100 text-emerald-700 rounded-lg"><RestoreIcon size={14}/></button>}
-                            <button onClick={async ()=>{ if((await Swal.fire({title:'¿Eliminar?', icon:'warning', showCancelButton:true})).isConfirmed) await db.collection("mensajesAgenda").doc(m.id).delete(); }} className="p-2 bg-red-50 text-red-400 rounded-lg"><TrashIcon size={14}/></button>
+                <h2 className="text-[11px] font-black text-stone-600 uppercase px-1">Paneles de Seguimiento</h2>
+                <div className="grid gap-4">
+                    <a href="https://roscar33.github.io/Paneltablas/" target="_blank" className="earth-card p-6 flex items-center justify-between no-underline active:scale-95 transition-transform">
+                        <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-800"><Database size={24}/></div>
+                            <div><h3 className="font-black text-sm uppercase">Panel de Tablas</h3><p className="text-[10px] font-bold text-stone-400">Resultados de multiplicaciones</p></div>
                         </div>
-                    </div>
-                    <div className="flex flex-col gap-2 mb-4">{m.conversacion && m.conversacion.map((chat, idx) => (<div key={idx} className={`chat-bubble ${chat.rol === 'docente' ? 'docente' : 'user'}`}>{chat.texto}</div>))}</div>
-                    <div className="flex gap-2">
-                      <input type="text" placeholder="Responder..." value={replyText[m.id]||''} onChange={e=>setReplyText({...replyText,[m.id]:e.target.value})} className="flex-1 px-4 text-xs font-black"/>
-                      <button onClick={async () => {
-                        await db.collection("mensajesAgenda").doc(m.id).update({ conversacion: firebase.firestore.FieldValue.arrayUnion({ rol: 'docente', texto: replyText[m.id], timestamp: new Date().toISOString() }), lastUpdate: new Date().toISOString(), read: true });
-                        setReplyText({...replyText, [m.id]: ''});
-                      }} className="bg-[#064e3b] text-[#facc15] p-4 rounded-xl"><Send size={18}/></button>
-                    </div>
-                  </div>
-                ))}
+                        <div className="text-[#facc15]"><ExternalLink size={20}/></div>
+                    </a>
+                    <a href="https://roscar33.github.io/Paneldesumas/" target="_blank" className="earth-card p-6 flex items-center justify-between no-underline active:scale-95 transition-transform">
+                        <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-800"><Plus size={24}/></div>
+                            <div><h3 className="font-black text-sm uppercase">Panel de Sumas</h3><p className="text-[10px] font-bold text-stone-400">Resultados de operaciones básicas</p></div>
+                        </div>
+                        <div className="text-[#facc15]"><ExternalLink size={20}/></div>
+                    </a>
+                </div>
               </div>
             )}
           </main>
@@ -829,7 +815,7 @@
             <button onClick={()=>setView('agenda')} className={`flex flex-col items-center gap-1 ${view==='agenda'?'nav-active':'text-stone-400'}`}><Book size={22}/><span className="text-[8px] uppercase">Agenda</span></button>
             <div className="-mt-14"><button onClick={()=>setIsFormOpen(true)} className="h-16 w-16 rounded-2xl bg-[#064e3b] text-[#facc15] flex items-center justify-center shadow-2xl active:scale-90"><Plus size={32}/></button></div>
             <button onClick={()=>setView('records')} className={`flex flex-col items-center gap-1 ${view==='records'?'nav-active':'text-stone-400'}`}><Database size={22}/><span className="text-[8px] uppercase">Registros</span></button>
-            <button onClick={()=>setView('mailbox')} className={`flex flex-col items-center gap-1 ${view==='mailbox'?'nav-active':'text-stone-400'}`}><MessageCircle size={22}/><span className="text-[8px] uppercase">Buzón</span></button>
+            <button onClick={()=>setView('panels')} className={`flex flex-col items-center gap-1 ${view==='panels'?'nav-active':'text-stone-400'}`}><LayoutIcon size={22}/><span className="text-[8px] uppercase">Panels</span></button>
           </nav>
 
           {isConfigOpen && (
@@ -976,7 +962,6 @@
             </div>
           )}
 
-          {/* MODAL DE EDICIÓN QUIRÚRGICA: CORRECCIÓN DE ERROR AL ACTUALIZAR */}
           {editingGradeEntry && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-stone-900/70" onClick={()=>setEditingGradeEntry(null)} />
@@ -994,24 +979,14 @@
                         const newNota = parseFloat(editingGradeEntry.score.replace(',','.'));
                         const isJustRecovered = editingGradeEntry.originalNota < 3 && newNota >= 3;
                         const isRecovery = isJustRecovered || (editingGradeEntry.recuperada || false);
-
                         const updateData = {
-                            actividad: editingGradeEntry.actividad,
-                            score: editingGradeEntry.score,
-                            nota: newNota,
-                            observacion: editingGradeEntry.observacion || '',
-                            recuperada: isRecovery,
-                            periodo: periodoActual,
-                            gradeLevel: editingGradeEntry.gradeLevel,
-                            area: editingGradeEntry.area,
-                            nombreEstudiante: editingGradeEntry.nombreEstudiante,
-                            documentoEstudiante: editingGradeEntry.documentoEstudiante,
+                            actividad: editingGradeEntry.actividad, score: editingGradeEntry.score, nota: newNota,
+                            observacion: editingGradeEntry.observacion || '', recuperada: isRecovery, periodo: periodoActual,
+                            gradeLevel: editingGradeEntry.gradeLevel, area: editingGradeEntry.area,
+                            nombreEstudiante: editingGradeEntry.nombreEstudiante, documentoEstudiante: editingGradeEntry.documentoEstudiante,
                             lastUpdate: Date.now()
                         };
-
                         if(isJustRecovered) updateData.notaAnterior = editingGradeEntry.originalNota;
-
-                        // USO DE SET CON MERGE PARA ASEGURAR PERSISTENCIA Y EVITAR ERRORES DE DOCUMENTO NO ENCONTRADO
                         await db.collection("notasAcademicas").doc(editingGradeEntry.id).set(updateData, { merge: true });
 
                         if (newNota < 3.0) {
@@ -1025,10 +1000,7 @@
                         }
                         setEditingGradeEntry(null); 
                         Swal.fire({ icon: 'success', title: 'Registro actualizado', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
-                    } catch(e) { 
-                        console.error(e);
-                        Swal.fire('Error', 'No se pudo actualizar el registro', 'error'); 
-                    }
+                    } catch(e) { Swal.fire('Error', 'No se pudo actualizar el registro', 'error'); }
                     finally { setIsSaving(false); }
                 }} disabled={isSaving} className="w-full py-4 bg-[#064e3b] text-[#facc15] rounded-2xl font-black uppercase">Guardar Registro</button>
               </div>
