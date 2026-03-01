@@ -103,6 +103,11 @@
         }
     };
 
+    // Funciones para extraer IDs de Multimedia
+    const getYouTubeId = (url) => { if(!url) return null; const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/; const match = url.match(regExp); return (match && match[2].length === 11) ? match[2] : null; };
+    const getTikTokId = (url) => { if(!url) return null; const match = url.match(/video\/(\d+)/); return match ? match[1] : null; };
+    const getDriveId = (url) => { if(!url) return null; const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/); return match ? match[1] : null; };
+
     const App = () => {
       const URL_IMAGEN_ALERTA = "https://cdn-icons-png.flaticon.com/512/564/564619.png"; 
 
@@ -132,6 +137,7 @@
       const [noticeColor, setNoticeColor] = useState('yellow');
       const [noticeImage, setNoticeImage] = useState('');
       const [noticeVideo, setNoticeVideo] = useState('');
+      const [noticeDoc, setNoticeDoc] = useState(''); // Nuevo estado para Documentos en Avisos
       const [noticeScope, setNoticeScope] = useState('General'); 
       const [noticeTargets, setNoticeTargets] = useState(['Todos']); 
       const [targetStudentDoc, setTargetStudentDoc] = useState('');
@@ -152,7 +158,6 @@
       const [agendaFilterArea, setAgendaFilterArea] = useState('');
       const [agendaFilterDate, setAgendaFilterDate] = useState('');
 
-      // Estados para control de XP (Minipanel)
       const [xpTab, setXpTab] = useState('manual');
       const [xpGrade, setXpGrade] = useState('Quinto');
       const [xpStudent, setXpStudent] = useState('');
@@ -161,12 +166,10 @@
       const [xpAmount, setXpAmount] = useState(20);
       const [attendanceMap, setAttendanceMap] = useState({});
       
-      // Estados para el Panel de Progreso
       const [studentsGlobalXp, setStudentsGlobalXp] = useState({}); 
       const [expandedStudentXp, setExpandedStudentXp] = useState(null);
       const [expandedStudentHistory, setExpandedStudentHistory] = useState(null);
       
-      // Estado de fecha para la asistencia
       const [attendanceDate, setAttendanceDate] = useState(() => {
           const d = new Date();
           return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
@@ -198,7 +201,6 @@
             setNoticesList(s.docs.map(d => ({id:d.id, ...d.data()})));
         });
         
-        // Listener para XP Global de todos los estudiantes
         const unsubXp = db.collection("logrosEstudiantes").onSnapshot(s => {
             const xpData = {};
             s.forEach(d => { xpData[d.id] = d.data(); });
@@ -276,7 +278,6 @@
               const snap = await db.collection("historialXP").where("documentoEstudiante", "==", docId).get();
               let hist = [];
               snap.forEach(d => hist.push({ id: d.id, ...d.data() }));
-              // Ordenamiento local
               hist.sort((a,b) => b.timestamp - a.timestamp);
               setExpandedStudentHistory(hist);
           } catch(e) {
@@ -352,7 +353,7 @@
                           ? `🌟 ¡Felicidades! Has ganado +${amt} XP por: ${conceptName}.`
                           : `⚠️ Atención: Has perdido ${amt} XP por debilidades en: ${conceptName}.`,
                       color: isPositive ? 'green' : 'red',
-                      imageUrl: '', videoUrl: '',
+                      imageUrl: '', videoUrl: '', docUrl: '',
                       scope: 'Individual',
                       targetGrades: [], targetStudentDoc: docId,
                       fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
@@ -409,7 +410,7 @@
                       batch.set(noticeRef, {
                           mensaje: `🌟 ¡+5 XP por tu Asistencia a clase el día ${dateStr}!`,
                           color: 'blue',
-                          imageUrl: '', videoUrl: '', scope: 'Individual', targetGrades: [], targetStudentDoc: docId,
+                          imageUrl: '', videoUrl: '', docUrl: '', scope: 'Individual', targetGrades: [], targetStudentDoc: docId,
                           fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
                           timestamp: new Date().toISOString(), archived: false, likes: [], 
                           isSystemNotice: false, isXpNotice: true, publishAt: new Date().toISOString(), expiresAt: expDate.toISOString()
@@ -422,7 +423,6 @@
           finally { setIsSaving(false); }
       };
 
-      // MISIL DE BORRADO: Actualización estricta que destruye las medallas fantasmas
       const handleResetXp = async () => {
           if(!xpStudent) return Swal.fire('Error', 'Selecciona estudiante o TODOS', 'warning');
           if(!(await Swal.fire({title: '¡Peligro!', text: 'Esto borrará todos los XP, medallas y el historial. Es irreversible.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33'})).isConfirmed) return;
@@ -431,22 +431,31 @@
           try {
               let targets = xpStudent === 'TODOS' ? (studentLists[xpGrade] || []).map(s => s.split(' - ')[1]) : [xpStudent];
               
-              for (const docId of targets) {
-                  const logRef = db.collection("logrosEstudiantes").doc(docId);
-                  const dSnap = await logRef.get();
-                  if (dSnap.exists) {
-                      await logRef.update({ xp: 0, logros: [], medallas: {} });
-                  } else {
-                      await logRef.set({ xp: 0, logros: [], medallas: {}, documentoEstudiante: docId });
-                  }
-              }
-
               const batch = db.batch();
-              targets.forEach(async docId => {
-                  const snap = await db.collection("historialXP").where("documentoEstudiante", "==", docId).get();
-                  snap.forEach(d => batch.delete(d.ref));
+              targets.forEach(docId => {
+                   const logRef = db.collection("logrosEstudiantes").doc(docId);
+                   
+                   const resetData = {
+                       xp: 0, 
+                       logros: [],
+                       documentoEstudiante: docId,
+                       medallas: firebase.firestore.FieldValue.delete()
+                   };
+                   
+                   areasList.forEach(a => {
+                       resetData[`medallas.${a}`] = firebase.firestore.FieldValue.delete();
+                   });
+                   
+                   batch.set(logRef, resetData, {merge: true});
               });
               await batch.commit();
+
+              targets.forEach(async docId => {
+                  const snap = await db.collection("historialXP").where("documentoEstudiante", "==", docId).get();
+                  const b = db.batch();
+                  snap.forEach(d => b.delete(d.ref));
+                  await b.commit();
+              });
 
               Swal.fire('Reseteado', 'El progreso y las medallas han vuelto a cero.', 'success');
               setXpStudent('');
@@ -466,12 +475,12 @@
 
       const handlePublishNotice = async () => {
         if(isSaving) return;
-        if(!noticeText.trim() && !noticeImage && !noticeVideo) return Swal.fire('Error', 'Escribe algo o agrega enlace multimedia', 'warning');
+        if(!noticeText.trim() && !noticeImage && !noticeVideo && !noticeDoc) return Swal.fire('Error', 'Agrega contenido, imagen, video o documento', 'warning');
         if(noticeScope === 'Individual' && !targetStudentDoc) return Swal.fire('Error', 'Selecciona un estudiante', 'warning');
         
         setIsSaving(true);
         const payload = {
-            mensaje: noticeText, color: noticeColor, imageUrl: noticeImage, videoUrl: noticeVideo,
+            mensaje: noticeText, color: noticeColor, imageUrl: noticeImage, videoUrl: noticeVideo, docUrl: noticeDoc,
             scope: noticeScope,
             targetGrades: noticeScope === 'Grado' ? noticeTargets : (noticeScope === 'General' ? ['Todos'] : []),
             targetStudentDoc: noticeScope === 'Individual' ? targetStudentDoc : null,
@@ -493,14 +502,14 @@
                 await db.collection("tableroAvisos").add(payload);
             }
             Swal.fire({ icon: 'success', title: 'Guardado', toast: true, position: 'top-end', timer: 1500 });
-            setNoticeText(''); setNoticeImage(''); setNoticeVideo(''); setNoticeTargets(['Todos']); setTargetStudentDoc(''); setNoticeScope('General');
+            setNoticeText(''); setNoticeImage(''); setNoticeVideo(''); setNoticeDoc(''); setNoticeTargets(['Todos']); setTargetStudentDoc(''); setNoticeScope('General');
             setNoticePublishAt(''); setNoticeExpiresAt('');
         } catch (e) { Swal.fire('Error', 'Error al guardar', 'error'); }
         finally { setIsSaving(false); }
       };
 
       const prepareEditNotice = (n) => {
-        setNoticeText(n.mensaje); setNoticeColor(n.color); setNoticeImage(n.imageUrl || ''); setNoticeVideo(n.videoUrl || '');
+        setNoticeText(n.mensaje); setNoticeColor(n.color); setNoticeImage(n.imageUrl || ''); setNoticeVideo(n.videoUrl || ''); setNoticeDoc(n.docUrl || '');
         setNoticeScope(n.scope || 'General'); setNoticeTargets(n.targetGrades || ['Todos']); setTargetStudentDoc(n.targetStudentDoc || '');
         setNoticePublishAt(n.publishAt || '');
         setNoticeExpiresAt(n.expiresAt || '');
@@ -599,7 +608,7 @@
                 const autoNoticeData = {
                     mensaje: `👨‍👩‍👧‍👦 Atención, familia:\nEl estudiante tiene una nueva actividad asignada.\n📍 Área: ${newTask.area || 'General'}\n📝 Trabajo: ${newTask.title}\n⏳ Fecha de entrega:\n🗓️ ${newTask.date || 'Ver Agenda'}\nPor favor ingresa a la agenda para ver todos los detalles.\n✅ ¡Éxitos!`,
                     color: 'white', 
-                    imageUrl: '', videoUrl: newTask.videoLink || '',
+                    imageUrl: '', videoUrl: newTask.videoLink || '', docUrl: newTask.pdfLink || '',
                     scope: autoNoticeScope, targetGrades: autoNoticeTargets, targetStudentDoc: autoNoticeStudent,
                     fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
                     timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: true, isXpNotice: false,
@@ -638,7 +647,7 @@
             const autoNoticeData = {
                 mensaje: `👨‍👩‍👧‍👦 Atención, familia:\nEl estudiante tiene una nueva actividad asignada.\n📍 Área: ${task.area || 'General'}\n📝 Trabajo: ${task.title}\n⏳ Fecha de entrega:\n🗓️ ${task.date}\nPor favor ingresa a la agenda para ver todos los detalles.\n✅ ¡Éxitos!`,
                 color: 'white', 
-                imageUrl: '', videoUrl: task.videoLink || '',
+                imageUrl: '', videoUrl: task.videoLink || '', docUrl: task.pdfLink || '',
                 scope: autoNoticeScope, targetGrades: autoNoticeTargets, targetStudentDoc: autoNoticeStudent,
                 fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
                 timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: true, isXpNotice: false,
@@ -659,11 +668,9 @@
         }
       };
 
-      // INTELIGENCIA PARA RECONOCER NOTAS FALTANTES Y ERRORES EN 5.0
       const saveIndividualGrade = async (en, idx) => {
         if(isSaving) return;
         
-        // RASTREADOR DE ÁREA PARA NOTAS PENDIENTES
         let actualArea = batchData.area || editingGradeEntry.area;
         if (!actualArea || actualArea === "SIN_AREA") {
              const existingRecordForArea = studentsData.find(r => r.actividad === (batchData.actividad || editingGradeEntry.actividad) && r.area && r.area !== "SIN_AREA");
@@ -684,15 +691,13 @@
             const existingRecord = filteredRecords.find(r => r.id === customDocId);
             let hasBeenProcessedForXP = existingRecord ? existingRecord.xpProcessed : false;
             let xpToAward = 0;
-            let medalMod = 0; // 1 para dar, -1 para quitar
+            let medalMod = 0; 
 
             if (editingGradeEntry && !editingGradeEntry.isNew) {
-                // ES UNA EDICIÓN DE NOTA VIEJA
                 if (editingGradeEntry.originalNota === 5.0 && finalNota < 5.0) {
-                    medalMod = -1; // Castigo: Si editó y bajó del 5.0, le quita la medalla puesta por error
+                    medalMod = -1; 
                 }
             } else if (!hasBeenProcessedForXP) {
-                // ES UNA NOTA TOTALMENTE NUEVA
                 if (finalNota === 5.0) { xpToAward = 100; medalMod = 1; }
                 else if (finalNota >= 4.6) xpToAward = 80;
                 else if (finalNota >= 4.0) xpToAward = 50;
@@ -752,7 +757,7 @@
                 const noticeRef = db.collection("tableroAvisos").doc();
                 batch.set(noticeRef, {
                     mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${actualArea}\n📝 ACTIVIDAD: ${finalActividad}\n📉 NOTA: ${finalNota}\n\nPor favor revisar la sección de Alertas dentro de Pizarra Escolar para ampliar la información.`,
-                    color: 'red', imageUrl: URL_IMAGEN_ALERTA, videoUrl: "",
+                    color: 'red', imageUrl: URL_IMAGEN_ALERTA, videoUrl: "", docUrl: "",
                     scope: 'Individual', targetGrades: [], targetStudentDoc: docEstudiante,
                     fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
                     timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: false,
@@ -838,7 +843,7 @@
                     const noticeRef = db.collection("tableroAvisos").doc();
                     batch.set(noticeRef, {
                         mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${batchData.area}\n📝 ACTIVIDAD: ${batchData.actividad}\n📉 NOTA: ${finalNota}\n\nPor favor revisar la sección de Alertas dentro de Pizarra Escolar para ampliar la información.`,
-                        color: 'red', imageUrl: URL_IMAGEN_ALERTA, videoUrl: "",
+                        color: 'red', imageUrl: URL_IMAGEN_ALERTA, videoUrl: "", docUrl: "",
                         scope: 'Individual', targetGrades: [], targetStudentDoc: docEstudiante,
                         fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
                         timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: false,
@@ -967,7 +972,6 @@
 
       return (
         <div className="flex flex-col h-[100dvh]">
-          {/* CABECERA */}
           <header className="px-6 pt-12 pb-6 bg-[#064e3b] sticky top-0 z-40 shadow-xl">
             <div className="flex justify-between items-center text-white">
               <div>
@@ -1031,8 +1035,8 @@
                         <div className="flex-1 flex items-center justify-center bg-stone-50 rounded-xl border border-dashed border-stone-300"><FileText size={16} className={newTask.pdfLink ? 'text-blue-600' : 'text-stone-300'}/></div>
                     </div>
                   </div>
-                  <input type="url" placeholder="YouTube URL" value={newTask.videoLink} onChange={e=>setNewTask({...newTask,videoLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
-                  <input type="url" placeholder="Drive URL" value={newTask.pdfLink} onChange={e=>setNewTask({...newTask,pdfLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
+                  <input type="url" placeholder="URL de YouTube o TikTok" value={newTask.videoLink} onChange={e=>setNewTask({...newTask,videoLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
+                  <input type="url" placeholder="URL de Documento (Drive o PDF externo)" value={newTask.pdfLink} onChange={e=>setNewTask({...newTask,pdfLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
                   <textarea placeholder="Descripción..." value={newTask.description} onChange={e=>setNewTask({...newTask,description:e.target.value})} className="w-full p-4 text-sm font-bold h-24 resize-none"></textarea>
                   <div className="bg-stone-50 p-3 rounded-xl border border-stone-200">
                     <label className="block text-[9px] font-black text-stone-500 uppercase mb-2">Programar Publicación (Opcional)</label>
@@ -1079,14 +1083,14 @@
                             <span className="text-[8px] font-black bg-stone-900 text-white px-2 py-0.5 rounded uppercase">{item.gradeLevel}</span>
                             <span className="text-[8px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded uppercase">{item.area}</span>
                             {item.videoLink && <span className="text-[8px] font-black bg-red-100 text-red-600 px-1.5 py-0.5 rounded flex items-center gap-1"><VideoIcon size={8}/> VIDEO</span>}
-                            {item.pdfLink && <span className="text-[8px] font-black bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded flex items-center gap-1"><FileText size={8}/> DRIVE</span>}
+                            {item.pdfLink && <span className="text-[8px] font-black bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded flex items-center gap-1"><FileText size={8}/> DOC</span>}
                         </div>
                         <span className="text-[10px] font-black text-[#064e3b]">{item.date}</span>
                       </div>
                       
                       {item.publishAt && new Date(item.publishAt) > new Date() && (
                           <div className="bg-blue-50 text-blue-700 text-[9px] font-black px-2 py-1 rounded-lg mb-2 inline-flex items-center gap-1 border border-blue-200">
-                              <span>🕒 Programada: {new Date(item.publishAt).toLocaleString()}</span>
+                              <span>⏳ PROGRAMADA PARA: {new Date(item.publishAt).toLocaleString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</span>
                           </div>
                       )}
 
@@ -1386,7 +1390,24 @@
                                   <img src={noticeImage} style={{width: "100%", height: "120px", objectFit: "cover", display: "block"}}/>
                               </div>
                           )}
-                          {noticeVideo && <div style={{position: "absolute", top: "10px", right: "10px", fontSize: "24px", color: "#d32f2f", filter: "drop-shadow(0 2px 2px rgba(255,255,255,0.8))"}}>▶️</div>}
+
+                          {noticeVideo && getYouTubeId(noticeVideo) && (
+                              <div style={{position: "relative", paddingBottom: "56.25%", height: 0, width: "100%", overflow: "hidden", borderRadius: "12px", marginBottom: "15px", background: "#000"}}>
+                                  <iframe src={`https://www.youtube.com/embed/${getYouTubeId(noticeVideo)}`} style={{position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0}} allowFullScreen></iframe>
+                              </div>
+                          )}
+
+                          {noticeVideo && getTikTokId(noticeVideo) && (
+                              <div style={{position: "relative", width: "100%", aspectRatio: "9/16", borderRadius: "12px", marginBottom: "15px", overflow: "hidden", background: "#000", boxShadow: "0 4px 10px rgba(0,0,0,0.2)"}}>
+                                  <iframe src={`https://www.tiktok.com/embed/v2/${getTikTokId(noticeVideo)}`} style={{position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0}} allowFullScreen></iframe>
+                              </div>
+                          )}
+
+                          {noticeDoc && (
+                              <div style={{width: "100%", height: "300px", borderRadius: "12px", marginBottom: "15px", overflow: "hidden", border: "2px solid #cbd5e1", boxShadow: "0 4px 10px rgba(0,0,0,0.1)"}}>
+                                  <iframe src={getDriveId(noticeDoc) ? `https://drive.google.com/file/d/${getDriveId(noticeDoc)}/preview` : `https://docs.google.com/gview?url=${encodeURIComponent(noticeDoc)}&embedded=true`} style={{width: "100%", height: "100%", border: 0}}></iframe>
+                              </div>
+                          )}
                           
                           <div style={{whiteSpace: "pre-line"}}>{noticeText || "Escribe un mensaje para ver la vista previa..."}</div>
                       </div>
@@ -1419,9 +1440,11 @@
                         <button onClick={() => setNoticeText(prev => "📢 AVISO: " + prev)} className="px-2 py-1 bg-green-100 text-green-700 rounded-lg text-[9px] font-black border border-green-200">📢 AVISO</button>
                     </div>
                     <textarea value={noticeText} onChange={e=>setNoticeText(e.target.value)} className="w-full p-3 text-xs font-bold border border-stone-300 rounded-xl resize-none h-20" placeholder="Escribe el aviso..."></textarea>
-                    <input type="url" value={noticeVideo} onChange={e=>setNoticeVideo(e.target.value)} className="w-full p-2 text-[10px] border rounded-lg" placeholder="YouTube URL"/>
                     
-                    <div className="flex gap-2 items-center mb-1">
+                    <input type="url" value={noticeVideo} onChange={e=>setNoticeVideo(e.target.value)} className="w-full p-2 text-[10px] border rounded-lg" placeholder="URL de YouTube o TikTok"/>
+                    <input type="url" value={noticeDoc} onChange={e=>setNoticeDoc(e.target.value)} className="w-full p-2 text-[10px] border rounded-lg mt-1" placeholder="URL de Documento (Drive o PDF externo)"/>
+                    
+                    <div className="flex gap-2 items-center mb-1 mt-2">
                         <input type="text" placeholder="Pega URL de imagen o sube archivo 👉" value={noticeImage} onChange={e=>setNoticeImage(e.target.value)} className="flex-1 p-3 text-xs font-bold border border-stone-300 rounded-xl outline-none" />
                         <label className="bg-stone-200 px-3 py-3 rounded-xl border border-stone-300 text-[10px] font-black cursor-pointer shadow-sm active:scale-95 shrink-0">
                             📷 SUBIR<input type="file" accept="image/*" onChange={handleFileChange} className="hidden"/>
@@ -1535,8 +1558,8 @@
                     </select>
                     <input type="date" value={editingTask.date} onChange={e=>setEditingTask({...editingTask, date:e.target.value})} className="w-full p-3 text-xs font-black"/>
                     <input type="text" value={editingTask.title} onChange={e=>setEditingTask({...editingTask, title:e.target.value})} className="w-full p-3 text-xs font-black" placeholder="Título"/>
-                    <input type="url" placeholder="YouTube URL" value={editingTask.videoLink || ''} onChange={e=>setEditingTask({...editingTask, videoLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
-                    <input type="url" placeholder="Drive URL" value={editingTask.pdfLink || ''} onChange={e=>setEditingTask({...editingTask, pdfLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
+                    <input type="url" placeholder="URL de YouTube o TikTok" value={editingTask.videoLink || ''} onChange={e=>setEditingTask({...editingTask, videoLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
+                    <input type="url" placeholder="URL de Documento (Drive o PDF externo)" value={editingTask.pdfLink || ''} onChange={e=>setEditingTask({...editingTask, pdfLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
                     <textarea value={editingTask.description} onChange={e=>setEditingTask({...editingTask, description:e.target.value})} className="w-full p-3 text-xs font-bold h-32 resize-none" placeholder="Descripción"></textarea>
                 </div>
                 <div className="flex gap-2 mt-6">
@@ -1568,14 +1591,12 @@
                         let xpToAward = 0;
                         let medalMod = 0; 
                         
-                        // Si la nota es totalmente nueva, damos premios.
                         if (editingGradeEntry.isNew) {
                             if (newNota === 5.0) { xpToAward = 100; medalMod = 1; }
                             else if (newNota >= 4.6) xpToAward = 80;
                             else if (newNota >= 4.0) xpToAward = 50;
                             else if (newNota >= 3.0) xpToAward = 25;
                         } else {
-                            // Si el docente baja la nota de 5.0 a menos, revoca la medalla que se dio por error
                             if (editingGradeEntry.originalNota === 5.0 && newNota < 5.0) {
                                 medalMod = -1;
                             }
@@ -1598,7 +1619,6 @@
                             batch.set(db.collection("notasAcademicas").doc(editingGradeEntry.id), updateData, { merge: true });
                         }
 
-                        // Entregar o Quitar medalla
                         if (xpToAward > 0 || medalMod !== 0) {
                             const logData = {};
                             if (xpToAward > 0) {
@@ -1630,7 +1650,7 @@
                             const noticeRef = db.collection("tableroAvisos").doc();
                             batch.set(noticeRef, {
                                 mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${editingGradeEntry.area}\n📝 ACTIVIDAD: ${editingGradeEntry.actividad}\n📉 NOTA: ${newNota}\n\nRevisar Alertas en Pizarra Escolar.`,
-                                color: 'red', imageUrl: URL_IMAGEN_ALERTA, videoUrl: "",
+                                color: 'red', imageUrl: URL_IMAGEN_ALERTA, videoUrl: "", docUrl: "",
                                 scope: 'Individual', targetGrades: [], targetStudentDoc: editingGradeEntry.documentoEstudiante,
                                 fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
                                 timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: false,
