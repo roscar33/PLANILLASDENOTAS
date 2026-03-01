@@ -17,6 +17,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&display=swap" rel="stylesheet">
 
   <style>
     :root { --dark-green: #064e3b; --dark-brown: #451a03; --vibrant-yellow: #facc15; --cream-white: #fafaf9; }
@@ -85,6 +86,23 @@
         '✏️ Personalizado...'
     ];
 
+    // Estilos dinámicos para la vista previa del aviso
+    const getNoticeColorStyle = (color) => {
+        switch(color) {
+            case 'pink': return { backgroundColor: '#fbcfe8', color: '#831843' };
+            case 'blue': return { backgroundColor: '#bae6fd', color: '#0c4a6e' };
+            case 'green': return { backgroundColor: '#bbf7d0', color: '#14532d' };
+            case 'orange': return { backgroundColor: '#ffcc80', color: '#fff' };
+            case 'red': return { backgroundColor: '#ffcdd2', color: '#b71c1c' };
+            case 'purple': return { backgroundColor: '#e9d5ff', color: '#581c87' };
+            case 'teal': return { backgroundColor: '#99f6e4', color: '#115e59' };
+            case 'lime': return { backgroundColor: '#d9f99d', color: '#365314' };
+            case 'white': return { backgroundColor: '#ffffff', color: '#1e293b', border: '1px solid #cbd5e1' };
+            case 'brown': return { backgroundColor: '#d7ccc8', color: '#3e2723' };
+            default: return { backgroundColor: '#fef08a', color: '#1e3a8a' }; // yellow
+        }
+    };
+
     const App = () => {
       const URL_IMAGEN_ALERTA = "https://cdn-icons-png.flaticon.com/512/564/564619.png"; 
 
@@ -99,6 +117,7 @@
       const [isConfigOpen, setIsConfigOpen] = useState(false);
       const [isBoardOpen, setIsBoardOpen] = useState(false);
       const [isXpModalOpen, setIsXpModalOpen] = useState(false);
+      const [isPreviewNoticeOpen, setIsPreviewNoticeOpen] = useState(false); // Estado Vista Previa
 
       const [batchData, setBatchData] = useState({ gradeLevel: '', area: '', actividad: '', entries: [] });
       const [agendaItems, setAgendaItems] = useState([]);
@@ -107,9 +126,7 @@
       const [newTask, setNewTask] = useState({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', publishAt: '' });
       const [editingTask, setEditingTask] = useState(null);
       const [inboxMessages, setInboxMessages] = useState([]);
-      const [replyText, setReplyText] = useState({});
       const [agendaTab, setAgendaTab] = useState('published');
-      const [mailboxTab, setMailboxTab] = useState('active');
       
       const [noticeText, setNoticeText] = useState('');
       const [noticeColor, setNoticeColor] = useState('yellow');
@@ -144,6 +161,11 @@
       const [xpAmount, setXpAmount] = useState(20);
       const [attendanceMap, setAttendanceMap] = useState({});
       
+      // Estados para el Panel de Progreso
+      const [studentsGlobalXp, setStudentsGlobalXp] = useState({}); 
+      const [expandedStudentXp, setExpandedStudentXp] = useState(null);
+      const [expandedStudentHistory, setExpandedStudentHistory] = useState(null);
+      
       // Estado de fecha para la asistencia
       const [attendanceDate, setAttendanceDate] = useState(() => {
           const d = new Date();
@@ -175,7 +197,15 @@
         const unsubNotices = db.collection("tableroAvisos").orderBy("timestamp", "desc").onSnapshot(s => {
             setNoticesList(s.docs.map(d => ({id:d.id, ...d.data()})));
         });
-        return () => { unsubNotes(); unsubAgenda(); unsubMessages(); unsubNotices(); };
+        
+        // Listener para XP Global de todos los estudiantes
+        const unsubXp = db.collection("logrosEstudiantes").onSnapshot(s => {
+            const xpData = {};
+            s.forEach(d => { xpData[d.id] = d.data(); });
+            setStudentsGlobalXp(xpData);
+        });
+
+        return () => { unsubNotes(); unsubAgenda(); unsubMessages(); unsubNotices(); unsubXp(); };
       }, [periodoVisualizacion]);
 
       const updateGlobalPeriod = async (p) => {
@@ -207,7 +237,53 @@
         }
       };
 
-      // --- LOGICA DE GESTIÓN XP Y ASISTENCIA ---
+      const getNivelData = (xp) => {
+          if (xp < 0) xp = 0;
+          const scale = [
+              { lvl: 1,  min: 0,     max: 999,   rango: "🌱 Novato" },
+              { lvl: 2,  min: 1000,  max: 1999,  rango: "🌱 Novato" },
+              { lvl: 3,  min: 2000,  max: 3199,  rango: "🧭 Explorador" },
+              { lvl: 4,  min: 3200,  max: 4499,  rango: "🧭 Explorador" },
+              { lvl: 5,  min: 4500,  max: 5899,  rango: "⚔️ Aventurero" },
+              { lvl: 6,  min: 5900,  max: 7399,  rango: "⚔️ Aventurero" },
+              { lvl: 7,  min: 7400,  max: 8999,  rango: "🦉 Sabio" },
+              { lvl: 8,  min: 9000,  max: 10799, rango: "🦉 Sabio" },
+              { lvl: 9,  min: 10800, max: 12799, rango: "👑 Maestro" },
+              { lvl: 10, min: 12800, max: Infinity, rango: "👑 Maestro Santa Juana" }
+          ];
+          let data = scale[0];
+          for (let i = 0; i < scale.length; i++) {
+              if (xp >= scale[i].min && xp <= scale[i].max) {
+                  data = scale[i];
+                  break;
+              }
+          }
+          let xpInLevel = xp - data.min;
+          let xpRequired = data.max === Infinity ? 0 : (data.max - data.min + 1);
+          let percent = data.max === Infinity ? 100 : (xpInLevel / xpRequired) * 100;
+          let faltan = data.max === Infinity ? 0 : (data.max - xp + 1);
+          return { ...data, xpRequired, percent, faltan };
+      };
+
+      const handleExpandStudent = async (docId) => {
+          if (expandedStudentXp === docId) {
+              setExpandedStudentXp(null);
+              return;
+          }
+          setExpandedStudentXp(docId);
+          setExpandedStudentHistory(null);
+          try {
+              const snap = await db.collection("historialXP").where("documentoEstudiante", "==", docId).get();
+              let hist = [];
+              snap.forEach(d => hist.push({ id: d.id, ...d.data() }));
+              // Ordenamiento local
+              hist.sort((a,b) => b.timestamp - a.timestamp);
+              setExpandedStudentHistory(hist);
+          } catch(e) {
+              console.error(e);
+          }
+      };
+
       const handleXPConceptChange = (e) => {
           const val = e.target.value;
           setXpConcept(val);
@@ -242,11 +318,11 @@
                   if(!xpCustomConcept.trim()) return Swal.fire('Error', 'Escribe el motivo personalizado', 'warning');
                   conceptName = xpCustomConcept.trim();
               } else {
-                  conceptName = xpConcept.split(' ').slice(1).join(' '); // Remueve emoji
+                  conceptName = xpConcept.split(' ').slice(1).join(' '); 
               }
               
               const expDate = new Date();
-              expDate.setHours(expDate.getHours() + 12); // AVISOS CADUCAN A LAS 12 HORAS
+              expDate.setHours(expDate.getHours() + 12); 
 
               let targets = [];
               if (xpStudent === 'TODOS') {
@@ -305,11 +381,9 @@
               const expDate = new Date();
               expDate.setHours(expDate.getHours() + 12);
               
-              // Formatear la fecha seleccionada
               const dateObj = new Date(attendanceDate + "T12:00:00");
               const dateStr = dateObj.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' });
 
-              // COMBINAR TODOS LOS ESTUDIANTES EN UNA SOLA LISTA GENERAL
               const students = Object.values(studentLists).flat();
               
               let count = 0;
@@ -348,6 +422,7 @@
           finally { setIsSaving(false); }
       };
 
+      // MISIL DE BORRADO: Actualización estricta que destruye las medallas fantasmas
       const handleResetXp = async () => {
           if(!xpStudent) return Swal.fire('Error', 'Selecciona estudiante o TODOS', 'warning');
           if(!(await Swal.fire({title: '¡Peligro!', text: 'Esto borrará todos los XP, medallas y el historial. Es irreversible.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33'})).isConfirmed) return;
@@ -356,27 +431,28 @@
           try {
               let targets = xpStudent === 'TODOS' ? (studentLists[xpGrade] || []).map(s => s.split(' - ')[1]) : [xpStudent];
               
+              for (const docId of targets) {
+                  const logRef = db.collection("logrosEstudiantes").doc(docId);
+                  const dSnap = await logRef.get();
+                  if (dSnap.exists) {
+                      await logRef.update({ xp: 0, logros: [], medallas: {} });
+                  } else {
+                      await logRef.set({ xp: 0, logros: [], medallas: {}, documentoEstudiante: docId });
+                  }
+              }
+
               const batch = db.batch();
-              targets.forEach(docId => {
-                   const logRef = db.collection("logrosEstudiantes").doc(docId);
-                   batch.set(logRef, { xp: 0, logros: [], documentoEstudiante: docId }, {merge: true});
+              targets.forEach(async docId => {
+                  const snap = await db.collection("historialXP").where("documentoEstudiante", "==", docId).get();
+                  snap.forEach(d => batch.delete(d.ref));
               });
               await batch.commit();
 
-              targets.forEach(async docId => {
-                  const snap = await db.collection("historialXP").where("documentoEstudiante", "==", docId).get();
-                  const b = db.batch();
-                  snap.forEach(d => b.delete(d.ref));
-                  await b.commit();
-              });
-
-              Swal.fire('Reseteado', 'El progreso ha vuelto a cero.', 'success');
+              Swal.fire('Reseteado', 'El progreso y las medallas han vuelto a cero.', 'success');
               setXpStudent('');
           } catch(e) { console.error(e); }
           finally { setIsSaving(false); }
       };
-
-      // --- LOGICA DE AGENDA Y PUBLICACIONES NORMALES ---
 
       const toggleNoticeTarget = (target) => {
         if (target === 'Todos') { setNoticeTargets(['Todos']); } else {
@@ -390,7 +466,7 @@
 
       const handlePublishNotice = async () => {
         if(isSaving) return;
-        if(!noticeText.trim() && !noticeImage) return Swal.fire('Error', 'Escribe o sube foto', 'warning');
+        if(!noticeText.trim() && !noticeImage && !noticeVideo) return Swal.fire('Error', 'Escribe algo o agrega enlace multimedia', 'warning');
         if(noticeScope === 'Individual' && !targetStudentDoc) return Swal.fire('Error', 'Selecciona un estudiante', 'warning');
         
         setIsSaving(true);
@@ -583,9 +659,18 @@
         }
       };
 
+      // INTELIGENCIA PARA RECONOCER NOTAS FALTANTES Y ERRORES EN 5.0
       const saveIndividualGrade = async (en, idx) => {
         if(isSaving) return;
-        if (!batchData.area || !batchData.actividad) return Swal.fire('Error', 'Área y Actividad obligatorias', 'warning');
+        
+        // RASTREADOR DE ÁREA PARA NOTAS PENDIENTES
+        let actualArea = batchData.area || editingGradeEntry.area;
+        if (!actualArea || actualArea === "SIN_AREA") {
+             const existingRecordForArea = studentsData.find(r => r.actividad === (batchData.actividad || editingGradeEntry.actividad) && r.area && r.area !== "SIN_AREA");
+             actualArea = existingRecordForArea ? existingRecordForArea.area : "";
+        }
+        if (!actualArea) return Swal.fire('Error', 'Falta seleccionar el Área de esta nota.', 'warning');
+        if (!batchData.actividad && !editingGradeEntry.actividad) return Swal.fire('Error', 'Actividad obligatoria', 'warning');
         
         setIsSaving(true);
         try {
@@ -593,58 +678,97 @@
             const docEstudiante = en.name.slice(posIdx + 3).trim();
             const nombreEstudiante = en.name.slice(0, posIdx).trim();
             const finalNota = parseFloat(en.score.replace(',', '.'));
-            const customDocId = `${periodoActual}_${batchData.gradeLevel}_${batchData.area}_${batchData.actividad.trim().replace(/\s+/g, '_')}_${docEstudiante}`;
+            const finalActividad = (batchData.actividad || editingGradeEntry.actividad).trim();
+            const customDocId = `${periodoActual}_${batchData.gradeLevel || editingGradeEntry.gradeLevel}_${actualArea}_${finalActividad.replace(/\s+/g, '_')}_${docEstudiante}`;
 
-            // CALCULADOR DE XP PARA NOTA MANUAL
             const existingRecord = filteredRecords.find(r => r.id === customDocId);
-            let alreadyGranted = existingRecord ? existingRecord.xpGranted : false;
+            let hasBeenProcessedForXP = existingRecord ? existingRecord.xpProcessed : false;
             let xpToAward = 0;
+            let medalMod = 0; // 1 para dar, -1 para quitar
 
-            if (!alreadyGranted) {
-                if (finalNota === 5.0) xpToAward = 100;
+            if (editingGradeEntry && !editingGradeEntry.isNew) {
+                // ES UNA EDICIÓN DE NOTA VIEJA
+                if (editingGradeEntry.originalNota === 5.0 && finalNota < 5.0) {
+                    medalMod = -1; // Castigo: Si editó y bajó del 5.0, le quita la medalla puesta por error
+                }
+            } else if (!hasBeenProcessedForXP) {
+                // ES UNA NOTA TOTALMENTE NUEVA
+                if (finalNota === 5.0) { xpToAward = 100; medalMod = 1; }
                 else if (finalNota >= 4.6) xpToAward = 80;
                 else if (finalNota >= 4.0) xpToAward = 50;
                 else if (finalNota >= 3.0) xpToAward = 25;
             }
 
             const studentObj = {
-                gradeLevel: batchData.gradeLevel, area: batchData.area, actividad: batchData.actividad.trim(),
-                name: en.name, nombreEstudiante: nombreEstudiante, documentoEstudiante: docEstudiante,
-                score: en.score.replace(',', '.'), nota: finalNota,
-                observacion: en.observation || '', periodo: periodoActual || 1, createdAt: Date.now(),
-                xpGranted: alreadyGranted || (xpToAward > 0)
+                gradeLevel: batchData.gradeLevel || editingGradeEntry.gradeLevel, 
+                area: actualArea, 
+                actividad: finalActividad,
+                name: en.name, 
+                nombreEstudiante: nombreEstudiante, 
+                documentoEstudiante: docEstudiante,
+                score: en.score.replace(',', '.'), 
+                nota: finalNota,
+                observacion: en.observation || (editingGradeEntry ? editingGradeEntry.observacion : ''), 
+                periodo: periodoActual || 1, 
+                createdAt: Date.now(),
+                xpProcessed: true
             };
             
-            await db.collection("notasAcademicas").doc(customDocId).set(studentObj, { merge: true });
+            const batch = db.batch();
+            batch.set(db.collection("notasAcademicas").doc(customDocId), studentObj, { merge: true });
             
-            if (xpToAward > 0) {
-                const batch = db.batch();
-                batch.set(db.collection("logrosEstudiantes").doc(docEstudiante), {
-                    xp: firebase.firestore.FieldValue.increment(xpToAward),
-                    documentoEstudiante: docEstudiante,
-                    nombreEstudiante: nombreEstudiante
-                }, {merge: true});
+            if (xpToAward > 0 || medalMod !== 0) {
+                const logData = {};
+                if (xpToAward > 0) {
+                    logData.xp = firebase.firestore.FieldValue.increment(xpToAward);
+                    logData.documentoEstudiante = docEstudiante;
+                    logData.nombreEstudiante = nombreEstudiante;
+                }
+                
+                if (medalMod !== 0) {
+                    logData.medallas = {
+                        [actualArea]: firebase.firestore.FieldValue.increment(medalMod)
+                    };
+                }
 
-                batch.set(db.collection("historialXP").doc(), {
-                    documentoEstudiante: docEstudiante,
-                    motivo: `Calificación en: ${batchData.actividad.trim()}`,
-                    cantidad: xpToAward,
-                    timestamp: Date.now()
-                });
-                await batch.commit();
+                if(Object.keys(logData).length > 0) {
+                    batch.set(db.collection("logrosEstudiantes").doc(docEstudiante), logData, {merge: true});
+                }
+
+                if (xpToAward > 0) {
+                    batch.set(db.collection("historialXP").doc(), {
+                        documentoEstudiante: docEstudiante,
+                        motivo: `Calificación en clase: ${finalActividad}`,
+                        cantidad: xpToAward,
+                        timestamp: Date.now()
+                    });
+                }
             }
 
             if (finalNota < 3.0) {
-                await db.collection("tableroAvisos").add({
-                    mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${studentObj.area}\n📝 ACTIVIDAD: ${studentObj.actividad}\n📉 NOTA: ${finalNota}\n\nPor favor revisar la sección de Alertas dentro de Pizarra Escolar para ampliar la información.`,
+                const alertExpDate = new Date();
+                alertExpDate.setHours(alertExpDate.getHours() + 24);
+
+                const noticeRef = db.collection("tableroAvisos").doc();
+                batch.set(noticeRef, {
+                    mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${actualArea}\n📝 ACTIVIDAD: ${finalActividad}\n📉 NOTA: ${finalNota}\n\nPor favor revisar la sección de Alertas dentro de Pizarra Escolar para ampliar la información.`,
                     color: 'red', imageUrl: URL_IMAGEN_ALERTA, videoUrl: "",
                     scope: 'Individual', targetGrades: [], targetStudentDoc: docEstudiante,
                     fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
-                    timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: false
+                    timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: false,
+                    publishAt: new Date().toISOString(),
+                    expiresAt: alertExpDate.toISOString()
                 });
             }
 
-            const newEntries = [...batchData.entries]; newEntries[idx].saved = true; setBatchData({ ...batchData, entries: newEntries });
+            await batch.commit();
+
+            if(editingGradeEntry) {
+                setEditingGradeEntry(null);
+                Swal.fire({ icon: 'success', title: editingGradeEntry.isNew ? 'Registro guardado' : 'Registro editado', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+            } else {
+                const newEntries = [...batchData.entries]; newEntries[idx].saved = true; setBatchData({ ...batchData, entries: newEntries });
+            }
         } catch(e) { Swal.fire('Error', 'No se pudo guardar la nota', 'error'); }
         finally { setIsSaving(false); }
       };
@@ -665,11 +789,12 @@
                 const customDocId = `${periodoActual}_${batchData.gradeLevel}_${batchData.area}_${batchData.actividad.trim().replace(/\s+/g, '_')}_${docEstudiante}`;
 
                 const existingRecord = filteredRecords.find(r => r.id === customDocId);
-                let alreadyGranted = existingRecord ? existingRecord.xpGranted : false;
+                let hasBeenProcessedForXP = existingRecord ? existingRecord.xpProcessed : false;
                 let xpToAward = 0;
+                let earnsMedal = false;
 
-                if (!alreadyGranted) {
-                    if (finalNota === 5.0) xpToAward = 100;
+                if (!hasBeenProcessedForXP) {
+                    if (finalNota === 5.0) { xpToAward = 100; earnsMedal = true; }
                     else if (finalNota >= 4.6) xpToAward = 80;
                     else if (finalNota >= 4.0) xpToAward = 50;
                     else if (finalNota >= 3.0) xpToAward = 25;
@@ -680,32 +805,45 @@
                     name: en.name, nombreEstudiante: nombreEstudiante, documentoEstudiante: docEstudiante,
                     score: en.score.replace(',','.'), nota: finalNota,
                     observacion: en.observation || '', periodo: periodoActual || 1, createdAt: Date.now(),
-                    xpGranted: alreadyGranted || (xpToAward > 0)
+                    xpProcessed: true
                 }, { merge: true });
 
                 if (xpToAward > 0) {
-                    batch.set(db.collection("logrosEstudiantes").doc(docEstudiante), {
+                    const logData = {
                         xp: firebase.firestore.FieldValue.increment(xpToAward),
                         documentoEstudiante: docEstudiante,
                         nombreEstudiante: nombreEstudiante
-                    }, {merge: true});
+                    };
+                    
+                    if (earnsMedal) {
+                        logData.medallas = {
+                            [batchData.area]: firebase.firestore.FieldValue.increment(1)
+                        };
+                    }
+
+                    batch.set(db.collection("logrosEstudiantes").doc(docEstudiante), logData, {merge: true});
 
                     batch.set(db.collection("historialXP").doc(), {
                         documentoEstudiante: docEstudiante,
-                        motivo: `Calificación en: ${batchData.actividad.trim()}`,
+                        motivo: `Calificación en clase: ${batchData.actividad.trim()}`,
                         cantidad: xpToAward,
                         timestamp: Date.now()
                     });
                 }
 
                 if (finalNota < 3.0) {
+                    const alertExpDate = new Date();
+                    alertExpDate.setHours(alertExpDate.getHours() + 24);
+
                     const noticeRef = db.collection("tableroAvisos").doc();
                     batch.set(noticeRef, {
                         mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${batchData.area}\n📝 ACTIVIDAD: ${batchData.actividad}\n📉 NOTA: ${finalNota}\n\nPor favor revisar la sección de Alertas dentro de Pizarra Escolar para ampliar la información.`,
                         color: 'red', imageUrl: URL_IMAGEN_ALERTA, videoUrl: "",
                         scope: 'Individual', targetGrades: [], targetStudentDoc: docEstudiante,
                         fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
-                        timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: false
+                        timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: false,
+                        publishAt: new Date().toISOString(),
+                        expiresAt: alertExpDate.toISOString()
                     });
                 }
             });
@@ -1009,7 +1147,10 @@
                                                 {record.recuperada && <span className="block text-[8px] text-red-600 font-bold">(Recuperó)</span>}
                                             </td>
                                             <td className="text-right flex justify-end gap-1">
-                                                <button onClick={()=>setEditingGradeEntry({...record, originalNota: parseFloat(record.score.replace(',','.'))})} className="p-2 bg-stone-100 rounded-lg"><EditIcon size={14}/></button>
+                                                <button onClick={()=>{
+                                                    setEditingGradeEntry({...record, originalNota: parseFloat(record.score.replace(',','.'))});
+                                                    setIsFormOpen(false);
+                                                }} className="p-2 bg-stone-100 rounded-lg"><EditIcon size={14}/></button>
                                                 <button onClick={()=>deleteSingleGrade(record.id)} className="p-2 bg-red-50 text-red-500 rounded-lg"><TrashIcon size={14}/></button>
                                             </td>
                                         </tr>
@@ -1021,10 +1162,17 @@
                                             <td><p className="text-xs font-black text-stone-400">{name}</p><p className="text-[8px] font-bold text-red-500 uppercase tracking-tighter">⚠️ Pendiente de nota</p></td>
                                             <td className="text-center text-stone-300 font-black">-,-</td>
                                             <td className="text-right">
-                                                <button onClick={() => setEditingGradeEntry({ 
-                                                    id: `${periodoActual}_${filterGrade}_${filterArea}_${filterActivity.trim().replace(/\s+/g, '_')}_${doc}`,
-                                                    nombreEstudiante: name, documentoEstudiante: doc, gradeLevel: filterGrade, area: filterArea, actividad: filterActivity, score: '', observacion: '', originalNota: 0, isNew: true 
-                                                })} className="p-2 bg-[#facc15] text-[#064e3b] rounded-lg"><Plus size={14}/></button>
+                                                <button onClick={() => {
+                                                    let realArea = filterArea;
+                                                    if (!realArea || realArea === 'SIN_AREA') {
+                                                        const sibling = studentsData.find(r => r.actividad === filterActivity && r.area && r.area !== 'SIN_AREA');
+                                                        if (sibling) realArea = sibling.area;
+                                                    }
+                                                    setEditingGradeEntry({ 
+                                                        id: `${periodoActual}_${filterGrade}_${realArea}_${filterActivity.trim().replace(/\s+/g, '_')}_${doc}`,
+                                                        nombreEstudiante: name, documentoEstudiante: doc, gradeLevel: filterGrade, area: realArea, actividad: filterActivity, score: '', observacion: '', originalNota: 0, isNew: true 
+                                                    });
+                                                }} className="p-2 bg-[#facc15] text-[#064e3b] rounded-lg"><Plus size={14}/></button>
                                             </td>
                                         </tr>
                                     );
@@ -1084,10 +1232,11 @@
                     <h2 className="text-lg font-black text-[#064e3b] uppercase">Gestión de XP</h2>
                     <button onClick={()=>setIsXpModalOpen(false)}>✕</button>
                 </div>
-                <div className="flex bg-stone-50 border-b">
-                    <button onClick={()=>setXpTab('manual')} className={`flex-1 p-3 text-[10px] font-black uppercase ${xpTab==='manual'?'bg-white text-emerald-700 shadow-sm':'text-stone-400'}`}>Actitudes</button>
-                    <button onClick={()=>setXpTab('attendance')} className={`flex-1 p-3 text-[10px] font-black uppercase ${xpTab==='attendance'?'bg-white text-emerald-700 shadow-sm':'text-stone-400'}`}>Asistencia</button>
-                    <button onClick={()=>setXpTab('reset')} className={`flex-1 p-3 text-[10px] font-black uppercase ${xpTab==='reset'?'bg-white text-red-700 shadow-sm':'text-stone-400'}`}>Resetear</button>
+                <div className="flex bg-stone-50 border-b overflow-x-auto no-scrollbar">
+                    <button onClick={()=>setXpTab('manual')} className={`min-w-[80px] flex-1 p-3 text-[10px] font-black uppercase ${xpTab==='manual'?'bg-white text-emerald-700 shadow-sm':'text-stone-400'}`}>Actitudes</button>
+                    <button onClick={()=>setXpTab('attendance')} className={`min-w-[80px] flex-1 p-3 text-[10px] font-black uppercase ${xpTab==='attendance'?'bg-white text-emerald-700 shadow-sm':'text-stone-400'}`}>Asistencia</button>
+                    <button onClick={()=>setXpTab('progreso')} className={`min-w-[80px] flex-1 p-3 text-[10px] font-black uppercase ${xpTab==='progreso'?'bg-white text-[#ca8a04] shadow-sm':'text-stone-400'}`}>Progreso</button>
+                    <button onClick={()=>setXpTab('reset')} className={`min-w-[80px] flex-1 p-3 text-[10px] font-black uppercase ${xpTab==='reset'?'bg-white text-red-700 shadow-sm':'text-stone-400'}`}>Reset</button>
                 </div>
                 <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto no-scrollbar">
                     
@@ -1144,6 +1293,58 @@
                         </>
                     )}
 
+                    {xpTab === 'progreso' && (
+                        <>
+                            <select value={xpGrade} onChange={e=>{setXpGrade(e.target.value); setExpandedStudentXp(null);}} className="w-full p-3 text-xs font-black border-2 border-stone-200 mb-3">
+                                {gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}
+                            </select>
+                            <div className="space-y-2">
+                                {(studentLists[xpGrade] || []).map(student => {
+                                    const [name, docId] = student.split(' - ');
+                                    const dataObj = studentsGlobalXp[docId] || {};
+                                    const totalXp = dataObj.xp || 0;
+                                    const isExpanded = expandedStudentXp === docId;
+                                    const nData = getNivelData(totalXp);
+                                    
+                                    return (
+                                        <div key={docId} className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-sm transition-all duration-200">
+                                            <div className="p-3 flex justify-between items-center cursor-pointer hover:bg-stone-50" onClick={()=>handleExpandStudent(docId)}>
+                                                <span className="text-[11px] font-black text-stone-800 truncate pr-2 flex-1">{name}</span>
+                                                <span className="text-[11px] font-black text-[#064e3b] bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-lg shrink-0">{totalXp} XP</span>
+                                            </div>
+                                            {isExpanded && (
+                                                <div className="p-4 bg-stone-50 border-t border-stone-200">
+                                                    <div className="mb-4">
+                                                        <div className="flex justify-between text-[10px] font-black text-stone-600 mb-1">
+                                                            <span>{nData.rango} (Nvl {nData.lvl})</span>
+                                                            {nData.faltan > 0 ? <span>Faltan {nData.faltan} XP</span> : <span>¡Nivel Máximo!</span>}
+                                                        </div>
+                                                        <div className="h-3 w-full bg-stone-200 rounded-full overflow-hidden border border-stone-300">
+                                                            <div className="h-full bg-[#facc15]" style={{width: `${nData.percent}%`}}></div>
+                                                        </div>
+                                                    </div>
+                                                    <h4 className="text-[9px] font-black text-stone-400 uppercase mb-2 tracking-wider">Historial Reciente:</h4>
+                                                    <div className="space-y-1 max-h-32 overflow-y-auto pr-1 no-scrollbar">
+                                                        {!expandedStudentHistory ? (
+                                                            <div className="text-[10px] text-stone-500 font-bold text-center py-2">Cargando...</div>
+                                                        ) : expandedStudentHistory.length === 0 ? (
+                                                            <div className="text-[10px] text-stone-500 text-center py-2">Sin registros de XP.</div>
+                                                        ) : expandedStudentHistory.map(h => (
+                                                            <div key={h.id} className="flex justify-between items-center text-[10px] bg-white p-2 rounded-lg border border-stone-100 shadow-sm">
+                                                                <span className="truncate pr-2 text-stone-600 font-bold flex-1">{h.motivo}</span>
+                                                                <span className={`font-black shrink-0 ${h.cantidad>0?'text-emerald-600':'text-red-600'}`}>{h.cantidad>0?'+':''}{h.cantidad}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
+
                     {xpTab === 'reset' && (
                         <>
                             <div className="bg-red-50 p-4 rounded-xl border border-red-200 text-[10px] font-black text-red-800 mb-4 text-center">
@@ -1164,6 +1365,34 @@
                 </div>
               </div>
             </div>
+          )}
+
+          {isPreviewNoticeOpen && (
+              <div className="fixed inset-0 z-[300] flex items-center justify-center p-4" onClick={()=>setIsPreviewNoticeOpen(false)}>
+                  <div className="absolute inset-0 bg-stone-900/80 backdrop-blur-sm" />
+                  <div className="relative w-full max-w-sm flex flex-col items-center" onClick={e=>e.stopPropagation()}>
+                      <h3 className="text-white font-black text-sm mb-4 uppercase text-center w-full">VISTA PREVIA DEL ESTUDIANTE</h3>
+                      <div style={{...getNoticeColorStyle(noticeColor), fontFamily: "'Kalam', cursive", width: "100%", minHeight: "140px", padding: "15px", position: "relative", boxShadow: "4px 4px 6px rgba(0,0,0,0.2)", transform: "rotate(-1deg)", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "center", wordBreak: "break-word", fontSize: "15px", lineHeight: "1.1", borderRadius: "2px"}}>
+                          <div style={{width: "14px", height: "14px", background: "#ef4444", borderRadius: "50%", position: "absolute", top: "-6px", left: "50%", transform: "translateX(-50%)", boxShadow: "1px 1px 3px rgba(0,0,0,0.3)", border: "1px solid #b91c1c"}}></div>
+                          
+                          {noticeScope !== 'General' && (
+                              <div style={{position: "absolute", top: "-6px", right: "-6px", background: "#fff0f5", color: "#b71c1c", border: "1px solid #ffcdd2", padding: "2px 6px", borderRadius: "10px", fontSize: "11px", fontWeight: "900", transform: "rotate(5deg)", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", zIndex: "10", fontFamily: "system-ui, sans-serif"}}>
+                                  {noticeScope === 'Grado' ? '👨‍👧‍👦 GRUPO' : '👤 ESTUDIANTE'}
+                              </div>
+                          )}
+                          
+                          {noticeImage && (
+                              <div style={{background: "white", padding: "5px 5px 15px 5px", border: "1px solid #ddd", boxShadow: "0 2px 4px rgba(0,0,0,0.1)", marginBottom: "5px", transform: "rotate(-2deg)"}}>
+                                  <img src={noticeImage} style={{width: "100%", height: "120px", objectFit: "cover", display: "block"}}/>
+                              </div>
+                          )}
+                          {noticeVideo && <div style={{position: "absolute", top: "10px", right: "10px", fontSize: "24px", color: "#d32f2f", filter: "drop-shadow(0 2px 2px rgba(255,255,255,0.8))"}}>▶️</div>}
+                          
+                          <div style={{whiteSpace: "pre-line"}}>{noticeText || "Escribe un mensaje para ver la vista previa..."}</div>
+                      </div>
+                      <button onClick={()=>setIsPreviewNoticeOpen(false)} className="mt-6 w-full py-3 bg-white text-stone-800 font-black rounded-xl uppercase text-xs shadow-lg active:scale-95">Cerrar Vista Previa</button>
+                  </div>
+              </div>
           )}
 
           {isConfigOpen && (
@@ -1191,9 +1420,14 @@
                     </div>
                     <textarea value={noticeText} onChange={e=>setNoticeText(e.target.value)} className="w-full p-3 text-xs font-bold border border-stone-300 rounded-xl resize-none h-20" placeholder="Escribe el aviso..."></textarea>
                     <input type="url" value={noticeVideo} onChange={e=>setNoticeVideo(e.target.value)} className="w-full p-2 text-[10px] border rounded-lg" placeholder="YouTube URL"/>
-                    <label className="block bg-white p-2 rounded-lg border border-dashed border-stone-400 text-[10px] font-black text-center cursor-pointer">
-                        {noticeImage ? "📷 FOTO CARGADA" : "📷 SUBIR FOTO"}<input type="file" accept="image/*" onChange={handleFileChange} className="hidden"/>
-                    </label>
+                    
+                    <div className="flex gap-2 items-center mb-1">
+                        <input type="text" placeholder="Pega URL de imagen o sube archivo 👉" value={noticeImage} onChange={e=>setNoticeImage(e.target.value)} className="flex-1 p-3 text-xs font-bold border border-stone-300 rounded-xl outline-none" />
+                        <label className="bg-stone-200 px-3 py-3 rounded-xl border border-stone-300 text-[10px] font-black cursor-pointer shadow-sm active:scale-95 shrink-0">
+                            📷 SUBIR<input type="file" accept="image/*" onChange={handleFileChange} className="hidden"/>
+                        </label>
+                    </div>
+
                     <div className="space-y-3 p-3 bg-stone-100 rounded-2xl">
                         <div className="flex gap-2 bg-white p-1 rounded-xl shadow-sm mb-2">
                             <button onClick={()=>setNoticeTab('active')} className={`flex-1 py-2 text-[10px] font-black rounded-lg ${noticeTab==='active'?'bg-[#064e3b] text-white':'text-stone-400'}`}>ACTIVOS</button>
@@ -1230,11 +1464,12 @@
                         </div>
                     </div>
                     <div className="flex gap-2 mt-2">
-                        <select value={noticeColor} onChange={e=>setNoticeColor(e.target.value)} className="p-2 text-xs font-black rounded-xl border border-stone-300 flex-1">
+                        <select value={noticeColor} onChange={e=>setNoticeColor(e.target.value)} className="p-2 text-xs font-black rounded-xl border border-stone-300 w-1/3">
                             <option value="yellow">Amarillo</option><option value="pink">Rosado</option><option value="blue">Azul</option><option value="green">Verde</option>
                             <option value="orange">Naranja</option><option value="white">Blanco</option>
                         </select>
-                        <button onClick={handlePublishNotice} className="flex-[2] bg-[#064e3b] text-[#facc15] font-black text-[10px] uppercase rounded-xl shadow-lg">{editingNoticeId ? 'GUARDAR CAMBIOS' : 'PUBLICAR'}</button>
+                        <button onClick={()=>setIsPreviewNoticeOpen(true)} className="flex-1 bg-sky-100 text-sky-700 font-black text-[10px] uppercase rounded-xl border border-sky-200 active:scale-95">👀 VISTA PREVIA</button>
+                        <button onClick={handlePublishNotice} className="flex-1 bg-[#064e3b] text-[#facc15] font-black text-[10px] uppercase rounded-xl shadow-lg active:scale-95">{editingNoticeId ? 'GUARDAR' : 'PUBLICAR'}</button>
                     </div>
                     <div className="space-y-2 mt-4">
                         {noticesList.filter(n => noticeTab === 'active' ? !n.archived : n.archived).map(n => (
@@ -1331,12 +1566,19 @@
                         const isRecovery = isJustRecovered || (editingGradeEntry.recuperada || false);
                         
                         let xpToAward = 0;
-                        let alreadyGranted = editingGradeEntry.xpGranted || false;
-                        if (!alreadyGranted) {
-                            if (newNota === 5.0) xpToAward = 100;
+                        let medalMod = 0; 
+                        
+                        // Si la nota es totalmente nueva, damos premios.
+                        if (editingGradeEntry.isNew) {
+                            if (newNota === 5.0) { xpToAward = 100; medalMod = 1; }
                             else if (newNota >= 4.6) xpToAward = 80;
                             else if (newNota >= 4.0) xpToAward = 50;
                             else if (newNota >= 3.0) xpToAward = 25;
+                        } else {
+                            // Si el docente baja la nota de 5.0 a menos, revoca la medalla que se dio por error
+                            if (editingGradeEntry.originalNota === 5.0 && newNota < 5.0) {
+                                medalMod = -1;
+                            }
                         }
 
                         const updateData = {
@@ -1345,39 +1587,65 @@
                             gradeLevel: editingGradeEntry.gradeLevel, area: editingGradeEntry.area,
                             nombreEstudiante: editingGradeEntry.nombreEstudiante, documentoEstudiante: editingGradeEntry.documentoEstudiante,
                             lastUpdate: Date.now(),
-                            xpGranted: alreadyGranted || (xpToAward > 0)
+                            xpProcessed: true 
                         };
                         if(isJustRecovered) updateData.notaAnterior = editingGradeEntry.originalNota;
-                        await db.collection("notasAcademicas").doc(editingGradeEntry.id).set(updateData, { merge: true });
+                        
+                        const batch = db.batch();
+                        if (editingGradeEntry.isNew) {
+                            batch.set(db.collection("notasAcademicas").doc(editingGradeEntry.id), updateData);
+                        } else {
+                            batch.set(db.collection("notasAcademicas").doc(editingGradeEntry.id), updateData, { merge: true });
+                        }
+
+                        // Entregar o Quitar medalla
+                        if (xpToAward > 0 || medalMod !== 0) {
+                            const logData = {};
+                            if (xpToAward > 0) {
+                                logData.xp = firebase.firestore.FieldValue.increment(xpToAward);
+                                logData.documentoEstudiante = editingGradeEntry.documentoEstudiante;
+                                logData.nombreEstudiante = editingGradeEntry.nombreEstudiante;
+                            }
+                            if (medalMod !== 0 && editingGradeEntry.area) {
+                                logData.medallas = {
+                                    [editingGradeEntry.area]: firebase.firestore.FieldValue.increment(medalMod)
+                                };
+                            }
+                            batch.set(db.collection("logrosEstudiantes").doc(editingGradeEntry.documentoEstudiante), logData, {merge: true});
+                        }
 
                         if (xpToAward > 0) {
-                            const batch = db.batch();
-                            batch.set(db.collection("logrosEstudiantes").doc(editingGradeEntry.documentoEstudiante), {
-                                xp: firebase.firestore.FieldValue.increment(xpToAward),
-                                documentoEstudiante: editingGradeEntry.documentoEstudiante,
-                                nombreEstudiante: editingGradeEntry.nombreEstudiante
-                            }, {merge: true});
-
                             batch.set(db.collection("historialXP").doc(), {
                                 documentoEstudiante: editingGradeEntry.documentoEstudiante,
-                                motivo: `Calificación en: ${editingGradeEntry.actividad}`,
+                                motivo: `Calificación en clase: ${editingGradeEntry.actividad}`,
                                 cantidad: xpToAward,
                                 timestamp: Date.now()
                             });
-                            await batch.commit();
                         }
 
                         if (newNota < 3.0) {
-                            await db.collection("tableroAvisos").add({
+                            const alertExpDate = new Date();
+                            alertExpDate.setHours(alertExpDate.getHours() + 24);
+
+                            const noticeRef = db.collection("tableroAvisos").doc();
+                            batch.set(noticeRef, {
                                 mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${editingGradeEntry.area}\n📝 ACTIVIDAD: ${editingGradeEntry.actividad}\n📉 NOTA: ${newNota}\n\nRevisar Alertas en Pizarra Escolar.`,
                                 color: 'red', imageUrl: URL_IMAGEN_ALERTA, videoUrl: "",
                                 scope: 'Individual', targetGrades: [], targetStudentDoc: editingGradeEntry.documentoEstudiante,
                                 fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
-                                timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false 
+                                timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: false,
+                                publishAt: new Date().toISOString(),
+                                expiresAt: alertExpDate.toISOString()
                             });
                         }
+                        
+                        await batch.commit();
                         setEditingGradeEntry(null); 
-                        Swal.fire({ icon: 'success', title: 'Registro actualizado', toast: true, position: 'top-end', timer: 1500, showConfirmButton: false });
+                        if(editingGradeEntry.isNew) {
+                             Swal.fire({ icon: 'success', title: 'Registro guardado', text: 'Se sumaron los premios.', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+                        } else {
+                             Swal.fire({ icon: 'success', title: 'Registro actualizado', text: 'Sin alterar XP (Recuperación).', toast: true, position: 'top-end', timer: 2500, showConfirmButton: false });
+                        }
                     } catch(e) { Swal.fire('Error', 'No se pudo actualizar el registro', 'error'); }
                     finally { setIsSaving(false); }
                 }} disabled={isSaving} className="w-full py-4 bg-[#064e3b] text-[#facc15] rounded-2xl font-black uppercase">Guardar Registro</button>
