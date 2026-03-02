@@ -74,7 +74,6 @@
     const gradeLevels = ['Primero', 'Segundo', 'Tercero', 'Cuarto', 'Quinto'];
     const areasList = ['INGLES', 'CIENCIAS NATURALES', 'CIENCIAS SOCIALES', 'ARTISTICA', 'EDUCACION FISICA', 'ETICA Y VALORES', 'RELIGION', 'ESPAÑOL (LENGUAJE)', 'MATEMATICAS', 'TECNOLOGIA E INFORMATICA'];
     
-    // Conceptos para el control de XP manual
     const conceptosXP = [
         '🙋‍♂️ Participación en clase',
         '😇 Comportamiento',
@@ -86,7 +85,6 @@
         '✏️ Personalizado...'
     ];
 
-    // Estilos dinámicos para la vista previa del aviso
     const getNoticeColorStyle = (color) => {
         switch(color) {
             case 'pink': return { backgroundColor: '#fbcfe8', color: '#831843' };
@@ -103,10 +101,48 @@
         }
     };
 
-    // Funciones para extraer IDs de Multimedia
+    // Funciones Multimedia Estudiante-like
     const getYouTubeId = (url) => { if(!url) return null; const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/; const match = url.match(regExp); return (match && match[2].length === 11) ? match[2] : null; };
     const getTikTokId = (url) => { if(!url) return null; const match = url.match(/video\/(\d+)/); return match ? match[1] : null; };
+    const isTikTok = (url) => { return url && url.toLowerCase().includes('tiktok.com'); };
     const getDriveId = (url) => { if(!url) return null; const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/); return match ? match[1] : null; };
+
+    const getAreaStyle = (a) => { 
+        const area = (a || '').toUpperCase(); 
+        if(area.includes('MATEMATICAS')) return { border: '#0284c7', badge: '#0284c7', text: '#ffffff', bg: '#f0f9ff' }; 
+        if(area.includes('ESPAÑOL') || area.includes('LENGUAJE')) return { border: '#0891b2', badge: '#0891b2', text: '#ffffff', bg: '#ecfeff' }; 
+        if(area.includes('NATURALES')) return { border: '#059669', badge: '#059669', text: '#ffffff', bg: '#ecfdf5' }; 
+        if(area.includes('SOCIALES')) return { border: '#d97706', badge: '#d97706', text: '#ffffff', bg: '#fffbeb' }; 
+        if(area.includes('INGLES')) return { border: '#7c3aed', badge: '#7c3aed', text: '#ffffff', bg: '#f5f3ff' }; 
+        if(area.includes('ARTISTICA')) return { border: '#ca8a04', badge: '#ca8a04', text: '#ffffff', bg: '#fefce8' }; 
+        if(area.includes('EDUCACION FISICA')) return { border: '#65a30d', badge: '#65a30d', text: '#ffffff', bg: '#f7fee7' }; 
+        if(area.includes('ETICA') || area.includes('RELIGION')) return { border: '#0d9488', badge: '#0d9488', text: '#ffffff', bg: '#f0fdf4' }; 
+        if(area.includes('TECNOLOGIA') || area.includes('INFORMATICA')) return { border: '#4f46e5', badge: '#4f46e5', text: '#ffffff', bg: '#eef2ff' }; 
+        return { border: '#475569', badge: '#475569', text: '#ffffff', bg: '#f8fafc' }; 
+    };
+
+    const formatTaskDescription = (text) => {
+        if (!text) return <span className="italic text-stone-400">Sin descripción...</span>;
+        const lines = text.split('\n');
+        return lines.map((line, idx) => {
+            let trimmedLine = line.trim();
+            if (!trimmedLine) return <div key={idx} className="h-3"></div>;
+            const bulletMatch = trimmedLine.match(/^[-*•]\s*(.*)/);
+            if (bulletMatch) {
+                let content = bulletMatch[1];
+                const parts = content.split(/(\b[A-ZÁÉÍÓÚÑ\s]{4,}\b)/g);
+                return (
+                    <div key={idx} className="flex gap-2 my-1 pl-1">
+                        <span className="text-[#2e7d32] font-black text-lg leading-none">●</span>
+                        <span>{parts.map((p, i) => /^[A-ZÁÉÍÓÚÑ\s]{4,}$/.test(p) ? <span key={i} className="text-[#d32f2f] font-black">{p}</span> : p)}</span>
+                    </div>
+                );
+            } else {
+                const parts = trimmedLine.split(/(\b[A-ZÁÉÍÓÚÑ\s]{4,}\b)/g);
+                return <div key={idx}>{parts.map((p, i) => /^[A-ZÁÉÍÓÚÑ\s]{4,}$/.test(p) ? <span key={i} className="text-[#d32f2f] font-black">{p}</span> : p)}</div>;
+            }
+        });
+    };
 
     const App = () => {
       const URL_IMAGEN_ALERTA = "https://cdn-icons-png.flaticon.com/512/564/564619.png"; 
@@ -123,8 +159,9 @@
       const [isBoardOpen, setIsBoardOpen] = useState(false);
       const [isXpModalOpen, setIsXpModalOpen] = useState(false);
       const [isPreviewNoticeOpen, setIsPreviewNoticeOpen] = useState(false); 
+      const [isPreviewAgendaOpen, setIsPreviewAgendaOpen] = useState(false);
+      const [previewAgendaData, setPreviewAgendaData] = useState(null);
 
-      // ESTADO NUEVO PARA EVITAR DOBLE XP
       const [massiveAwardXp, setMassiveAwardXp] = useState(true);
 
       const [batchData, setBatchData] = useState({ gradeLevel: '', area: '', actividad: '', entries: [] });
@@ -132,7 +169,11 @@
       const [assignmentType, setAssignmentType] = useState('group');
       const [selectedGrades, setSelectedGrades] = useState([]);
       const [newTask, setNewTask] = useState({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', publishAt: '' });
+      
       const [editingTask, setEditingTask] = useState(null);
+      const [editAssignmentType, setEditAssignmentType] = useState('group');
+      const [editSelectedGrades, setEditSelectedGrades] = useState([]);
+
       const [inboxMessages, setInboxMessages] = useState([]);
       const [agendaTab, setAgendaTab] = useState('published');
       
@@ -434,6 +475,7 @@
           try {
               let targets = xpStudent === 'TODOS' ? (studentLists[xpGrade] || []).map(s => s.split(' - ')[1]) : [xpStudent];
               
+              const batch = db.batch();
               for (const docId of targets) {
                   const logRef = db.collection("logrosEstudiantes").doc(docId);
                   const dSnap = await logRef.get();
@@ -444,7 +486,6 @@
                   }
               }
 
-              const batch = db.batch();
               targets.forEach(async docId => {
                   const snap = await db.collection("historialXP").where("documentoEstudiante", "==", docId).get();
                   snap.forEach(d => batch.delete(d.ref));
@@ -559,6 +600,12 @@
         } catch(e) { return false; }
       };
 
+      // MUESTRA VISTA PREVIA AGENDA ESTUDIANTE
+      const handlePreviewAgenda = (taskData) => {
+          setPreviewAgendaData(taskData);
+          setIsPreviewAgendaOpen(true);
+      };
+
       const handleAddTask = async (status = 'published') => {
         if(isSaving) return;
         const isPublished = status === 'published';
@@ -617,6 +664,51 @@
         } catch (error) {
             Swal.fire('Error al guardar', 'Verifica los campos e intenta de nuevo.', 'error');
         } finally { setIsSaving(false); }
+      };
+
+      const handleSaveEditTask = async () => {
+          if(isSaving) return;
+          setIsSaving(true);
+          try {
+              const batch = db.batch();
+              const baseTask = { ...editingTask };
+              const originalId = baseTask.id;
+              delete baseTask.id;
+
+              if (editAssignmentType === 'individual') {
+                  baseTask.targetStudent = editingTask.targetStudent;
+                  batch.update(db.collection("agendaEscolar").doc(originalId), baseTask);
+              } else {
+                  baseTask.targetStudent = '';
+                  if (editSelectedGrades.length === 0) {
+                      Swal.fire('Error', 'Debes seleccionar al menos un grado.', 'warning');
+                      setIsSaving(false);
+                      return;
+                  }
+                  
+                  let gradeForCurrentDoc = editingTask.gradeLevel;
+                  if (!editSelectedGrades.includes(gradeForCurrentDoc)) {
+                      gradeForCurrentDoc = editSelectedGrades[0];
+                  }
+                  
+                  baseTask.gradeLevel = gradeForCurrentDoc;
+                  batch.update(db.collection("agendaEscolar").doc(originalId), baseTask);
+                  
+                  editSelectedGrades.filter(g => g !== gradeForCurrentDoc).forEach(g => {
+                      const ref = db.collection("agendaEscolar").doc();
+                      batch.set(ref, { ...baseTask, gradeLevel: g, createdAt: Date.now() });
+                  });
+              }
+              
+              await batch.commit();
+              setEditingTask(null);
+              Swal.fire({ icon: 'success', title: 'Tarea Actualizada', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+          } catch(e) {
+              console.error(e);
+              Swal.fire('Error', 'No se pudo actualizar la tarea', 'error');
+          } finally {
+              setIsSaving(false);
+          }
       };
 
       const publishDraft = async (task) => {
@@ -1036,7 +1128,11 @@
                     <label className="block text-[9px] font-black text-stone-500 uppercase mb-2">Programar Publicación (Opcional)</label>
                     <input type="datetime-local" value={newTask.publishAt} onChange={e=>setNewTask({...newTask, publishAt:e.target.value})} className="w-full p-3 text-[10px] font-black bg-white rounded-lg border border-stone-300"/>
                   </div>
-                  <div className="flex gap-2"><button onClick={() => handleAddTask('draft')} disabled={isSaving} className="flex-1 py-4 bg-stone-200 text-stone-600 font-black rounded-2xl text-[11px] uppercase">Borrador</button><button onClick={() => handleAddTask('published')} disabled={isSaving} className="flex-[2] py-4 bg-[#064e3b] text-white font-black rounded-2xl text-[11px] uppercase shadow-lg">Publicar</button></div>
+                  <div className="flex gap-2">
+                      <button onClick={() => handlePreviewAgenda(newTask)} disabled={isSaving} className="flex-[1] py-4 bg-sky-100 text-sky-700 border border-sky-200 font-black rounded-2xl text-[10px] uppercase shadow-sm">👁️ Previa</button>
+                      <button onClick={() => handleAddTask('draft')} disabled={isSaving} className="flex-[1.5] py-4 bg-stone-200 text-stone-600 font-black rounded-2xl text-[10px] uppercase">Borrador</button>
+                      <button onClick={() => handleAddTask('published')} disabled={isSaving} className="flex-[2] py-4 bg-[#064e3b] text-white font-black rounded-2xl text-[10px] uppercase shadow-lg">Publicar</button>
+                  </div>
                 </div>
 
                 <div className="space-y-4">
@@ -1099,7 +1195,11 @@
                                 <button onClick={()=>archiveTask(item)} disabled={isSaving} className="p-2 text-stone-400" title="Archivar"><ArchiveIcon size={20}/></button>
                             )
                         )}
-                        <button onClick={()=>setEditingTask(item)} className="p-2 text-stone-400"><EditIcon size={20}/></button>
+                        <button onClick={()=>{
+                            setEditingTask(item);
+                            setEditAssignmentType(item.targetStudent ? 'individual' : 'group');
+                            setEditSelectedGrades([item.gradeLevel]);
+                        }} className="p-2 text-stone-400"><EditIcon size={20}/></button>
                         <button onClick={async ()=>{ if((await Swal.fire({title:'¿Eliminar?', icon:'warning', showCancelButton:true})).isConfirmed) db.collection("agendaEscolar").doc(item.id).delete(); }} className="p-2 text-stone-400"><TrashIcon size={20}/></button>
                       </div>
                     </div>
@@ -1220,6 +1320,53 @@
             <button onClick={()=>setView('records')} className={`flex flex-col items-center gap-1 ${view==='records'?'nav-active':'text-stone-400'}`}><Database size={22}/><span className="text-[8px] uppercase">Registros</span></button>
             <button onClick={()=>setView('panels')} className={`flex flex-col items-center gap-1 ${view==='panels'?'nav-active':'text-stone-400'}`}><LayoutIcon size={22}/><span className="text-[8px] uppercase">Panels</span></button>
           </nav>
+
+{/* VISTA PREVIA AGENDA ESTUDIANTE */}
+          {isPreviewAgendaOpen && previewAgendaData && (
+              <div className="fixed inset-0 z-[300] flex items-center justify-center p-4" onClick={()=>setIsPreviewAgendaOpen(false)}>
+                  <div className="absolute inset-0 bg-stone-900/80 backdrop-blur-sm" />
+                  <div className="relative w-full max-w-sm flex flex-col items-center" onClick={e=>e.stopPropagation()}>
+                      <h3 className="text-white font-black text-sm mb-4 uppercase text-center w-full">VISTA PREVIA AGENDA ESTUDIANTE</h3>
+                      
+                      <div style={{border: "1.5px solid #eee", borderLeft: `6px solid ${getAreaStyle(previewAgendaData.area).border}`, borderRadius: "20px", padding: "18px", marginBottom: "18px", background: "#fff", width: "100%", maxHeight: "70vh", overflowY: "auto"}}>
+                          
+                          <span style={{fontSize: "10px", fontWeight: "900", padding: "4px 10px", borderRadius: "8px", background: getAreaStyle(previewAgendaData.area).badge, color: getAreaStyle(previewAgendaData.area).text, textTransform: "uppercase"}}>
+                              {previewAgendaData.area || 'General'}
+                          </span>
+                          
+                          <div style={{margin: "12px 0 8px", fontSize: "12px", fontWeight: "700", color: "#c62828", textTransform: "capitalize"}}>
+                              📅 Entrega: {previewAgendaData.date ? new Date(previewAgendaData.date + "T00:00:00").toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).replace(',', '') : 'Sin fecha'}
+                          </div>
+                          
+                          <div style={{fontSize: "17px", fontWeight: "900", color: "#1e293b", lineHeight: "1.2"}}>
+                              {previewAgendaData.title || 'SIN TÍTULO'}
+                          </div>
+                          
+                          <div style={{fontSize: "14px", color: "#334155", lineHeight: "1.6", marginTop: "10px", background: "#f8fafc", padding: "18px", borderRadius: "16px", border: "1px solid #e2e8f0", wordBreak: "break-word"}}>
+                              {formatTaskDescription(previewAgendaData.description)}
+                          </div>
+                          
+                          {previewAgendaData.videoLink && getYouTubeId(previewAgendaData.videoLink) && (
+                              <div style={{marginTop: "15px", borderRadius: "15px", overflow: "hidden", aspectRatio: "16/9", border: "1px solid #ddd"}}>
+                                  <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${getYouTubeId(previewAgendaData.videoLink)}`} frameBorder="0" allowFullScreen></iframe>
+                              </div>
+                          )}
+                          {previewAgendaData.videoLink && isTikTok(previewAgendaData.videoLink) && getTikTokId(previewAgendaData.videoLink) && (
+                              <div style={{marginTop: "15px", borderRadius: "15px", overflow: "hidden", aspectRatio: "9/16", border: "1px solid #ddd", background: "#000"}}>
+                                  <iframe width="100%" height="100%" src={`https://www.tiktok.com/embed/v2/${getTikTokId(previewAgendaData.videoLink)}`} frameBorder="0" allowFullScreen></iframe>
+                              </div>
+                          )}
+                          {previewAgendaData.pdfLink && (
+                              <div style={{marginTop: "15px", borderRadius: "15px", overflow: "hidden", height: "300px", border: "1px solid #ddd"}}>
+                                  <iframe width="100%" height="100%" src={getDriveId(previewAgendaData.pdfLink) ? `https://drive.google.com/file/d/${getDriveId(previewAgendaData.pdfLink)}/preview` : `https://docs.google.com/gview?url=${encodeURIComponent(previewAgendaData.pdfLink)}&embedded=true`} frameBorder="0"></iframe>
+                              </div>
+                          )}
+                      </div>
+
+                      <button onClick={()=>setIsPreviewAgendaOpen(false)} className="mt-4 w-full py-3 bg-white text-stone-800 font-black rounded-xl uppercase text-xs shadow-lg active:scale-95">Cerrar Vista Previa</button>
+                  </div>
+              </div>
+          )}
 
           {/* MODAL GESTIÓN XP MANUAL */}
           {isXpModalOpen && (
@@ -1548,14 +1695,30 @@
               <div className="relative bg-white w-full max-w-md rounded-[40px] p-6 border-t-[10px] border-[#facc15] max-h-[90vh] overflow-y-auto no-scrollbar">
                 <h3 className="font-black mb-4 uppercase text-emerald-900">Editar Tarea</h3>
                 <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
-                        <select value={editingTask.gradeLevel || 'Quinto'} onChange={e=>setEditingTask({...editingTask, gradeLevel:e.target.value, targetStudent: ''})} className="w-full p-3 text-xs font-black">{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select>
-                        <select value={editingTask.area} onChange={e=>setEditingTask({...editingTask, area:e.target.value})} className="w-full p-3 text-xs font-black">{areasList.map(a => <option key={a} value={a}>{a}</option>)}</select>
+                    
+                    <div className="flex gap-2 bg-stone-100 p-1 rounded-xl mb-3">
+                      <button onClick={()=>setEditAssignmentType('group')} className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg ${editAssignmentType==='group'?'bg-white text-emerald-900 shadow-sm':'text-stone-400'}`}>Grupal</button>
+                      <button onClick={()=>setEditAssignmentType('individual')} className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg ${editAssignmentType==='individual'?'bg-white text-emerald-900 shadow-sm':'text-stone-400'}`}>Individual</button>
                     </div>
-                    <select value={editingTask.targetStudent || ''} onChange={e=>setEditingTask({...editingTask, targetStudent:e.target.value})} className="w-full p-3 text-xs font-black bg-stone-50">
-                        <option value="">Todos (Grupal)</option>
-                        {(studentLists[editingTask.gradeLevel || 'Quinto'] || []).map(name => <option key={name.split(' - ')[1]} value={name.split(' - ')[1]}>{name.split(' - ')[0]}</option>)}
-                    </select>
+
+                    {editAssignmentType === 'group' ? (
+                      <div className="grid grid-cols-5 gap-1 mb-3">
+                        {gradeLevels.map(g => (
+                          <button key={g} onClick={()=>setEditSelectedGrades(prev => prev.includes(g) ? prev.filter(x=>x!==g) : [...prev, g])} className={`py-3 rounded-xl text-[10px] font-black border ${editSelectedGrades.includes(g)?'bg-[#064e3b] text-[#facc15] border-[#064e3b]':'bg-white text-stone-400 border-stone-200'}`}>{g}</button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <select value={editingTask.gradeLevel || 'Quinto'} onChange={e=>{setEditingTask({...editingTask, gradeLevel:e.target.value, targetStudent: ''}); setEditSelectedGrades([e.target.value]);}} className="p-3 text-xs font-black">{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select>
+                        <select value={editingTask.targetStudent || ''} onChange={e=>setEditingTask({...editingTask, targetStudent:e.target.value})} className="p-3 text-xs font-black bg-stone-50">
+                          <option value="">Estudiante...</option>
+                          {(studentLists[editingTask.gradeLevel || 'Quinto'] || []).map(name => <option key={name.split(' - ')[1]} value={name.split(' - ')[1]}>{name.split(' - ')[0]}</option>)}
+                        </select>
+                      </div>
+                    )}
+
+                    <select value={editingTask.area} onChange={e=>setEditingTask({...editingTask, area:e.target.value})} className="w-full p-3 text-xs font-black">{areasList.map(a => <option key={a} value={a}>{a}</option>)}</select>
+                    
                     <input type="date" value={editingTask.date} onChange={e=>setEditingTask({...editingTask, date:e.target.value})} className="w-full p-3 text-xs font-black"/>
                     <input type="text" value={editingTask.title} onChange={e=>setEditingTask({...editingTask, title:e.target.value})} className="w-full p-3 text-xs font-black" placeholder="Título"/>
                     <input type="url" placeholder="URL de YouTube o TikTok" value={editingTask.videoLink || ''} onChange={e=>setEditingTask({...editingTask, videoLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
@@ -1563,8 +1726,9 @@
                     <textarea value={editingTask.description} onChange={e=>setEditingTask({...editingTask, description:e.target.value})} className="w-full p-3 text-xs font-bold h-32 resize-none" placeholder="Descripción"></textarea>
                 </div>
                 <div className="flex gap-2 mt-6">
-                    <button onClick={()=>setEditingTask(null)} className="flex-1 py-4 bg-stone-200 rounded-2xl font-black uppercase text-xs">Cancelar</button>
-                    <button onClick={async ()=>{ await db.collection("agendaEscolar").doc(editingTask.id).update(editingTask); setEditingTask(null); }} className="flex-[2] py-4 bg-emerald-900 text-[#facc15] rounded-2xl font-black uppercase text-xs">Guardar</button>
+                    <button onClick={() => handlePreviewAgenda(editingTask)} disabled={isSaving} className="flex-[1] py-4 bg-sky-100 text-sky-700 border border-sky-200 font-black rounded-2xl text-[10px] uppercase shadow-sm">👁️ Previa</button>
+                    <button onClick={()=>setEditingTask(null)} className="flex-[1] py-4 bg-stone-200 rounded-2xl font-black uppercase text-xs">Cancelar</button>
+                    <button onClick={handleSaveEditTask} className="flex-[1.5] py-4 bg-emerald-900 text-[#facc15] rounded-2xl font-black uppercase text-xs shadow-lg">Guardar</button>
                 </div>
               </div>
             </div>
