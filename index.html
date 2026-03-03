@@ -168,7 +168,8 @@
       const [agendaItems, setAgendaItems] = useState([]);
       const [assignmentType, setAssignmentType] = useState('group');
       const [selectedGrades, setSelectedGrades] = useState([]);
-      const [newTask, setNewTask] = useState({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', publishAt: '' });
+      // Nueva variable imageUrl en newTask
+      const [newTask, setNewTask] = useState({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', imageUrl: '', publishAt: '' });
       
       const [editingTask, setEditingTask] = useState(null);
       const [editAssignmentType, setEditAssignmentType] = useState('group');
@@ -283,6 +284,20 @@
         }
       };
 
+      // Manejador de imágenes para las tareas de la agenda
+      const handleTaskImageUpload = (e, isEditing) => {
+        const file = e.target.files[0];
+        if (file) {
+          if (file.size > 800000) return Swal.fire('Foto muy pesada', 'Máx 800kb', 'error');
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (isEditing) setEditingTask({...editingTask, imageUrl: reader.result});
+            else setNewTask({...newTask, imageUrl: reader.result});
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+
       const getNivelData = (xp) => {
           if (xp < 0) xp = 0;
           const scale = [
@@ -326,6 +341,32 @@
               setExpandedStudentHistory(hist);
           } catch(e) {
               console.error(e);
+          }
+      };
+
+      // Función quirúrgica: Eliminar registro y descontar XP
+      const handleDeleteXpRecord = async (record, docId) => {
+          if (!(await Swal.fire({title: '¿Eliminar este registro?', text: `Se descontarán/ajustarán ${record.cantidad} XP del estudiante.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Sí, descontar'})).isConfirmed) return;
+          
+          setIsSaving(true);
+          try {
+              const batch = db.batch();
+              batch.delete(db.collection("historialXP").doc(record.id));
+              
+              const logRef = db.collection("logrosEstudiantes").doc(docId);
+              batch.set(logRef, {
+                  xp: firebase.firestore.FieldValue.increment(-record.cantidad)
+              }, { merge: true });
+              
+              await batch.commit();
+              
+              setExpandedStudentHistory(prev => prev.filter(h => h.id !== record.id));
+              Swal.fire({icon: 'success', title: 'Registro eliminado y XP ajustado', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false});
+          } catch (e) {
+              console.error(e);
+              Swal.fire('Error', 'No se pudo eliminar el registro', 'error');
+          } finally {
+              setIsSaving(false);
           }
       };
 
@@ -573,6 +614,7 @@
             targetStudent: task.targetStudent || '',
             videoLink: task.videoLink || '',
             pdfLink: task.pdfLink || '',
+            imageUrl: task.imageUrl || '',
             publishAt: ''
         });
 
@@ -649,7 +691,9 @@
                 const autoNoticeData = {
                     mensaje: `👨‍👩‍👧‍👦 Atención, familia:\nEl estudiante tiene una nueva actividad asignada.\n📍 Área: ${newTask.area || 'General'}\n📝 Trabajo: ${newTask.title}\n⏳ Fecha de entrega:\n🗓️ ${newTask.date || 'Ver Agenda'}\nPor favor ingresa a la agenda para ver todos los detalles.\n✅ ¡Éxitos!`,
                     color: 'white', 
-                    imageUrl: '', videoUrl: newTask.videoLink || '', docUrl: newTask.pdfLink || '',
+                    imageUrl: newTask.imageUrl || '', 
+                    videoUrl: newTask.videoLink || '', 
+                    docUrl: newTask.pdfLink || '',
                     scope: autoNoticeScope, targetGrades: autoNoticeTargets, targetStudentDoc: autoNoticeStudent,
                     fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
                     timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: true, isXpNotice: false,
@@ -658,7 +702,7 @@
                 batch.set(noticeRef, autoNoticeData);
             }
             await batch.commit();
-            setNewTask({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', publishAt: '' });
+            setNewTask({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', imageUrl: '', publishAt: '' });
             setSelectedGrades([]);
             Swal.fire({icon:'success', title: isPublished ? (newTask.publishAt ? 'Programada' : 'Publicada y Aviso Creado') : 'Guardada'});
         } catch (error) {
@@ -733,7 +777,9 @@
             const autoNoticeData = {
                 mensaje: `👨‍👩‍👧‍👦 Atención, familia:\nEl estudiante tiene una nueva actividad asignada.\n📍 Área: ${task.area || 'General'}\n📝 Trabajo: ${task.title}\n⏳ Fecha de entrega:\n🗓️ ${task.date}\nPor favor ingresa a la agenda para ver todos los detalles.\n✅ ¡Éxitos!`,
                 color: 'white', 
-                imageUrl: '', videoUrl: task.videoLink || '', docUrl: task.pdfLink || '',
+                imageUrl: task.imageUrl || '', 
+                videoUrl: task.videoLink || '', 
+                docUrl: task.pdfLink || '',
                 scope: autoNoticeScope, targetGrades: autoNoticeTargets, targetStudentDoc: autoNoticeStudent,
                 fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
                 timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: true, isXpNotice: false,
@@ -1121,6 +1167,15 @@
                         <div className="flex-1 flex items-center justify-center bg-stone-50 rounded-xl border border-dashed border-stone-300"><FileText size={16} className={newTask.pdfLink ? 'text-blue-600' : 'text-stone-300'}/></div>
                     </div>
                   </div>
+                  
+                  {/* CAMPO DE IMAGEN NUEVO */}
+                  <div className="flex gap-2">
+                      <input type="text" placeholder="URL de Imagen o subir 👉" value={newTask.imageUrl || ''} onChange={e=>setNewTask({...newTask,imageUrl:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50 flex-1"/>
+                      <label className="bg-stone-200 px-3 py-3 rounded-xl border border-stone-300 text-[10px] font-black cursor-pointer shadow-sm active:scale-95 shrink-0 flex items-center justify-center" title="Subir Imagen desde el equipo">
+                          📷<input type="file" accept="image/*" onChange={(e) => handleTaskImageUpload(e, false)} className="hidden"/>
+                      </label>
+                  </div>
+                  
                   <input type="url" placeholder="URL de YouTube o TikTok" value={newTask.videoLink} onChange={e=>setNewTask({...newTask,videoLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
                   <input type="url" placeholder="URL de Documento (Drive o PDF externo)" value={newTask.pdfLink} onChange={e=>setNewTask({...newTask,pdfLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
                   <textarea placeholder="Descripción..." value={newTask.description} onChange={e=>setNewTask({...newTask,description:e.target.value})} className="w-full p-4 text-sm font-bold h-24 resize-none"></textarea>
@@ -1172,6 +1227,7 @@
                         <div className="flex flex-wrap gap-1">
                             <span className="text-[8px] font-black bg-stone-900 text-white px-2 py-0.5 rounded uppercase">{item.gradeLevel}</span>
                             <span className="text-[8px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded uppercase">{item.area}</span>
+                            {item.imageUrl && <span className="text-[8px] font-black bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded flex items-center gap-1">📷 IMG</span>}
                             {item.videoLink && <span className="text-[8px] font-black bg-red-100 text-red-600 px-1.5 py-0.5 rounded flex items-center gap-1"><VideoIcon size={8}/> VIDEO</span>}
                             {item.pdfLink && <span className="text-[8px] font-black bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded flex items-center gap-1"><FileText size={8}/> DOC</span>}
                         </div>
@@ -1321,7 +1377,7 @@
             <button onClick={()=>setView('panels')} className={`flex flex-col items-center gap-1 ${view==='panels'?'nav-active':'text-stone-400'}`}><LayoutIcon size={22}/><span className="text-[8px] uppercase">Panels</span></button>
           </nav>
 
-{/* VISTA PREVIA AGENDA ESTUDIANTE */}
+          {/* VISTA PREVIA AGENDA ESTUDIANTE */}
           {isPreviewAgendaOpen && previewAgendaData && (
               <div className="fixed inset-0 z-[300] flex items-center justify-center p-4" onClick={()=>setIsPreviewAgendaOpen(false)}>
                   <div className="absolute inset-0 bg-stone-900/80 backdrop-blur-sm" />
@@ -1346,6 +1402,13 @@
                               {formatTaskDescription(previewAgendaData.description)}
                           </div>
                           
+                          {/* VISOR DE IMAGEN */}
+                          {previewAgendaData.imageUrl && (
+                              <div style={{marginTop: "15px", borderRadius: "15px", overflow: "hidden", border: "1px solid #ddd"}}>
+                                  <img src={previewAgendaData.imageUrl} style={{width: "100%", height: "auto", display: "block"}} alt="Imagen de Tarea" />
+                              </div>
+                          )}
+
                           {previewAgendaData.videoLink && getYouTubeId(previewAgendaData.videoLink) && (
                               <div style={{marginTop: "15px", borderRadius: "15px", overflow: "hidden", aspectRatio: "16/9", border: "1px solid #ddd"}}>
                                   <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${getYouTubeId(previewAgendaData.videoLink)}`} frameBorder="0" allowFullScreen></iframe>
@@ -1400,7 +1463,7 @@
                             </select>
                             
                             {xpConcept === '✏️ Personalizado...' && (
-                                <input type="text" placeholder="Escribe el motivo..." value={xpCustomConcept} onChange={e=>setXpCustomConcept(e.target.value)} className="w-full p-3 text-xs font-bold border border-stone-300"/>
+                                <input type="text" placeholder="Escribe el motivo exacto por el que darás los XP..." value={xpCustomConcept} onChange={e=>setXpCustomConcept(e.target.value)} className="w-full p-3 text-xs font-bold border border-stone-300"/>
                             )}
                             
                             <div className="flex items-center gap-3">
@@ -1469,15 +1532,16 @@
                                                         </div>
                                                     </div>
                                                     <h4 className="text-[9px] font-black text-stone-400 uppercase mb-2 tracking-wider">Historial Reciente:</h4>
-                                                    <div className="space-y-1 max-h-32 overflow-y-auto pr-1 no-scrollbar">
+                                                    <div className="space-y-1 max-h-48 overflow-y-auto pr-1 no-scrollbar">
                                                         {!expandedStudentHistory ? (
                                                             <div className="text-[10px] text-stone-500 font-bold text-center py-2">Cargando...</div>
                                                         ) : expandedStudentHistory.length === 0 ? (
                                                             <div className="text-[10px] text-stone-500 text-center py-2">Sin registros de XP.</div>
                                                         ) : expandedStudentHistory.map(h => (
-                                                            <div key={h.id} className="flex justify-between items-center text-[10px] bg-white p-2 rounded-lg border border-stone-100 shadow-sm">
-                                                                <span className="truncate pr-2 text-stone-600 font-bold flex-1">{h.motivo}</span>
+                                                            <div key={h.id} className="flex justify-between items-center text-[10px] bg-white p-2 rounded-lg border border-stone-100 shadow-sm gap-2">
+                                                                <span className="text-stone-600 font-bold flex-1 break-words leading-tight">{h.motivo}</span>
                                                                 <span className={`font-black shrink-0 ${h.cantidad>0?'text-emerald-600':'text-red-600'}`}>{h.cantidad>0?'+':''}{h.cantidad}</span>
+                                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteXpRecord(h, docId); }} className="text-red-400 hover:text-red-600 p-1 shrink-0 ml-1" title="Eliminar y descontar XP"><TrashIcon size={14}/></button>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -1689,7 +1753,7 @@
             </div>
           )}
 
-  {editingTask && (
+          {editingTask && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-stone-900/80" onClick={()=>setEditingTask(null)} />
               <div className="relative bg-white w-full max-w-md rounded-[40px] p-6 border-t-[10px] border-[#facc15] max-h-[90vh] overflow-y-auto no-scrollbar">
@@ -1721,6 +1785,15 @@
                     
                     <input type="date" value={editingTask.date} onChange={e=>setEditingTask({...editingTask, date:e.target.value})} className="w-full p-3 text-xs font-black"/>
                     <input type="text" value={editingTask.title} onChange={e=>setEditingTask({...editingTask, title:e.target.value})} className="w-full p-3 text-xs font-black" placeholder="Título"/>
+                    
+                    {/* CAMPO DE IMAGEN EN EDICIÓN */}
+                    <div className="flex gap-2 mb-2">
+                        <input type="text" placeholder="URL de Imagen o subir 👉" value={editingTask.imageUrl || ''} onChange={e=>setEditingTask({...editingTask,imageUrl:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50 flex-1"/>
+                        <label className="bg-stone-200 px-3 py-3 rounded-xl border border-stone-300 text-[10px] font-black cursor-pointer shadow-sm active:scale-95 shrink-0 flex items-center justify-center" title="Subir Imagen">
+                            📷<input type="file" accept="image/*" onChange={(e) => handleTaskImageUpload(e, true)} className="hidden"/>
+                        </label>
+                    </div>
+
                     <input type="url" placeholder="URL de YouTube o TikTok" value={editingTask.videoLink || ''} onChange={e=>setEditingTask({...editingTask, videoLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
                     <input type="url" placeholder="URL de Documento (Drive o PDF externo)" value={editingTask.pdfLink || ''} onChange={e=>setEditingTask({...editingTask, pdfLink:e.target.value})} className="w-full p-3 text-[10px] font-black bg-stone-50"/>
                     <textarea value={editingTask.description} onChange={e=>setEditingTask({...editingTask, description:e.target.value})} className="w-full p-3 text-xs font-bold h-32 resize-none" placeholder="Descripción"></textarea>
