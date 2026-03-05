@@ -4,15 +4,18 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Seguimiento Docente 2026 - Tierra</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root { --dark-green: #064e3b; --dark-brown: #451a03; --vibrant-yellow: #facc15; --cream-white: #fafaf9; }
@@ -26,76 +29,113 @@
     .table-earth tr { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .table-earth td, .table-earth th { padding: 12px; text-align: left; }
     .table-earth th { font-size: 10px; text-transform: uppercase; font-weight: 900; color: #78716c; }
-    .chat-bubble { max-width: 85%; padding: 10px; border-radius: 14px; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
-    .chat-bubble.user { background: #f3f4f6; color: #1f2937; border: 1px solid #e5e7eb; border-bottom-left-radius: 2px; }
-    .chat-bubble.docente { background: var(--dark-green); color: var(--vibrant-yellow); align-self: flex-end; border-bottom-right-radius: 2px; }
     button:disabled { opacity: 0.6; cursor: progress; }
   </style>
 </head>
 <body class="antialiased overflow-hidden">
   <div id="root"></div>
+
   <script type="text/babel">
     const { useState, useEffect, useMemo } = React;
+
     const firebaseConfig = { apiKey: "AIzaSyB2MJ-jdwQeT6sOfZ21tCrFYzGiuTNOAJ8", authDomain: "diariodeprocesos-6f78d.firebaseapp.com", projectId: "diariodeprocesos-6f78d" };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const Icon=({children,size=24,className=""})=><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>;
-    const Home=(p)=><Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
-    const Book=(p)=><Icon {...p}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></Icon>;
-    const Plus=(p)=><Icon {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Icon>;
-    const Database=(p)=><Icon {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></Icon>;
-    const Settings=(p)=><Icon {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></Icon>;
-    const EditIcon=(p)=><Icon {...p}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></Icon>;
-    const TrashIcon=(p)=><Icon {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1-2-2h4a2 2 0 0 1 2 2v2"/></Icon>;
-    const Send=(p)=><Icon {...p}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Icon>;
-    const VideoIcon=(p)=><Icon {...p}><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></Icon>;
-    const FileText=(p)=><Icon {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></Icon>;
-    const ArchiveIcon=(p)=><Icon {...p}><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></Icon>;
-    const RestoreIcon=(p)=><Icon {...p}><polyline points="16 14 12 9 8 14"/><path d="M12 9v12"/><path d="M20 20h-8a6 6 0 0 1-6-6V8"/><path d="M4 8h16"/></Icon>;
-    const SaveIcon=(p)=><Icon {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></Icon>;
-    const BoardIcon=(p)=><Icon {...p}><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></Icon>;
-    const LayoutIcon=(p)=><Icon {...p}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></Icon>;
-    const ExternalLink=(p)=><Icon {...p}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></Icon>;
-    const StarIcon=(p)=><Icon {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></Icon>;
-    const CopyIcon=(p)=><Icon {...p}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></Icon>;
-    const EyeOffIcon=(p)=><Icon {...p}><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></Icon>;
+    const Icon = ({ children, size = 24, className = "" }) => ( <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg> );
+    const Home = (p)=><Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
+    const Book = (p)=><Icon {...p}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></Icon>;
+    const Plus = (p)=><Icon {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Icon>;
+    const Database = (p)=><Icon {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></Icon>;
+    const Settings = (p)=><Icon {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></Icon>;
+    const EditIcon = (p)=><Icon {...p}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></Icon>;
+    const TrashIcon = (p)=><Icon {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1-2-2h4a2 2 0 0 1 2 2v2"/></Icon>;
+    const Send = (p)=><Icon {...p}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Icon>;
+    const VideoIcon = (p)=><Icon {...p}><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></Icon>;
+    const FileText = (p)=><Icon {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></Icon>;
+    const ArchiveIcon = (p)=><Icon {...p}><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></Icon>;
+    const RestoreIcon = (p)=><Icon {...p}><polyline points="16 14 12 9 8 14"/><path d="M12 9v12"/><path d="M20 20h-8a6 6 0 0 1-6-6V8"/><path d="M4 8h16"/></Icon>;
+    const SaveIcon = (p)=><Icon {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></Icon>;
+    const BoardIcon = (p)=><Icon {...p}><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></Icon>;
+    const LayoutIcon = (p)=><Icon {...p}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></Icon>;
+    const ExternalLink = (p)=><Icon {...p}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></Icon>;
+    const StarIcon = (p)=><Icon {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></Icon>;
+    const CopyIcon = (p)=><Icon {...p}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></Icon>;
+    const EyeOffIcon = (p)=><Icon {...p}><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></Icon>;
 
     const gradeLevels = ['Primero', 'Segundo', 'Tercero', 'Cuarto', 'Quinto'];
     const areasList = ['INGLES', 'CIENCIAS NATURALES', 'CIENCIAS SOCIALES', 'ARTISTICA', 'EDUCACION FISICA', 'ETICA Y VALORES', 'RELIGION', 'ESPAÑOL (LENGUAJE)', 'MATEMATICAS', 'TECNOLOGIA E INFORMATICA'];
+    
     const conceptosXP = ['🙋‍♂️ Participación en clase','😇 Comportamiento','🤝 Colaboración','✍️ Trabajo en clase','⏰ Puntualidad','🕊️ Respeto y convivencia','📚 Responsabilidad','✏️ Personalizado...'];
 
-    const getNoticeColorStyle=(c)=>({pink:{backgroundColor:'#fbcfe8',color:'#831843'},blue:{backgroundColor:'#bae6fd',color:'#0c4a6e'},green:{backgroundColor:'#bbf7d0',color:'#14532d'},orange:{backgroundColor:'#ffcc80',color:'#fff'},red:{backgroundColor:'#ffcdd2',color:'#b71c1c'},purple:{backgroundColor:'#e9d5ff',color:'#581c87'},teal:{backgroundColor:'#99f6e4',color:'#115e59'},lime:{backgroundColor:'#d9f99d',color:'#365314'},white:{backgroundColor:'#ffffff',color:'#1e293b',border:'1px solid #cbd5e1'},brown:{backgroundColor:'#d7ccc8',color:'#3e2723'}}[c]||{backgroundColor:'#fef08a',color:'#1e3a8a'});
+    const getNoticeColorStyle = (color) => {
+        switch(color) {
+            case 'pink': return { backgroundColor: '#fbcfe8', color: '#831843' };
+            case 'blue': return { backgroundColor: '#bae6fd', color: '#0c4a6e' };
+            case 'green': return { backgroundColor: '#bbf7d0', color: '#14532d' };
+            case 'orange': return { backgroundColor: '#ffcc80', color: '#fff' };
+            case 'red': return { backgroundColor: '#ffcdd2', color: '#b71c1c' };
+            case 'purple': return { backgroundColor: '#e9d5ff', color: '#581c87' };
+            case 'teal': return { backgroundColor: '#99f6e4', color: '#115e59' };
+            case 'lime': return { backgroundColor: '#d9f99d', color: '#365314' };
+            case 'white': return { backgroundColor: '#ffffff', color: '#1e293b', border: '1px solid #cbd5e1' };
+            case 'brown': return { backgroundColor: '#d7ccc8', color: '#3e2723' };
+            default: return { backgroundColor: '#fef08a', color: '#1e3a8a' }; 
+        }
+    };
 
-    const getYouTubeId=(u)=>{if(!u)return null;const m=u.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);return(m&&m[2].length===11)?m[2]:null;};
-    const getTikTokId=(u)=>{if(!u)return null;const m=u.match(/video\/(\d+)/);return m?m[1]:null;};
-    const isTikTok=(u)=>u&&u.toLowerCase().includes('tiktok.com');
-    const getDriveId=(u)=>{if(!u)return null;const m=u.match(/\/d\/([a-zA-Z0-9_-]+)/);return m?m[1]:null;};
-    const getAreaStyle=(a)=>{const ar=(a||'').toUpperCase();if(ar.includes('MATEMATICAS'))return{border:'#0284c7',badge:'#0284c7',text:'#ffffff',bg:'#f0f9ff'};if(ar.includes('ESPAÑOL')||ar.includes('LENGUAJE'))return{border:'#0891b2',badge:'#0891b2',text:'#ffffff',bg:'#ecfeff'};if(ar.includes('NATURALES'))return{border:'#059669',badge:'#059669',text:'#ffffff',bg:'#ecfdf5'};if(ar.includes('SOCIALES'))return{border:'#d97706',badge:'#d97706',text:'#ffffff',bg:'#fffbeb'};if(ar.includes('INGLES'))return{border:'#7c3aed',badge:'#7c3aed',text:'#ffffff',bg:'#f5f3ff'};if(ar.includes('ARTISTICA'))return{border:'#ca8a04',badge:'#ca8a04',text:'#ffffff',bg:'#fefce8'};if(ar.includes('EDUCACION FISICA'))return{border:'#65a30d',badge:'#65a30d',text:'#ffffff',bg:'#f7fee7'};if(ar.includes('ETICA')||ar.includes('RELIGION'))return{border:'#0d9488',badge:'#0d9488',text:'#ffffff',bg:'#f0fdf4'};if(ar.includes('TECNOLOGIA')||ar.includes('INFORMATICA'))return{border:'#4f46e5',badge:'#4f46e5',text:'#ffffff',bg:'#eef2ff'};return{border:'#475569',badge:'#475569',text:'#ffffff',bg:'#f8fafc'};};
+    const getYouTubeId = (url) => { if(!url) return null; const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/; const match = url.match(regExp); return (match && match[2].length === 11) ? match[2] : null; };
+    const getTikTokId = (url) => { if(!url) return null; const match = url.match(/video\/(\d+)/); return match ? match[1] : null; };
+    const isTikTok = (url) => { return url && url.toLowerCase().includes('tiktok.com'); };
+    const getDriveId = (url) => { if(!url) return null; const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/); return match ? match[1] : null; };
+
+    const getAreaStyle = (a) => { 
+        const area = (a || '').toUpperCase(); 
+        if(area.includes('MATEMATICAS')) return { border: '#0284c7', badge: '#0284c7', text: '#ffffff', bg: '#f0f9ff' }; 
+        if(area.includes('ESPAÑOL') || area.includes('LENGUAJE')) return { border: '#0891b2', badge: '#0891b2', text: '#ffffff', bg: '#ecfeff' }; 
+        if(area.includes('NATURALES')) return { border: '#059669', badge: '#059669', text: '#ffffff', bg: '#ecfdf5' }; 
+        if(area.includes('SOCIALES')) return { border: '#d97706', badge: '#d97706', text: '#ffffff', bg: '#fffbeb' }; 
+        if(area.includes('INGLES')) return { border: '#7c3aed', badge: '#7c3aed', text: '#ffffff', bg: '#f5f3ff' }; 
+        if(area.includes('ARTISTICA')) return { border: '#ca8a04', badge: '#ca8a04', text: '#ffffff', bg: '#fefce8' }; 
+        if(area.includes('EDUCACION FISICA')) return { border: '#65a30d', badge: '#65a30d', text: '#ffffff', bg: '#f7fee7' }; 
+        if(area.includes('ETICA') || area.includes('RELIGION')) return { border: '#0d9488', badge: '#0d9488', text: '#ffffff', bg: '#f0fdf4' }; 
+        if(area.includes('TECNOLOGIA') || area.includes('INFORMATICA')) return { border: '#4f46e5', badge: '#4f46e5', text: '#ffffff', bg: '#eef2ff' }; 
+        return { border: '#475569', badge: '#475569', text: '#ffffff', bg: '#f8fafc' }; 
+    };
 
     const formatTaskDescription = (text) => {
         if (!text) return <span className="italic text-stone-400">Sin descripción...</span>;
-        return text.split('\n').map((line, idx) => {
+        const lines = text.split('\n');
+        return lines.map((line, idx) => {
             let trimmedLine = line.trim();
             if (!trimmedLine) return <div key={idx} className="h-3"></div>;
             const bulletMatch = trimmedLine.match(/^[-*•]\s*(.*)/);
             if (bulletMatch) {
-                const parts = bulletMatch[1].split(/(\b[A-ZÁÉÍÓÚÑ\s]{4,}\b)/g);
-                return <div key={idx} className="flex gap-2 my-1 pl-1"><span className="text-[#2e7d32] font-black text-lg leading-none">●</span><span>{parts.map((p, i) => /^[A-ZÁÉÍÓÚÑ\s]{4,}$/.test(p) ? <span key={i} className="text-[#d32f2f] font-black">{p}</span> : p)}</span></div>;
+                let content = bulletMatch[1];
+                const parts = content.split(/(\b[A-ZÁÉÍÓÚÑ\s]{4,}\b)/g);
+                return (
+                    <div key={idx} className="flex gap-2 my-1 pl-1">
+                        <span className="text-[#2e7d32] font-black text-lg leading-none">●</span>
+                        <span>{parts.map((p, i) => /^[A-ZÁÉÍÓÚÑ\s]{4,}$/.test(p) ? <span key={i} className="text-[#d32f2f] font-black">{p}</span> : p)}</span>
+                    </div>
+                );
+            } else {
+                const parts = trimmedLine.split(/(\b[A-ZÁÉÍÓÚÑ\s]{4,}\b)/g);
+                return <div key={idx}>{parts.map((p, i) => /^[A-ZÁÉÍÓÚÑ\s]{4,}$/.test(p) ? <span key={i} className="text-[#d32f2f] font-black">{p}</span> : p)}</div>;
             }
-            const parts = trimmedLine.split(/(\b[A-ZÁÉÍÓÚÑ\s]{4,}\b)/g);
-            return <div key={idx}>{parts.map((p, i) => /^[A-ZÁÉÍÓÚÑ\s]{4,}$/.test(p) ? <span key={i} className="text-[#d32f2f] font-black">{p}</span> : p)}</div>;
         });
     };
 
     const App = () => {
       const URL_IMAGEN_ALERTA = "https://cdn-icons-png.flaticon.com/512/564/564619.png"; 
+
       const [view, setView] = useState('recent');
       const [studentsData, setStudentsData] = useState([]);
       const [studentLists, setStudentLists] = useState({});
       const [periodoActual, setPeriodoActual] = useState(1);
       const [periodoVisualizacion, setPeriodoVisualizacion] = useState(1);
       const [isSaving, setIsSaving] = useState(false);
+      
       const [isFormOpen, setIsFormOpen] = useState(false);
       const [isConfigOpen, setIsConfigOpen] = useState(false);
       const [isBoardOpen, setIsBoardOpen] = useState(false);
@@ -103,17 +143,23 @@
       const [isPreviewNoticeOpen, setIsPreviewNoticeOpen] = useState(false); 
       const [isPreviewAgendaOpen, setIsPreviewAgendaOpen] = useState(false);
       const [previewAgendaData, setPreviewAgendaData] = useState(null);
+
       const [massiveAwardXp, setMassiveAwardXp] = useState(true);
+
       const [batchData, setBatchData] = useState({ gradeLevel: '', area: '', actividad: '', entries: [] });
       const [agendaItems, setAgendaItems] = useState([]);
       const [assignmentType, setAssignmentType] = useState('group');
       const [selectedGrades, setSelectedGrades] = useState([]);
+      
       const [newTask, setNewTask] = useState({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', imageUrl: '', publishAt: '', excludedStudents: [] });
+      
       const [editingTask, setEditingTask] = useState(null);
       const [editAssignmentType, setEditAssignmentType] = useState('group');
       const [editSelectedGrades, setEditSelectedGrades] = useState([]);
+
       const [inboxMessages, setInboxMessages] = useState([]);
       const [agendaTab, setAgendaTab] = useState('published');
+      
       const [noticeText, setNoticeText] = useState('');
       const [noticeColor, setNoticeColor] = useState('yellow');
       const [noticeImage, setNoticeImage] = useState('');
@@ -123,19 +169,24 @@
       const [noticeTargets, setNoticeTargets] = useState(['Todos']); 
       const [targetStudentDoc, setTargetStudentDoc] = useState('');
       const [noticeExcluded, setNoticeExcluded] = useState([]); 
+
       const [noticesList, setNoticesList] = useState([]);
       const [editingNoticeId, setEditingNoticeId] = useState(null);
       const [noticeTab, setNoticeTab] = useState('active');
+
       const [noticePublishAt, setNoticePublishAt] = useState('');
       const [noticeExpiresAt, setNoticeExpiresAt] = useState('');
+
       const [filterGrade, setFilterGrade] = useState('Quinto');
       const [filterArea, setFilterArea] = useState('MATEMATICAS');
       const [filterActivity, setFilterActivity] = useState('');
       const [filterStudent, setFilterStudent] = useState('');
       const [editingGradeEntry, setEditingGradeEntry] = useState(null);
+
       const [agendaFilterGrade, setAgendaFilterGrade] = useState('');
       const [agendaFilterArea, setAgendaFilterArea] = useState('');
       const [agendaFilterDate, setAgendaFilterDate] = useState('');
+
       const [xpTab, setXpTab] = useState('manual');
       const [xpGrade, setXpGrade] = useState('Quinto');
       const [xpStudent, setXpStudent] = useState('');
@@ -143,37 +194,113 @@
       const [xpCustomConcept, setXpCustomConcept] = useState('');
       const [xpAmount, setXpAmount] = useState(20);
       const [attendanceMap, setAttendanceMap] = useState({});
+      
       const [studentsGlobalXp, setStudentsGlobalXp] = useState({}); 
       const [expandedStudentXp, setExpandedStudentXp] = useState(null);
       const [expandedStudentHistory, setExpandedStudentHistory] = useState(null);
-      const [attendanceDate, setAttendanceDate] = useState(() => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); });
+      
+      const [attendanceDate, setAttendanceDate] = useState(() => {
+          const d = new Date();
+          return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
+      });
 
       useEffect(() => {
         db.collection("configuracionGlobal").doc("notas").onSnapshot(s => {
           const p = s.exists ? s.data().periodoActual || 1 : 1;
-          setPeriodoActual(p); setPeriodoVisualizacion(p);
+          setPeriodoActual(p);
+          setPeriodoVisualizacion(p);
         });
         db.collection("configuracionGlobal").doc("listasEstudiantes").onSnapshot(s => setStudentLists(s.exists ? s.data() : {}));
       }, []);
 
       useEffect(() => {
-        const unsubNotes = db.collection("notasAcademicas").onSnapshot(s => { const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); setStudentsData(a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0))); });
-        const unsubAgenda = db.collection("agendaEscolar").onSnapshot(s => { const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); setAgendaItems(a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0))); });
-        const unsubMessages = db.collection("mensajesAgenda").onSnapshot(s => { const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); setInboxMessages(a.sort((x,y)=>(y.lastUpdate||'').localeCompare(x.lastUpdate||''))); });
-        const unsubNotices = db.collection("tableroAvisos").orderBy("timestamp", "desc").onSnapshot(s => { setNoticesList(s.docs.map(d => ({id:d.id, ...d.data()}))); });
-        const unsubXp = db.collection("logrosEstudiantes").onSnapshot(s => { const xpData = {}; s.forEach(d => { xpData[d.id] = d.data(); }); setStudentsGlobalXp(xpData); });
+        const unsubNotes = db.collection("notasAcademicas").onSnapshot(s => {
+          const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); 
+          setStudentsData(a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0)));
+        });
+        const unsubAgenda = db.collection("agendaEscolar").onSnapshot(s => {
+          const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); 
+          setAgendaItems(a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0)));
+        });
+        const unsubMessages = db.collection("mensajesAgenda").onSnapshot(s => {
+          const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); 
+          setInboxMessages(a.sort((x,y)=>(y.lastUpdate||'').localeCompare(x.lastUpdate||'')));
+        });
+        const unsubNotices = db.collection("tableroAvisos").orderBy("timestamp", "desc").onSnapshot(s => {
+            setNoticesList(s.docs.map(d => ({id:d.id, ...d.data()})));
+        });
+        const unsubXp = db.collection("logrosEstudiantes").onSnapshot(s => {
+            const xpData = {};
+            s.forEach(d => { xpData[d.id] = d.data(); });
+            setStudentsGlobalXp(xpData);
+        });
         return () => { unsubNotes(); unsubAgenda(); unsubMessages(); unsubNotices(); unsubXp(); };
       }, [periodoVisualizacion]);
 
-      const updateGlobalPeriod = async (p) => { await db.collection("configuracionGlobal").doc("notas").set({ periodoActual: p }, { merge: true }); setPeriodoActual(p); setPeriodoVisualizacion(p); Swal.fire({ icon: 'success', title: `Periodo ${p} Activo`, toast: true, position: 'top-end', timer: 2000, showConfirmButton: false }); };
-      const handleBatchConfigChange = (e) => { const { name, value } = e.target; setBatchData(prev => { const newData = { ...prev, [name]: value }; if (name === 'gradeLevel') { const list = value ? (studentLists[value] || []) : []; newData.entries = list.map(n => ({ name: n, score: '', observation: '' })); } return newData; }); };
-      const handleFileChange = (e) => { const file = e.target.files[0]; if (file) { if (file.size > 800000) return Swal.fire('Foto muy pesada', 'Máx 800kb', 'error'); const reader = new FileReader(); reader.onloadend = () => setNoticeImage(reader.result); reader.readAsDataURL(file); } };
-      const handleTaskImageUpload = (e, isEditing) => { const file = e.target.files[0]; if (file) { if (file.size > 800000) return Swal.fire('Foto muy pesada', 'Máx 800kb', 'error'); const reader = new FileReader(); reader.onloadend = () => { if (isEditing) setEditingTask({...editingTask, imageUrl: reader.result}); else setNewTask({...newTask, imageUrl: reader.result}); }; reader.readAsDataURL(file); } };
+      const updateGlobalPeriod = async (p) => {
+        await db.collection("configuracionGlobal").doc("notas").set({ periodoActual: p }, { merge: true });
+        setPeriodoActual(p);
+        setPeriodoVisualizacion(p);
+        Swal.fire({ icon: 'success', title: `Periodo ${p} Activo`, toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+      };
+
+      const handleBatchConfigChange = (e) => {
+        const { name, value } = e.target;
+        setBatchData(prev => {
+          const newData = { ...prev, [name]: value };
+          if (name === 'gradeLevel') {
+            const list = value ? (studentLists[value] || []) : [];
+            newData.entries = list.map(n => ({ name: n, score: '', observation: '' }));
+          }
+          return newData;
+        });
+      };
+      
+      const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          if (file.size > 800000) return Swal.fire('Foto muy pesada', 'Máx 800kb', 'error');
+          const reader = new FileReader();
+          reader.onloadend = () => setNoticeImage(reader.result);
+          reader.readAsDataURL(file);
+        }
+      };
+
+      const handleTaskImageUpload = (e, isEditing) => {
+        const file = e.target.files[0];
+        if (file) {
+          if (file.size > 800000) return Swal.fire('Foto muy pesada', 'Máx 800kb', 'error');
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (isEditing) setEditingTask({...editingTask, imageUrl: reader.result});
+            else setNewTask({...newTask, imageUrl: reader.result});
+          };
+          reader.readAsDataURL(file);
+        }
+      };
 
       const duplicateTask = (task) => {
-          setNewTask({ gradeLevel: task.gradeLevel, area: task.area, title: task.title + ' (Copia)', description: task.description, date: task.date, targetStudent: task.targetStudent || '', videoLink: task.videoLink || '', pdfLink: task.pdfLink || '', imageUrl: task.imageUrl || '', publishAt: task.publishAt || '', excludedStudents: task.excludedStudents || [] });
-          if(task.targetStudent) { setAssignmentType('individual'); } else { setAssignmentType('group'); setSelectedGrades([task.gradeLevel]); }
-          const mainContainer = document.querySelector('main'); if(mainContainer) mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
+          setNewTask({
+              gradeLevel: task.gradeLevel,
+              area: task.area,
+              title: task.title + ' (Copia)',
+              description: task.description,
+              date: task.date, 
+              targetStudent: task.targetStudent || '',
+              videoLink: task.videoLink || '',
+              pdfLink: task.pdfLink || '',
+              imageUrl: task.imageUrl || '',
+              publishAt: task.publishAt || '',
+              excludedStudents: task.excludedStudents || []
+          });
+          if(task.targetStudent) {
+              setAssignmentType('individual');
+          } else {
+              setAssignmentType('group');
+              setSelectedGrades([task.gradeLevel]);
+          }
+          const mainContainer = document.querySelector('main');
+          if(mainContainer) mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
           Swal.fire({ icon: 'info', title: 'Tarea Copiada', text: 'Modifica los datos y dale a Publicar.', timer: 3000, toast: true, position: 'top-end' });
       };
 
@@ -218,7 +345,14 @@
               const batch = db.batch(); const finalAmt = isPositive ? amt : -amt;
               let conceptName = xpConcept; if (xpConcept === '✏️ Personalizado...') { if(!xpCustomConcept.trim()) return Swal.fire('Error', 'Escribe el motivo', 'warning'); conceptName = xpCustomConcept.trim(); } else { conceptName = xpConcept.split(' ').slice(1).join(' '); }
               const expDate = new Date(); expDate.setHours(expDate.getHours() + 12); 
-              let targets = xpStudent === 'TODOS' ? (studentLists[xpGrade] || []).map(s => s.split(' - ')[1]) : [xpStudent];
+              
+              let targets = [];
+              if (xpStudent === 'TODOS') {
+                  targets = (studentLists[xpGrade] || []).map(s => { const p = s.split(' - '); return p.length > 1 ? p[1].trim() : ''; }).filter(Boolean);
+              } else {
+                  targets = [xpStudent];
+              }
+
               targets.forEach(docId => {
                   batch.set(db.collection("logrosEstudiantes").doc(docId), { xp: firebase.firestore.FieldValue.increment(finalAmt), documentoEstudiante: docId }, {merge: true});
                   batch.set(db.collection("historialXP").doc(), { documentoEstudiante: docId, motivo: conceptName, cantidad: finalAmt, timestamp: Date.now() });
@@ -236,8 +370,9 @@
               const dateStr = new Date(attendanceDate + "T12:00:00").toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' });
               let count = 0;
               Object.values(studentLists).flat().forEach(studentStr => {
-                  const docId = studentStr.split(' - ')[1];
-                  if (isPresent(docId)) {
+                  const parts = studentStr.split(' - ');
+                  const docId = parts.length > 1 ? parts[1].trim() : '';
+                  if (docId && isPresent(docId)) {
                       count++;
                       batch.set(db.collection("logrosEstudiantes").doc(docId), { xp: firebase.firestore.FieldValue.increment(5), documentoEstudiante: docId }, {merge: true});
                       batch.set(db.collection("historialXP").doc(), { documentoEstudiante: docId, motivo: `Asistencia a clase (${dateStr})`, cantidad: 5, timestamp: Date.now() });
@@ -253,7 +388,12 @@
           if(!(await Swal.fire({title: '¡Peligro!', text: 'Se borrará progreso.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33'})).isConfirmed) return;
           setIsSaving(true);
           try {
-              let targets = xpStudent === 'TODOS' ? (studentLists[xpGrade] || []).map(s => s.split(' - ')[1]) : [xpStudent];
+              let targets = [];
+              if (xpStudent === 'TODOS') {
+                  targets = (studentLists[xpGrade] || []).map(s => { const p = s.split(' - '); return p.length > 1 ? p[1].trim() : ''; }).filter(Boolean);
+              } else {
+                  targets = [xpStudent];
+              }
               const batch = db.batch();
               for (const docId of targets) {
                   const logRef = db.collection("logrosEstudiantes").doc(docId); const dSnap = await logRef.get();
@@ -279,60 +419,160 @@
       const prepareEditNotice = (n) => { setNoticeText(n.mensaje); setNoticeColor(n.color); setNoticeImage(n.imageUrl || ''); setNoticeVideo(n.videoUrl || ''); setNoticeDoc(n.docUrl || ''); setNoticeScope(n.scope || 'General'); setNoticeTargets(n.targetGrades || ['Todos']); setTargetStudentDoc(n.targetStudentDoc || ''); setNoticePublishAt(n.publishAt || ''); setNoticeExpiresAt(n.expiresAt || ''); setNoticeExcluded(n.excludedStudents || []); setEditingNoticeId(n.id); const modalScroll = document.getElementById('board-scroll-container'); if(modalScroll) modalScroll.scrollTop = 0; };
       const archiveNotice = async (n) => { await db.collection("tableroAvisos").doc(n.id).update({ archived: !n.archived }); };
       const deleteNotice = async (id) => { if((await Swal.fire({title:'¿Eliminar?', icon:'warning', showCancelButton:true})).isConfirmed){ await db.collection("tableroAvisos").doc(id).delete(); } };
-      const republishTask = (task) => { duplicateTask(task); };
-
+      
       const isExpired = (dateStr) => { if(!dateStr) return false; try { const now = new Date(); const due = new Date(dateStr + 'T23:59:59'); return !isNaN(due) && now > due; } catch(e) { return false; } };
       const handlePreviewAgenda = (taskData) => { setPreviewAgendaData(taskData); setIsPreviewAgendaOpen(true); };
 
+      // ==========================================
+      // FUNCION REPARADA: handleAddTask
+      // ==========================================
       const handleAddTask = async (status = 'published') => {
-        if(isSaving) return; const isPublished = status === 'published'; const gradeReady = assignmentType === 'group' ? selectedGrades.length > 0 : !!newTask.gradeLevel;
-        if(!gradeReady) return Swal.fire('Error','Debes seleccionar el grado','warning');
+        if(isSaving) return;
+        const isPublished = status === 'published';
+
+        if (assignmentType === 'group' && selectedGrades.length === 0) return Swal.fire('Error','Debes seleccionar al menos un grado','warning');
+        if (assignmentType === 'individual' && (!newTask.gradeLevel || !newTask.targetStudent)) return Swal.fire('Error','Selecciona el grado y un estudiante de la lista.','warning');
+        
         setIsSaving(true);
         try {
-            const batch = db.batch(); const baseTask = { ...newTask, status, publico: isPublished, archived: false, createdAt: Date.now(), periodo: periodoActual || 1, publishAt: newTask.publishAt || null };
-            if(assignmentType === 'group') { selectedGrades.forEach(g => { batch.set(db.collection("agendaEscolar").doc(), { ...baseTask, gradeLevel: g }); }); } 
-            else { batch.set(db.collection("agendaEscolar").doc(), baseTask); }
-            if (isPublished) {
-                const pubDate = newTask.publishAt ? new Date(newTask.publishAt) : new Date(); const expDate = new Date(pubDate); expDate.setHours(expDate.getHours() + 24); 
-                batch.set(db.collection("tableroAvisos").doc(), { mensaje: `👨‍👩‍👧‍👦 Atención, familia:\nEl estudiante tiene una nueva actividad asignada.\n📍 Área: ${newTask.area || 'General'}\n📝 Trabajo: ${newTask.title}\n⏳ Fecha de entrega:\n🗓️ ${newTask.date || 'Ver Agenda'}`, color: 'white', imageUrl: newTask.imageUrl || '', videoUrl: newTask.videoLink || '', docUrl: newTask.pdfLink || '', scope: assignmentType === 'group' ? 'Grado' : 'Individual', targetGrades: assignmentType === 'group' ? selectedGrades : [], targetStudentDoc: assignmentType === 'group' ? null : newTask.targetStudent, excludedStudents: newTask.excludedStudents || [], fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }), timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: true, isXpNotice: false, publishAt: pubDate.toISOString(), expiresAt: expDate.toISOString() });
+            const batch = db.batch();
+            const finalTarget = assignmentType === 'individual' ? newTask.targetStudent.trim() : null;
+
+            const baseTask = { 
+                ...newTask, 
+                targetStudent: finalTarget,
+                status, 
+                publico: isPublished, 
+                archived: false, 
+                createdAt: Date.now(), 
+                periodo: periodoActual || 1, 
+                publishAt: newTask.publishAt || null 
+            };
+            
+            if(assignmentType === 'group') {
+                selectedGrades.forEach(g => {
+                    const ref = db.collection("agendaEscolar").doc();
+                    batch.set(ref, { ...baseTask, gradeLevel: g });
+                });
+            } else {
+                batch.set(db.collection("agendaEscolar").doc(), baseTask);
             }
-            await batch.commit(); setNewTask({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', imageUrl: '', publishAt: '', excludedStudents: [] }); setSelectedGrades([]); Swal.fire({icon:'success', title: isPublished ? (newTask.publishAt ? 'Programada' : 'Publicada') : 'Guardada'});
-        } catch (error) { Swal.fire('Error al guardar', 'Intenta de nuevo.', 'error'); } finally { setIsSaving(false); }
+
+            if (isPublished) {
+                const noticeRef = db.collection("tableroAvisos").doc();
+                let autoNoticeScope = assignmentType === 'group' ? 'Grado' : 'Individual';
+                let autoNoticeTargets = assignmentType === 'group' ? selectedGrades : [];
+                let autoNoticeStudent = finalTarget;
+                
+                const pubDate = newTask.publishAt ? new Date(newTask.publishAt) : new Date();
+                const expDate = new Date(pubDate);
+                expDate.setHours(expDate.getHours() + 24); 
+                
+                const autoNoticeData = {
+                    mensaje: `👨‍👩‍👧‍👦 Atención, familia:\nEl estudiante tiene una nueva actividad asignada.\n📍 Área: ${newTask.area || 'General'}\n📝 Trabajo: ${newTask.title}\n⏳ Fecha de entrega:\n🗓️ ${newTask.date || 'Ver Agenda'}`,
+                    color: 'white', imageUrl: newTask.imageUrl || '', videoUrl: newTask.videoLink || '', docUrl: newTask.pdfLink || '',
+                    scope: autoNoticeScope, targetGrades: autoNoticeTargets, targetStudentDoc: autoNoticeStudent,
+                    excludedStudents: newTask.excludedStudents || [],
+                    fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
+                    timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: true, isXpNotice: false,
+                    publishAt: pubDate.toISOString(), expiresAt: expDate.toISOString()
+                };
+                batch.set(noticeRef, autoNoticeData);
+            }
+            await batch.commit();
+            setNewTask({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', imageUrl: '', publishAt: '', excludedStudents: [] });
+            setSelectedGrades([]);
+            Swal.fire({icon:'success', title: isPublished ? (newTask.publishAt ? 'Programada' : 'Publicada') : 'Guardada'});
+        } catch (error) { Swal.fire('Error', 'Intenta de nuevo.', 'error'); } 
+        finally { setIsSaving(false); }
       };
 
+      // ==========================================
+      // FUNCION REPARADA: handleSaveEditTask
+      // ==========================================
       const handleSaveEditTask = async () => {
-          if(isSaving) return; setIsSaving(true);
+          if(isSaving) return;
+          if (editAssignmentType === 'individual' && !editingTask.targetStudent) return Swal.fire('Error','Selecciona un estudiante.','warning');
+
+          setIsSaving(true);
           try {
-              const batch = db.batch(); const baseTask = { ...editingTask }; const originalId = baseTask.id; delete baseTask.id;
-              if (editAssignmentType === 'individual') { baseTask.targetStudent = editingTask.targetStudent; batch.update(db.collection("agendaEscolar").doc(originalId), baseTask); } 
-              else {
-                  baseTask.targetStudent = ''; if (editSelectedGrades.length === 0) { Swal.fire('Error', 'Selecciona un grado.', 'warning'); setIsSaving(false); return; }
-                  let gradeForCurrentDoc = editingTask.gradeLevel; if (!editSelectedGrades.includes(gradeForCurrentDoc)) gradeForCurrentDoc = editSelectedGrades[0];
-                  baseTask.gradeLevel = gradeForCurrentDoc; batch.update(db.collection("agendaEscolar").doc(originalId), baseTask);
-                  editSelectedGrades.filter(g => g !== gradeForCurrentDoc).forEach(g => { batch.set(db.collection("agendaEscolar").doc(), { ...baseTask, gradeLevel: g, createdAt: Date.now() }); });
+              const batch = db.batch();
+              const baseTask = { ...editingTask };
+              const originalId = baseTask.id;
+              delete baseTask.id;
+
+              if (editAssignmentType === 'individual') {
+                  baseTask.targetStudent = editingTask.targetStudent.trim();
+                  batch.update(db.collection("agendaEscolar").doc(originalId), baseTask);
+              } else {
+                  baseTask.targetStudent = null; // LIMPIEZA OBLIGATORIA
+                  if (editSelectedGrades.length === 0) { Swal.fire('Error', 'Selecciona un grado.', 'warning'); setIsSaving(false); return; }
+                  
+                  let gradeForCurrentDoc = editingTask.gradeLevel;
+                  if (!editSelectedGrades.includes(gradeForCurrentDoc)) gradeForCurrentDoc = editSelectedGrades[0];
+                  
+                  baseTask.gradeLevel = gradeForCurrentDoc;
+                  batch.update(db.collection("agendaEscolar").doc(originalId), baseTask);
+                  
+                  editSelectedGrades.filter(g => g !== gradeForCurrentDoc).forEach(g => {
+                      const ref = db.collection("agendaEscolar").doc();
+                      batch.set(ref, { ...baseTask, gradeLevel: g, createdAt: Date.now() });
+                  });
               }
-              await batch.commit(); setEditingTask(null); Swal.fire({ icon: 'success', title: 'Actualizada', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
-          } catch(e) { Swal.fire('Error', 'No se pudo actualizar', 'error'); } finally { setIsSaving(false); }
+              
+              await batch.commit();
+              setEditingTask(null);
+              Swal.fire({ icon: 'success', title: 'Actualizada', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+          } catch(e) { Swal.fire('Error', 'Falló la actualización', 'error'); } 
+          finally { setIsSaving(false); }
       };
 
       const publishDraft = async (task) => {
-         if(isSaving) return; setIsSaving(true);
+         if(isSaving) return;
+         setIsSaving(true);
          try {
-            const batch = db.batch(); batch.update(db.collection("agendaEscolar").doc(task.id), { status: 'published', publico: true, archived: false });
-            const pubDate = new Date(); const expDate = new Date(); expDate.setHours(expDate.getHours() + 24); 
-            batch.set(db.collection("tableroAvisos").doc(), { mensaje: `👨‍👩‍👧‍👦 Atención, familia:\nEl estudiante tiene una nueva actividad asignada.\n📍 Área: ${task.area || 'General'}\n📝 Trabajo: ${task.title}\n⏳ Fecha de entrega:\n🗓️ ${task.date}`, color: 'white', imageUrl: task.imageUrl || '', videoUrl: task.videoLink || '', docUrl: task.pdfLink || '', scope: task.gradeLevel ? 'Grado' : 'Individual', targetGrades: task.gradeLevel ? [task.gradeLevel] : [], targetStudentDoc: task.targetStudent || null, excludedStudents: task.excludedStudents || [], fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }), timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: true, isXpNotice: false, publishAt: pubDate.toISOString(), expiresAt: expDate.toISOString() });
-            await batch.commit(); Swal.fire({icon:'success', title: 'Publicado', toast: true, position:'top-end', timer: 1500});
-         } catch (error) { Swal.fire('Error', 'Falló al publicar', 'error'); } finally { setIsSaving(false); }
+            const batch = db.batch();
+            batch.update(db.collection("agendaEscolar").doc(task.id), { status: 'published', publico: true, archived: false });
+
+            const noticeRef = db.collection("tableroAvisos").doc();
+            let autoNoticeScope = task.targetStudent ? 'Individual' : 'Grado'; 
+            let autoNoticeTargets = task.gradeLevel && !task.targetStudent ? [task.gradeLevel] : []; 
+            let autoNoticeStudent = task.targetStudent ? task.targetStudent.trim() : null;
+            
+            const pubDate = new Date();
+            const expDate = new Date();
+            expDate.setHours(expDate.getHours() + 24); 
+
+            const autoNoticeData = {
+                mensaje: `👨‍👩‍👧‍👦 Atención, familia:\nEl estudiante tiene una nueva actividad asignada.\n📍 Área: ${task.area || 'General'}\n📝 Trabajo: ${task.title}\n⏳ Fecha de entrega:\n🗓️ ${task.date}`,
+                color: 'white', imageUrl: task.imageUrl || '', videoUrl: task.videoLink || '', docUrl: task.pdfLink || '',
+                scope: autoNoticeScope, targetGrades: autoNoticeTargets, targetStudentDoc: autoNoticeStudent,
+                excludedStudents: task.excludedStudents || [], 
+                fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
+                timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: true, isXpNotice: false,
+                publishAt: pubDate.toISOString(), expiresAt: expDate.toISOString()
+            };
+            batch.set(noticeRef, autoNoticeData);
+
+            await batch.commit();
+            Swal.fire({icon:'success', title: 'Borrador Publicado', toast: true, position:'top-end', timer: 1500});
+         } catch (error) { Swal.fire('Error', 'Falló la publicación', 'error'); } 
+         finally { setIsSaving(false); }
       };
 
-      const deleteSingleGrade = async (id) => { if((await Swal.fire({title:'¿Eliminar Nota?', icon:'warning', showCancelButton:true})).isConfirmed){ await db.collection("notasAcademicas").doc(id).delete(); Swal.fire({icon:'success', title:'Eliminado', timer:1500, showConfirmButton:false, toast:true, position:'top-end'}); } };
+      const deleteSingleGrade = async (id) => {
+        if((await Swal.fire({title:'¿Eliminar?', text: 'Se eliminará solo este registro.', icon:'warning', showCancelButton:true})).isConfirmed){
+            await db.collection("notasAcademicas").doc(id).delete();
+            Swal.fire({icon:'success', title:'Eliminado', timer:1500, showConfirmButton:false, toast:true, position:'top-end'});
+        }
+      };
 
       const saveIndividualGrade = async (en, idx) => {
         if(isSaving) return;
         let actualArea = batchData.area || editingGradeEntry.area;
         if (!actualArea || actualArea === "SIN_AREA") { const sibling = studentsData.find(r => r.actividad === (batchData.actividad || editingGradeEntry.actividad) && r.area && r.area !== "SIN_AREA"); actualArea = sibling ? sibling.area : ""; }
-        if (!actualArea) return Swal.fire('Error', 'Selecciona Área.', 'warning');
-        if (!batchData.actividad && !editingGradeEntry.actividad) return Swal.fire('Error', 'Falta Actividad', 'warning');
+        if (!actualArea) return Swal.fire('Error', 'Falta Área.', 'warning');
+        if (!batchData.actividad && !editingGradeEntry.actividad) return Swal.fire('Error', 'Actividad obligatoria', 'warning');
         
         setIsSaving(true);
         try {
@@ -341,7 +581,7 @@
             const customDocId = `${periodoActual}_${batchData.gradeLevel || editingGradeEntry.gradeLevel}_${actualArea}_${finalActividad.replace(/\s+/g, '_')}_${docEstudiante}`;
             const existingRecord = filteredRecords.find(r => r.id === customDocId); let hasBeenProcessedForXP = existingRecord ? existingRecord.xpProcessed : false;
             let xpToAward = 0; let medalMod = 0; 
-            if (editingGradeEntry && !editingGradeEntry.isNew) { if (editingGradeEntry.originalNota === 5.0 && finalNota < 5.0) medalMod = -1; } 
+            if (editingGradeEntry && !editingGradeEntry.isNew) { if (editingGradeEntry.originalNota === 5.0 && finalNota < 5.0) { medalMod = -1; } } 
             else if (!hasBeenProcessedForXP && massiveAwardXp) { if (finalNota === 5.0) { xpToAward = 100; medalMod = 1; } else if (finalNota >= 4.6) xpToAward = 80; else if (finalNota >= 4.0) xpToAward = 50; else if (finalNota >= 3.0) xpToAward = 25; }
 
             const batch = db.batch();
@@ -351,15 +591,15 @@
                 const logData = {}; if (xpToAward > 0) { logData.xp = firebase.firestore.FieldValue.increment(xpToAward); logData.documentoEstudiante = docEstudiante; logData.nombreEstudiante = nombreEstudiante; }
                 if (medalMod !== 0) { logData.medallas = { [actualArea]: firebase.firestore.FieldValue.increment(medalMod) }; }
                 if(Object.keys(logData).length > 0) batch.set(db.collection("logrosEstudiantes").doc(docEstudiante), logData, {merge: true});
-                if (xpToAward > 0) batch.set(db.collection("historialXP").doc(), { documentoEstudiante: docEstudiante, motivo: `Calificación en clase: ${finalActividad}`, cantidad: xpToAward, timestamp: Date.now() });
+                if (xpToAward > 0) batch.set(db.collection("historialXP").doc(), { documentoEstudiante: docEstudiante, motivo: `Calificación: ${finalActividad}`, cantidad: xpToAward, timestamp: Date.now() });
             }
 
             if (finalNota < 3.0) {
                 const alertExpDate = new Date(); alertExpDate.setHours(alertExpDate.getHours() + 24);
                 batch.set(db.collection("tableroAvisos").doc(), { mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${actualArea}\n📝 ACTIVIDAD: ${finalActividad}\n📉 NOTA: ${finalNota}\n\nRevisar Alertas en Pizarra Escolar.`, color: 'red', imageUrl: URL_IMAGEN_ALERTA, videoUrl: "", docUrl: "", scope: 'Individual', targetGrades: [], targetStudentDoc: docEstudiante, fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }), timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: false, publishAt: new Date().toISOString(), expiresAt: alertExpDate.toISOString() });
             }
-            await batch.commit();
 
+            await batch.commit();
             if(editingGradeEntry) { setEditingGradeEntry(null); Swal.fire({ icon: 'success', title: 'Guardado', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false }); } 
             else { const newEntries = [...batchData.entries]; newEntries[idx].saved = true; setBatchData({ ...batchData, entries: newEntries }); }
         } catch(e) { Swal.fire('Error', 'Falló el guardado', 'error'); } finally { setIsSaving(false); }
@@ -368,6 +608,7 @@
       const saveGrades = async () => {
         if(isSaving) return;
         if (!batchData.area || !batchData.actividad) return Swal.fire('Error', 'Área y Actividad obligatorias', 'warning');
+
         setIsSaving(true);
         try {
             const valid = batchData.entries.filter(e => e.score !== '');
@@ -377,6 +618,7 @@
                 const customDocId = `${periodoActual}_${batchData.gradeLevel}_${batchData.area}_${batchData.actividad.trim().replace(/\s+/g, '_')}_${docEstudiante}`;
                 const existingRecord = filteredRecords.find(r => r.id === customDocId); let hasBeenProcessedForXP = existingRecord ? existingRecord.xpProcessed : false;
                 let xpToAward = 0; let earnsMedal = false;
+
                 if (!hasBeenProcessedForXP && massiveAwardXp) { if (finalNota === 5.0) { xpToAward = 100; earnsMedal = true; } else if (finalNota >= 4.6) xpToAward = 80; else if (finalNota >= 4.0) xpToAward = 50; else if (finalNota >= 3.0) xpToAward = 25; }
 
                 batch.set(db.collection("notasAcademicas").doc(customDocId), { gradeLevel: batchData.gradeLevel, area: batchData.area, actividad: batchData.actividad.trim(), name: en.name, nombreEstudiante: nombreEstudiante, documentoEstudiante: docEstudiante, score: en.score.replace(',','.'), nota: finalNota, observacion: en.observation || '', periodo: periodoActual || 1, createdAt: Date.now(), xpProcessed: true }, { merge: true });
@@ -390,40 +632,39 @@
 
                 if (finalNota < 3.0) {
                     const alertExpDate = new Date(); alertExpDate.setHours(alertExpDate.getHours() + 24);
-                    batch.set(db.collection("tableroAvisos").doc(), { mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${batchData.area}\n📝 ACTIVIDAD: ${batchData.actividad}\n📉 NOTA: ${finalNota}\n\nPor favor revisar la sección de Alertas dentro de Pizarra Escolar para ampliar la información.`, color: 'red', imageUrl: URL_IMAGEN_ALERTA, videoUrl: "", docUrl: "", scope: 'Individual', targetGrades: [], targetStudentDoc: docEstudiante, fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }), timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: false, publishAt: new Date().toISOString(), expiresAt: alertExpDate.toISOString() });
+                    batch.set(db.collection("tableroAvisos").doc(), { mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${batchData.area}\n📝 ACTIVIDAD: ${batchData.actividad}\n📉 NOTA: ${finalNota}\n\nRevisar Alertas.`, color: 'red', imageUrl: URL_IMAGEN_ALERTA, videoUrl: "", docUrl: "", scope: 'Individual', targetGrades: [], targetStudentDoc: docEstudiante, fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }), timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: false, publishAt: new Date().toISOString(), expiresAt: alertExpDate.toISOString() });
                 }
             });
             await batch.commit(); setIsFormOpen(false); setBatchData({ gradeLevel: '', area: '', actividad: '', entries: [] });
-        } catch(e) { Swal.fire('Error', 'Falló el guardado masivo', 'error'); } finally { setIsSaving(false); }
+        } catch(e) { Swal.fire('Error', 'Falló masivo', 'error'); } finally { setIsSaving(false); }
       };
 
       const generateReportPDF = () => {
         const doc = new window.jspdf.jsPDF();
         const body = filteredRecords.map(r => { let notaCell = (r.score || '0').replace('.', ','); if (r.recuperada && r.notaAnterior) notaCell = `${r.notaAnterior} -> ${notaCell}`; return [r.nombreEstudiante, r.actividad, notaCell]; });
-        doc.autoTable({ head: [['ESTUDIANTE', 'ACTIVIDAD', 'NOTA']], body, headStyles: { fillColor: [6, 78, 59] } });
-        doc.save(`Reporte_Notas.pdf`);
+        doc.autoTable({ head: [['ESTUDIANTE', 'ACTIVIDAD', 'NOTA']], body, headStyles: { fillColor: [6, 78, 59] } }); doc.save(`Reporte_Notas.pdf`);
       };
 
       const generateObservationsPDF = () => {
         const doc = new window.jspdf.jsPDF(); doc.setFontSize(14); doc.text(`HISTÓRICO DE OBSERVACIONES Y ALERTAS - ${filterGrade} - ${filterArea}`, 10, 15);
         const obsRecords = studentsData.filter(s => s.gradeLevel === filterGrade && s.area === filterArea && s.observacion && s.observacion.trim().length > 0);
         const body = obsRecords.map(r => [r.nombreEstudiante, r.actividad, (r.score || '0').replace('.', ','), r.observacion]);
-        doc.autoTable({ startY: 20, head: [['ESTUDIANTE', 'ACTIVIDAD', 'NOTA', 'OBSERVACIÓN/ALERTA']], body, headStyles: { fillColor: [69, 26, 3] }, columnStyles: { 3: { cellWidth: 80 } } });
+        doc.autoTable({ startY: 20, head: [['ESTUDIANTE', 'ACTIVIDAD', 'NOTA', 'OBSERVACIÓN']], body, headStyles: { fillColor: [69, 26, 3] }, columnStyles: { 3: { cellWidth: 80 } } });
         doc.save(`Historial_Observaciones_${filterGrade}.pdf`);
       };
 
       const generateStudentReportPDF = () => {
         if(!filterStudent) return Swal.fire('Error', 'Selecciona un estudiante', 'warning');
         const estRecords = studentsData.filter(s => s.documentoEstudiante === filterStudent);
-        if(estRecords.length === 0) return Swal.fire('Sin datos', 'No hay registros.', 'info');
+        if(estRecords.length === 0) return Swal.fire('Sin datos', 'No hay registros', 'info');
         const doc = new window.jspdf.jsPDF(); const estName = estRecords[0].nombreEstudiante;
-        doc.setFontSize(14); doc.setTextColor(6, 78, 59); doc.text(`INFORME ACADÉMICO INTEGRAL`, 105, 15, null, null, 'center'); doc.setFontSize(10); doc.setTextColor(0, 0, 0); doc.text(`Estudiante: ${estName}`, 10, 25); doc.text(`Periodo: ${periodoVisualizacion}`, 10, 30);
+        doc.setFontSize(14); doc.setTextColor(6, 78, 59); doc.text(`INFORME ACADÉMICO`, 105, 15, null, null, 'center'); doc.setFontSize(10); doc.setTextColor(0, 0, 0); doc.text(`Estudiante: ${estName}`, 10, 25); doc.text(`Periodo: ${periodoVisualizacion}`, 10, 30);
         const byArea = {}; estRecords.forEach(r => { if(!byArea[r.area]) byArea[r.area] = []; byArea[r.area].push(r); });
         let currentY = 35;
         Object.keys(byArea).forEach(area => {
             const rows = byArea[area].map(r => {
                 let finalScore = (r.score || '0').replace('.', ','); if(r.recuperada && r.notaAnterior) finalScore = `${r.notaAnterior} -> ${finalScore}`;
-                let finalObs = r.observacion || ''; if(r.recuperada) finalObs += (finalObs ? ' - ' : '') + 'Trabajo recuperado.'; else if (r.nota < 3.0) finalObs += (finalObs ? ' - ' : '') + 'Nota No recuperada.';
+                let finalObs = r.observacion || ''; if(r.recuperada) finalObs += (finalObs ? ' - ' : '') + 'Recuperado.'; else if (r.nota < 3.0) finalObs += (finalObs ? ' - ' : '') + 'No recuperada.';
                 return [r.actividad, finalScore, finalObs || '-'];
             });
             doc.autoTable({ startY: currentY + 5, head: [[`${area}`, 'NOTA', 'OBSERVACIÓN']], body: rows, headStyles: { fillColor: [6, 78, 59] }, columnStyles: { 2: { cellWidth: 90 } }, margin: { top: 10 } });
@@ -502,7 +743,10 @@
                   ) : (
                     <div className="grid grid-cols-2 gap-3">
                       <select value={newTask.gradeLevel} onChange={e=>setNewTask({...newTask,gradeLevel:e.target.value})} className="p-4 text-xs font-black">{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select>
-                      <select value={newTask.targetStudent} onChange={e=>setNewTask({...newTask,targetStudent:e.target.value})} className="p-4 text-xs font-black"><option value="">Estudiante...</option>{(studentLists[newTask.gradeLevel] || []).map(name => <option key={name.split(' - ')[1]} value={name.split(' - ')[1]}>{name.split(' - ')[0]}</option>)}</select>
+                      <select value={newTask.targetStudent} onChange={e=>setNewTask({...newTask,targetStudent:e.target.value})} className="p-4 text-xs font-black">
+                        <option value="">Seleccionar Estudiante...</option>
+                        {(studentLists[newTask.gradeLevel] || []).map(str => { const p = str.split(' - '); const val = p.length > 1 ? p[1].trim() : p[0]; return <option key={val} value={val}>{p[0]}</option>; })}
+                      </select>
                     </div>
                   )}
                   <select value={newTask.area} onChange={e=>setNewTask({...newTask,area:e.target.value})} className="w-full p-4 text-xs font-black"><option value="">Área...</option>{areasList.map(a => <option key={a} value={a}>{a}</option>)}</select>
@@ -528,11 +772,12 @@
                       <label className="block text-[9px] font-black text-red-600 uppercase mb-2 flex items-center gap-1"><EyeOffIcon size={12}/> Ocultar a (Excluir estudiantes):</label>
                       <select onChange={e => { if(!e.target.value) return; if(!newTask.excludedStudents.includes(e.target.value)) { setNewTask({...newTask, excludedStudents: [...newTask.excludedStudents, e.target.value]}); } }} className="w-full p-2 text-[10px] font-black bg-white rounded-lg border border-red-200">
                           <option value="">Seleccionar para ocultar...</option>
-                          {(studentLists[newTask.gradeLevel] || []).map(name => <option key={name.split(' - ')[1]} value={name.split(' - ')[1]}>{name.split(' - ')[0]}</option>)}
+                          {(studentLists[newTask.gradeLevel] || []).map(str => { const p = str.split(' - '); const val = p.length > 1 ? p[1].trim() : p[0]; return <option key={val} value={val}>{p[0]}</option>; })}
                       </select>
                       <div className="flex flex-wrap gap-1 mt-2">
                           {newTask.excludedStudents.map(doc => {
-                              const stuName = (studentLists[newTask.gradeLevel] || []).find(s => s.includes(doc))?.split(' - ')[0] || doc;
+                              const stuStr = (studentLists[newTask.gradeLevel] || []).find(s => s.includes(doc));
+                              const stuName = stuStr ? stuStr.split(' - ')[0] : doc;
                               return <span key={doc} onClick={() => setNewTask({...newTask, excludedStudents: newTask.excludedStudents.filter(d => d !== doc)})} className="px-2 py-1 bg-red-600 text-white text-[8px] font-black rounded-lg cursor-pointer shadow-sm active:scale-90">✕ {stuName}</span>;
                           })}
                       </div>
@@ -627,7 +872,10 @@
                     <select value={filterGrade} onChange={e=>{setFilterGrade(e.target.value); setFilterStudent('');}} className="p-3 text-xs font-black">{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select>
                     <select value={filterArea} onChange={e=>setFilterArea(e.target.value)} className="p-3 text-xs font-black"><option value="">Seleccionar Área...</option><option value="SIN_AREA">⚠️ SIN ÁREA</option>{areasList.map(a => <option key={a} value={a}>{a}</option>)}</select>
                   </div>
-                  <select value={filterStudent} onChange={e=>setFilterStudent(e.target.value)} className="w-full p-3 text-xs font-black"><option value="">Todos los Estudiantes...</option>{(studentLists[filterGrade] || []).map(name => <option key={name.split(' - ')[1]} value={name.split(' - ')[1]}>{name.split(' - ')[0]}</option>)}</select>
+                  <select value={filterStudent} onChange={e=>setFilterStudent(e.target.value)} className="w-full p-3 text-xs font-black">
+                    <option value="">Todos los Estudiantes...</option>
+                    {(studentLists[filterGrade] || []).map(str => { const p = str.split(' - '); const val = p.length > 1 ? p[1].trim() : p[0]; return <option key={val} value={val}>{p[0]}</option>; })}
+                  </select>
                   <select value={filterActivity} onChange={e=>setFilterActivity(e.target.value)} className="w-full p-3 text-xs font-black"><option value="">Todas las Actividades...</option>{currentActivities.map(act => <option key={act} value={act}>{act}</option>)}</select>
                   <div className="grid grid-cols-2 gap-2">
                     <button onClick={generateReportPDF} className="p-4 bg-[#064e3b] text-[#facc15] font-black text-[10px] uppercase rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-95"><FileText size={16}/> DESCARGAR PDF</button>
@@ -642,7 +890,8 @@
                         <thead><tr><th>Estudiante</th><th className="text-center">Nota</th><th className="text-right">Acción</th></tr></thead>
                         <tbody>
                             {(studentLists[filterGrade] || []).map(studentNameDoc => {
-                                const [name, doc] = studentNameDoc.split(' - ');
+                                const parts = studentNameDoc.split(' - ');
+                                const name = parts[0]; const doc = parts.length>1?parts[1].trim():'';
                                 const record = filteredRecords.find(r => r.documentoEstudiante === doc);
                                 if (record) {
                                     return (
@@ -734,7 +983,7 @@
                     {xpTab === 'manual' && (
                         <>
                             <select value={xpGrade} onChange={e=>setXpGrade(e.target.value)} className="w-full p-3 text-xs font-black border-2 border-stone-200">{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select>
-                            <select value={xpStudent} onChange={e=>setXpStudent(e.target.value)} className="w-full p-3 text-xs font-black border-2 border-stone-200"><option value="">Seleccionar Estudiante...</option><option value="TODOS">👥 TODOS EN EL GRADO</option>{(studentLists[xpGrade] || []).map(name => <option key={name.split(' - ')[1]} value={name.split(' - ')[1]}>{name.split(' - ')[0]}</option>)}</select>
+                            <select value={xpStudent} onChange={e=>setXpStudent(e.target.value)} className="w-full p-3 text-xs font-black border-2 border-stone-200"><option value="">Seleccionar Estudiante...</option><option value="TODOS">👥 TODOS EN EL GRADO</option>{(studentLists[xpGrade] || []).map(str => { const p = str.split(' - '); const val = p.length > 1 ? p[1].trim() : p[0]; return <option key={val} value={val}>{p[0]}</option>; })}</select>
                             <select value={xpConcept} onChange={handleXPConceptChange} className="w-full p-3 text-xs font-black bg-stone-50 border-2 border-stone-200">{conceptosXP.map(c => <option key={c} value={c}>{c}</option>)}</select>
                             {xpConcept === '✏️ Personalizado...' && (<input type="text" placeholder="Escribe el motivo exacto..." value={xpCustomConcept} onChange={e=>setXpCustomConcept(e.target.value)} className="w-full p-3 text-xs font-bold border border-stone-300"/>)}
                             <div className="flex items-center gap-3"><label className="text-[10px] font-black text-stone-500 uppercase">XP a sumar/restar:</label><input type="number" value={xpAmount} onChange={e=>setXpAmount(e.target.value)} className="w-20 p-2 text-center text-lg font-black border border-stone-300" min="1"/></div>
@@ -745,7 +994,7 @@
                         <>
                             <div className="bg-blue-50 p-3 rounded-xl border border-blue-200 text-[10px] font-black text-blue-800 mb-2">💡 Desmarca a los ausentes. Los presentes ganarán +5 XP automáticamente.</div>
                             <div className="mb-3"><input type="date" value={attendanceDate} onChange={e=>setAttendanceDate(e.target.value)} className="w-full p-3 text-xs font-black border-2 border-stone-200 rounded-xl" /></div>
-                            <div className="space-y-2 mb-4">{Object.values(studentLists).flat().sort((a,b)=>a.localeCompare(b)).map(student => { const [name, docId] = student.split(' - '); return ( <div key={docId} className="flex justify-between items-center bg-stone-50 p-2 rounded-lg border border-stone-200"><span className="text-[10px] font-bold text-stone-700 truncate pr-2">{name}</span><input type="checkbox" checked={isPresent(docId)} onChange={()=>toggleAttendance(docId)} className="w-5 h-5 accent-[#064e3b] cursor-pointer"/></div> ) })}</div>
+                            <div className="space-y-2 mb-4">{Object.values(studentLists).flat().sort((a,b)=>a.localeCompare(b)).map(student => { const p = student.split(' - '); const name = p[0]; const docId = p.length>1?p[1].trim():''; if(!docId) return null; return ( <div key={docId} className="flex justify-between items-center bg-stone-50 p-2 rounded-lg border border-stone-200"><span className="text-[10px] font-bold text-stone-700 truncate pr-2">{name}</span><input type="checkbox" checked={isPresent(docId)} onChange={()=>toggleAttendance(docId)} className="w-5 h-5 accent-[#064e3b] cursor-pointer"/></div> ) })}</div>
                             <button onClick={submitAttendanceXp} disabled={isSaving} className="w-full py-4 bg-[#064e3b] text-[#facc15] rounded-2xl font-black uppercase shadow-lg">Cargar Asistencia</button>
                         </>
                     )}
@@ -754,7 +1003,8 @@
                             <select value={xpGrade} onChange={e=>{setXpGrade(e.target.value); setExpandedStudentXp(null);}} className="w-full p-3 text-xs font-black border-2 border-stone-200 mb-3">{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select>
                             <div className="space-y-2">
                                 {(studentLists[xpGrade] || []).map(student => {
-                                    const [name, docId] = student.split(' - '); const dataObj = studentsGlobalXp[docId] || {}; const totalXp = dataObj.xp || 0; const isExpanded = expandedStudentXp === docId; const nData = getNivelData(totalXp);
+                                    const p = student.split(' - '); const name = p[0]; const docId = p.length>1?p[1].trim():''; if(!docId) return null;
+                                    const dataObj = studentsGlobalXp[docId] || {}; const totalXp = dataObj.xp || 0; const isExpanded = expandedStudentXp === docId; const nData = getNivelData(totalXp);
                                     return (
                                         <div key={docId} className="border border-stone-200 rounded-xl overflow-hidden bg-white shadow-sm transition-all duration-200">
                                             <div className="p-3 flex justify-between items-center cursor-pointer hover:bg-stone-50" onClick={()=>handleExpandStudent(docId)}><span className="text-[11px] font-black text-stone-800 truncate pr-2 flex-1">{name}</span><span className="text-[11px] font-black text-[#064e3b] bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-lg shrink-0">{totalXp} XP</span></div>
@@ -777,7 +1027,7 @@
                         <>
                             <div className="bg-red-50 p-4 rounded-xl border border-red-200 text-[10px] font-black text-red-800 mb-4 text-center">⚠️ PELIGRO: Esto devolverá a CERO el progreso.</div>
                             <select value={xpGrade} onChange={e=>setXpGrade(e.target.value)} className="w-full p-3 text-xs font-black border-2 border-stone-200 mb-2">{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select>
-                            <select value={xpStudent} onChange={e=>setXpStudent(e.target.value)} className="w-full p-3 text-xs font-black border-2 border-stone-200 mb-4"><option value="">Seleccionar Estudiante...</option><option value="TODOS">🚨 TODOS EN EL GRADO</option>{(studentLists[xpGrade] || []).map(name => <option key={name.split(' - ')[1]} value={name.split(' - ')[1]}>{name.split(' - ')[0]}</option>)}</select>
+                            <select value={xpStudent} onChange={e=>setXpStudent(e.target.value)} className="w-full p-3 text-xs font-black border-2 border-stone-200 mb-4"><option value="">Seleccionar Estudiante...</option><option value="TODOS">🚨 TODOS EN EL GRADO</option>{(studentLists[xpGrade] || []).map(str => { const p = str.split(' - '); const val = p.length > 1 ? p[1].trim() : p[0]; return <option key={val} value={val}>{p[0]}</option>; })}</select>
                             <button onClick={handleResetXp} disabled={isSaving} className="w-full py-4 bg-red-600 text-white rounded-2xl font-black uppercase shadow-lg">RESETEAR A CERO</button>
                         </>
                     )}
@@ -839,11 +1089,11 @@
                         <div className="flex gap-2 bg-white p-1 rounded-xl shadow-sm mb-2"><button onClick={()=>setNoticeTab('active')} className={`flex-1 py-2 text-[10px] font-black rounded-lg ${noticeTab==='active'?'bg-[#064e3b] text-white':'text-stone-400'}`}>ACTIVOS</button><button onClick={()=>setNoticeTab('archived')} className={`flex-1 py-2 text-[10px] font-black rounded-lg ${noticeTab==='archived'?'bg-[#064e3b] text-white':'text-stone-400'}`}>ARCHIVADOS</button></div>
                         <div className="flex gap-2 bg-white p-1 rounded-xl shadow-sm">{['General', 'Grado', 'Individual'].map(s => (<button key={s} onClick={()=>setNoticeScope(s)} className={`flex-1 py-2 text-[10px] font-black rounded-lg transition-all ${noticeScope===s?'bg-[#064e3b] text-white':'text-stone-400'}`}>{s}</button>))}</div>
                         {noticeScope === 'Grado' && (<div className="flex flex-wrap gap-1">{gradeLevels.map(g => (<button key={g} onClick={()=>toggleNoticeTarget(g)} className={`px-2 py-1 rounded text-[10px] font-black border ${noticeTargets.includes(g) ? 'bg-emerald-600 text-white' : 'bg-white text-stone-400'}`}>{g}</button>))}</div>)}
-                        {noticeScope === 'Individual' && (<select value={targetStudentDoc} onChange={e=>setTargetStudentDoc(e.target.value)} className="w-full p-2 text-[10px] font-black bg-white rounded-lg border border-stone-300"><option value="">Seleccionar Estudiante...</option>{Object.values(studentLists).flat().map(student => { const [name, doc] = student.split(' - '); return <option key={doc} value={doc}>{name}</option> })}</select>)}
+                        {noticeScope === 'Individual' && (<select value={targetStudentDoc} onChange={e=>setTargetStudentDoc(e.target.value)} className="w-full p-2 text-[10px] font-black bg-white rounded-lg border border-stone-300"><option value="">Seleccionar Estudiante...</option>{Object.values(studentLists).flat().map(str => { const p = str.split(' - '); const val = p.length > 1 ? p[1].trim() : p[0]; return <option key={val} value={val}>{p[0]}</option>; })}</select>)}
                         
                         <div className="mt-2 bg-red-50 p-2 rounded-lg border border-red-100">
                             <label className="block text-[8px] font-black text-red-600 uppercase mb-1 flex items-center gap-1"><EyeOffIcon size={10}/> Ocultar Aviso A:</label>
-                            <select onChange={e => { if(!e.target.value) return; if(!noticeExcluded.includes(e.target.value)) setNoticeExcluded([...noticeExcluded, e.target.value]); }} className="w-full p-1.5 text-[9px] font-black bg-white rounded border border-red-200"><option value="">Seleccionar para ocultar...</option>{Object.values(studentLists).flat().map(student => { const [name, doc] = student.split(' - '); return <option key={doc} value={doc}>{name}</option> })}</select>
+                            <select onChange={e => { if(!e.target.value) return; if(!noticeExcluded.includes(e.target.value)) setNoticeExcluded([...noticeExcluded, e.target.value]); }} className="w-full p-1.5 text-[9px] font-black bg-white rounded border border-red-200"><option value="">Seleccionar para ocultar...</option>{Object.values(studentLists).flat().map(str => { const p = str.split(' - '); const val = p.length > 1 ? p[1].trim() : p[0]; return <option key={val} value={val}>{p[0]}</option>; })}</select>
                             <div className="flex flex-wrap gap-1 mt-1">
                                 {noticeExcluded.map(doc => { const stuName = Object.values(studentLists).flat().find(s => s.includes(doc))?.split(' - ')[0] || doc; return <span key={doc} onClick={() => setNoticeExcluded(noticeExcluded.filter(d => d !== doc))} className="px-1.5 py-0.5 bg-red-600 text-white text-[7px] font-black rounded cursor-pointer">✕ {stuName}</span>; })}
                             </div>
@@ -934,7 +1184,7 @@
                     ) : (
                       <div className="grid grid-cols-2 gap-3 mb-3">
                         <select value={editingTask.gradeLevel || 'Quinto'} onChange={e=>{setEditingTask({...editingTask, gradeLevel:e.target.value, targetStudent: ''}); setEditSelectedGrades([e.target.value]);}} className="p-3 text-xs font-black">{gradeLevels.map(g => <option key={g} value={g}>{g}</option>)}</select>
-                        <select value={editingTask.targetStudent || ''} onChange={e=>setEditingTask({...editingTask, targetStudent:e.target.value})} className="p-3 text-xs font-black bg-stone-50"><option value="">Estudiante...</option>{(studentLists[editingTask.gradeLevel || 'Quinto'] || []).map(name => <option key={name.split(' - ')[1]} value={name.split(' - ')[1]}>{name.split(' - ')[0]}</option>)}</select>
+                        <select value={editingTask.targetStudent || ''} onChange={e=>setEditingTask({...editingTask, targetStudent:e.target.value})} className="p-3 text-xs font-black bg-stone-50"><option value="">Seleccionar Estudiante...</option>{(studentLists[editingTask.gradeLevel || 'Quinto'] || []).map(str => { const p = str.split(' - '); const val = p.length > 1 ? p[1].trim() : p[0]; return <option key={val} value={val}>{p[0]}</option>; })}</select>
                       </div>
                     )}
 
@@ -955,7 +1205,7 @@
                         <label className="block text-[9px] font-black text-red-600 uppercase mb-2 flex items-center gap-1"><EyeOffIcon size={12}/> Ocultar a (Excluir estudiantes):</label>
                         <select onChange={e => { if(!e.target.value) return; const cur = editingTask.excludedStudents || []; if(!cur.includes(e.target.value)) { setEditingTask({...editingTask, excludedStudents: [...cur, e.target.value]}); } }} className="w-full p-2 text-[10px] font-black bg-white rounded-lg border border-red-200">
                             <option value="">Seleccionar para ocultar...</option>
-                            {(studentLists[editingTask.gradeLevel || 'Quinto'] || []).map(name => <option key={name.split(' - ')[1]} value={name.split(' - ')[1]}>{name.split(' - ')[0]}</option>)}
+                            {(studentLists[editingTask.gradeLevel || 'Quinto'] || []).map(str => { const p = str.split(' - '); const val = p.length > 1 ? p[1].trim() : p[0]; return <option key={val} value={val}>{p[0]}</option>; })}
                         </select>
                         <div className="flex flex-wrap gap-1 mt-2">
                             {(editingTask.excludedStudents || []).map(doc => {
