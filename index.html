@@ -62,73 +62,37 @@
     const StarIcon = (p)=><Icon {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></Icon>;
     const CopyIcon = (p)=><Icon {...p}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></Icon>;
     const EyeOffIcon = (p)=><Icon {...p}><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></Icon>;
+    const ActivityIcon = (p)=><Icon {...p}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></Icon>;
 
     const gradeLevels = ['Primero', 'Segundo', 'Tercero', 'Cuarto', 'Quinto'];
     const areasList = ['INGLES', 'CIENCIAS NATURALES', 'CIENCIAS SOCIALES', 'ARTISTICA', 'EDUCACION FISICA', 'ETICA Y VALORES', 'RELIGION', 'ESPAÑOL (LENGUAJE)', 'MATEMATICAS', 'TECNOLOGIA E INFORMATICA'];
-    
     const conceptosXP = ['🙋‍♂️ Participación en clase','😇 Comportamiento','🤝 Colaboración','✍️ Trabajo en clase','⏰ Puntualidad','🕊️ Respeto y convivencia','📚 Responsabilidad','✏️ Personalizado...'];
 
-    const getNoticeColorStyle = (color) => {
-        switch(color) {
-            case 'pink': return { backgroundColor: '#fbcfe8', color: '#831843' };
-            case 'blue': return { backgroundColor: '#bae6fd', color: '#0c4a6e' };
-            case 'green': return { backgroundColor: '#bbf7d0', color: '#14532d' };
-            case 'orange': return { backgroundColor: '#ffcc80', color: '#fff' };
-            case 'red': return { backgroundColor: '#ffcdd2', color: '#b71c1c' };
-            case 'purple': return { backgroundColor: '#e9d5ff', color: '#581c87' };
-            case 'teal': return { backgroundColor: '#99f6e4', color: '#115e59' };
-            case 'lime': return { backgroundColor: '#d9f99d', color: '#365314' };
-            case 'white': return { backgroundColor: '#ffffff', color: '#1e293b', border: '1px solid #cbd5e1' };
-            case 'brown': return { backgroundColor: '#d7ccc8', color: '#3e2723' };
-            default: return { backgroundColor: '#fef08a', color: '#1e3a8a' }; 
-        }
-    };
+    const getNoticeColorStyle=(c)=>({pink:{backgroundColor:'#fbcfe8',color:'#831843'},blue:{backgroundColor:'#bae6fd',color:'#0c4a6e'},green:{backgroundColor:'#bbf7d0',color:'#14532d'},orange:{backgroundColor:'#ffcc80',color:'#fff'},red:{backgroundColor:'#ffcdd2',color:'#b71c1c'},purple:{backgroundColor:'#e9d5ff',color:'#581c87'},teal:{backgroundColor:'#99f6e4',color:'#115e59'},lime:{backgroundColor:'#d9f99d',color:'#365314'},white:{backgroundColor:'#ffffff',color:'#1e293b',border:'1px solid #cbd5e1'},brown:{backgroundColor:'#d7ccc8',color:'#3e2723'}}[c]||{backgroundColor:'#fef08a',color:'#1e3a8a'});
 
-    const getYouTubeId = (url) => { if(!url) return null; const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/; const match = url.match(regExp); return (match && match[2].length === 11) ? match[2] : null; };
-    const getTikTokId = (url) => { if(!url) return null; const match = url.match(/video\/(\d+)/); return match ? match[1] : null; };
-    const isTikTok = (url) => { return url && url.toLowerCase().includes('tiktok.com'); };
-    const getDriveId = (url) => { if(!url) return null; const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/); return match ? match[1] : null; };
-
-    const getAreaStyle = (a) => { 
-        const area = (a || '').toUpperCase(); 
-        if(area.includes('MATEMATICAS')) return { border: '#0284c7', badge: '#0284c7', text: '#ffffff', bg: '#f0f9ff' }; 
-        if(area.includes('ESPAÑOL') || area.includes('LENGUAJE')) return { border: '#0891b2', badge: '#0891b2', text: '#ffffff', bg: '#ecfeff' }; 
-        if(area.includes('NATURALES')) return { border: '#059669', badge: '#059669', text: '#ffffff', bg: '#ecfdf5' }; 
-        if(area.includes('SOCIALES')) return { border: '#d97706', badge: '#d97706', text: '#ffffff', bg: '#fffbeb' }; 
-        if(area.includes('INGLES')) return { border: '#7c3aed', badge: '#7c3aed', text: '#ffffff', bg: '#f5f3ff' }; 
-        if(area.includes('ARTISTICA')) return { border: '#ca8a04', badge: '#ca8a04', text: '#ffffff', bg: '#fefce8' }; 
-        if(area.includes('EDUCACION FISICA')) return { border: '#65a30d', badge: '#65a30d', text: '#ffffff', bg: '#f7fee7' }; 
-        if(area.includes('ETICA') || area.includes('RELIGION')) return { border: '#0d9488', badge: '#0d9488', text: '#ffffff', bg: '#f0fdf4' }; 
-        if(area.includes('TECNOLOGIA') || area.includes('INFORMATICA')) return { border: '#4f46e5', badge: '#4f46e5', text: '#ffffff', bg: '#eef2ff' }; 
-        return { border: '#475569', badge: '#475569', text: '#ffffff', bg: '#f8fafc' }; 
-    };
+    const getYouTubeId=(u)=>{if(!u)return null;const m=u.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);return(m&&m[2].length===11)?m[2]:null;};
+    const getTikTokId=(u)=>{if(!u)return null;const m=u.match(/video\/(\d+)/);return m?m[1]:null;};
+    const isTikTok=(u)=>u&&u.toLowerCase().includes('tiktok.com');
+    const getDriveId=(u)=>{if(!u)return null;const m=u.match(/\/d\/([a-zA-Z0-9_-]+)/);return m?m[1]:null;};
+    const getAreaStyle=(a)=>{const ar=(a||'').toUpperCase();if(ar.includes('MATEMATICAS'))return{border:'#0284c7',badge:'#0284c7',text:'#ffffff',bg:'#f0f9ff'};if(ar.includes('ESPAÑOL')||ar.includes('LENGUAJE'))return{border:'#0891b2',badge:'#0891b2',text:'#ffffff',bg:'#ecfeff'};if(ar.includes('NATURALES'))return{border:'#059669',badge:'#059669',text:'#ffffff',bg:'#ecfdf5'};if(ar.includes('SOCIALES'))return{border:'#d97706',badge:'#d97706',text:'#ffffff',bg:'#fffbeb'};if(ar.includes('INGLES'))return{border:'#7c3aed',badge:'#7c3aed',text:'#ffffff',bg:'#f5f3ff'};if(ar.includes('ARTISTICA'))return{border:'#ca8a04',badge:'#ca8a04',text:'#ffffff',bg:'#fefce8'};if(ar.includes('EDUCACION FISICA'))return{border:'#65a30d',badge:'#65a30d',text:'#ffffff',bg:'#f7fee7'};if(ar.includes('ETICA')||ar.includes('RELIGION'))return{border:'#0d9488',badge:'#0d9488',text:'#ffffff',bg:'#f0fdf4'};if(ar.includes('TECNOLOGIA')||ar.includes('INFORMATICA'))return{border:'#4f46e5',badge:'#4f46e5',text:'#ffffff',bg:'#eef2ff'};return{border:'#475569',badge:'#475569',text:'#ffffff',bg:'#f8fafc'};};
 
     const formatTaskDescription = (text) => {
         if (!text) return <span className="italic text-stone-400">Sin descripción...</span>;
-        const lines = text.split('\n');
-        return lines.map((line, idx) => {
+        return text.split('\n').map((line, idx) => {
             let trimmedLine = line.trim();
             if (!trimmedLine) return <div key={idx} className="h-3"></div>;
             const bulletMatch = trimmedLine.match(/^[-*•]\s*(.*)/);
             if (bulletMatch) {
-                let content = bulletMatch[1];
-                const parts = content.split(/(\b[A-ZÁÉÍÓÚÑ\s]{4,}\b)/g);
-                return (
-                    <div key={idx} className="flex gap-2 my-1 pl-1">
-                        <span className="text-[#2e7d32] font-black text-lg leading-none">●</span>
-                        <span>{parts.map((p, i) => /^[A-ZÁÉÍÓÚÑ\s]{4,}$/.test(p) ? <span key={i} className="text-[#d32f2f] font-black">{p}</span> : p)}</span>
-                    </div>
-                );
-            } else {
-                const parts = trimmedLine.split(/(\b[A-ZÁÉÍÓÚÑ\s]{4,}\b)/g);
-                return <div key={idx}>{parts.map((p, i) => /^[A-ZÁÉÍÓÚÑ\s]{4,}$/.test(p) ? <span key={i} className="text-[#d32f2f] font-black">{p}</span> : p)}</div>;
+                const parts = bulletMatch[1].split(/(\b[A-ZÁÉÍÓÚÑ\s]{4,}\b)/g);
+                return <div key={idx} className="flex gap-2 my-1 pl-1"><span className="text-[#2e7d32] font-black text-lg leading-none">●</span><span>{parts.map((p, i) => /^[A-ZÁÉÍÓÚÑ\s]{4,}$/.test(p) ? <span key={i} className="text-[#d32f2f] font-black">{p}</span> : p)}</span></div>;
             }
+            const parts = trimmedLine.split(/(\b[A-ZÁÉÍÓÚÑ\s]{4,}\b)/g);
+            return <div key={idx}>{parts.map((p, i) => /^[A-ZÁÉÍÓÚÑ\s]{4,}$/.test(p) ? <span key={i} className="text-[#d32f2f] font-black">{p}</span> : p)}</div>;
         });
     };
 
     const App = () => {
       const URL_IMAGEN_ALERTA = "https://cdn-icons-png.flaticon.com/512/564/564619.png"; 
-
       const [view, setView] = useState('recent');
       const [studentsData, setStudentsData] = useState([]);
       const [studentLists, setStudentLists] = useState({});
@@ -145,21 +109,16 @@
       const [previewAgendaData, setPreviewAgendaData] = useState(null);
 
       const [massiveAwardXp, setMassiveAwardXp] = useState(true);
-
       const [batchData, setBatchData] = useState({ gradeLevel: '', area: '', actividad: '', entries: [] });
       const [agendaItems, setAgendaItems] = useState([]);
       const [assignmentType, setAssignmentType] = useState('group');
       const [selectedGrades, setSelectedGrades] = useState([]);
-      
       const [newTask, setNewTask] = useState({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', imageUrl: '', publishAt: '', excludedStudents: [] });
-      
       const [editingTask, setEditingTask] = useState(null);
       const [editAssignmentType, setEditAssignmentType] = useState('group');
       const [editSelectedGrades, setEditSelectedGrades] = useState([]);
-
       const [inboxMessages, setInboxMessages] = useState([]);
       const [agendaTab, setAgendaTab] = useState('published');
-      
       const [noticeText, setNoticeText] = useState('');
       const [noticeColor, setNoticeColor] = useState('yellow');
       const [noticeImage, setNoticeImage] = useState('');
@@ -169,24 +128,19 @@
       const [noticeTargets, setNoticeTargets] = useState(['Todos']); 
       const [targetStudentDoc, setTargetStudentDoc] = useState('');
       const [noticeExcluded, setNoticeExcluded] = useState([]); 
-
       const [noticesList, setNoticesList] = useState([]);
       const [editingNoticeId, setEditingNoticeId] = useState(null);
       const [noticeTab, setNoticeTab] = useState('active');
-
       const [noticePublishAt, setNoticePublishAt] = useState('');
       const [noticeExpiresAt, setNoticeExpiresAt] = useState('');
-
       const [filterGrade, setFilterGrade] = useState('Quinto');
       const [filterArea, setFilterArea] = useState('MATEMATICAS');
       const [filterActivity, setFilterActivity] = useState('');
       const [filterStudent, setFilterStudent] = useState('');
       const [editingGradeEntry, setEditingGradeEntry] = useState(null);
-
       const [agendaFilterGrade, setAgendaFilterGrade] = useState('');
       const [agendaFilterArea, setAgendaFilterArea] = useState('');
       const [agendaFilterDate, setAgendaFilterDate] = useState('');
-
       const [xpTab, setXpTab] = useState('manual');
       const [xpGrade, setXpGrade] = useState('Quinto');
       const [xpStudent, setXpStudent] = useState('');
@@ -194,113 +148,48 @@
       const [xpCustomConcept, setXpCustomConcept] = useState('');
       const [xpAmount, setXpAmount] = useState(20);
       const [attendanceMap, setAttendanceMap] = useState({});
-      
       const [studentsGlobalXp, setStudentsGlobalXp] = useState({}); 
       const [expandedStudentXp, setExpandedStudentXp] = useState(null);
       const [expandedStudentHistory, setExpandedStudentHistory] = useState(null);
       
-      const [attendanceDate, setAttendanceDate] = useState(() => {
-          const d = new Date();
-          return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
-      });
+      const [auditLogs, setAuditLogs] = useState([]); // ESTADO DE AUDITORIA
+
+      const [attendanceDate, setAttendanceDate] = useState(() => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); });
 
       useEffect(() => {
         db.collection("configuracionGlobal").doc("notas").onSnapshot(s => {
           const p = s.exists ? s.data().periodoActual || 1 : 1;
-          setPeriodoActual(p);
-          setPeriodoVisualizacion(p);
+          setPeriodoActual(p); setPeriodoVisualizacion(p);
         });
         db.collection("configuracionGlobal").doc("listasEstudiantes").onSnapshot(s => setStudentLists(s.exists ? s.data() : {}));
       }, []);
 
       useEffect(() => {
-        const unsubNotes = db.collection("notasAcademicas").onSnapshot(s => {
-          const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); 
-          setStudentsData(a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0)));
+        const unsubNotes = db.collection("notasAcademicas").onSnapshot(s => { const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); setStudentsData(a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0))); });
+        const unsubAgenda = db.collection("agendaEscolar").onSnapshot(s => { const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); setAgendaItems(a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0))); });
+        const unsubMessages = db.collection("mensajesAgenda").onSnapshot(s => { const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); setInboxMessages(a.sort((x,y)=>(y.lastUpdate||'').localeCompare(x.lastUpdate||''))); });
+        const unsubNotices = db.collection("tableroAvisos").orderBy("timestamp", "desc").onSnapshot(s => { setNoticesList(s.docs.map(d => ({id:d.id, ...d.data()}))); });
+        const unsubXp = db.collection("logrosEstudiantes").onSnapshot(s => { const xpData = {}; s.forEach(d => { xpData[d.id] = d.data(); }); setStudentsGlobalXp(xpData); });
+        
+        // SUSCRIPCION A LA AUDITORIA
+        const unsubAudit = db.collection("auditoriaAccesos").orderBy("timestamp", "desc").limit(100).onSnapshot(s => {
+            const logs = [];
+            s.forEach(d => logs.push({ id: d.id, ...d.data() }));
+            setAuditLogs(logs);
         });
-        const unsubAgenda = db.collection("agendaEscolar").onSnapshot(s => {
-          const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); 
-          setAgendaItems(a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0)));
-        });
-        const unsubMessages = db.collection("mensajesAgenda").onSnapshot(s => {
-          const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); 
-          setInboxMessages(a.sort((x,y)=>(y.lastUpdate||'').localeCompare(x.lastUpdate||'')));
-        });
-        const unsubNotices = db.collection("tableroAvisos").orderBy("timestamp", "desc").onSnapshot(s => {
-            setNoticesList(s.docs.map(d => ({id:d.id, ...d.data()})));
-        });
-        const unsubXp = db.collection("logrosEstudiantes").onSnapshot(s => {
-            const xpData = {};
-            s.forEach(d => { xpData[d.id] = d.data(); });
-            setStudentsGlobalXp(xpData);
-        });
-        return () => { unsubNotes(); unsubAgenda(); unsubMessages(); unsubNotices(); unsubXp(); };
+
+        return () => { unsubNotes(); unsubAgenda(); unsubMessages(); unsubNotices(); unsubXp(); unsubAudit(); };
       }, [periodoVisualizacion]);
 
-      const updateGlobalPeriod = async (p) => {
-        await db.collection("configuracionGlobal").doc("notas").set({ periodoActual: p }, { merge: true });
-        setPeriodoActual(p);
-        setPeriodoVisualizacion(p);
-        Swal.fire({ icon: 'success', title: `Periodo ${p} Activo`, toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
-      };
-
-      const handleBatchConfigChange = (e) => {
-        const { name, value } = e.target;
-        setBatchData(prev => {
-          const newData = { ...prev, [name]: value };
-          if (name === 'gradeLevel') {
-            const list = value ? (studentLists[value] || []) : [];
-            newData.entries = list.map(n => ({ name: n, score: '', observation: '' }));
-          }
-          return newData;
-        });
-      };
-      
-      const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-          if (file.size > 800000) return Swal.fire('Foto muy pesada', 'Máx 800kb', 'error');
-          const reader = new FileReader();
-          reader.onloadend = () => setNoticeImage(reader.result);
-          reader.readAsDataURL(file);
-        }
-      };
-
-      const handleTaskImageUpload = (e, isEditing) => {
-        const file = e.target.files[0];
-        if (file) {
-          if (file.size > 800000) return Swal.fire('Foto muy pesada', 'Máx 800kb', 'error');
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            if (isEditing) setEditingTask({...editingTask, imageUrl: reader.result});
-            else setNewTask({...newTask, imageUrl: reader.result});
-          };
-          reader.readAsDataURL(file);
-        }
-      };
+      const updateGlobalPeriod = async (p) => { await db.collection("configuracionGlobal").doc("notas").set({ periodoActual: p }, { merge: true }); setPeriodoActual(p); setPeriodoVisualizacion(p); Swal.fire({ icon: 'success', title: `Periodo ${p} Activo`, toast: true, position: 'top-end', timer: 2000, showConfirmButton: false }); };
+      const handleBatchConfigChange = (e) => { const { name, value } = e.target; setBatchData(prev => { const newData = { ...prev, [name]: value }; if (name === 'gradeLevel') { const list = value ? (studentLists[value] || []) : []; newData.entries = list.map(n => ({ name: n, score: '', observation: '' })); } return newData; }); };
+      const handleFileChange = (e) => { const file = e.target.files[0]; if (file) { if (file.size > 800000) return Swal.fire('Foto muy pesada', 'Máx 800kb', 'error'); const reader = new FileReader(); reader.onloadend = () => setNoticeImage(reader.result); reader.readAsDataURL(file); } };
+      const handleTaskImageUpload = (e, isEditing) => { const file = e.target.files[0]; if (file) { if (file.size > 800000) return Swal.fire('Foto muy pesada', 'Máx 800kb', 'error'); const reader = new FileReader(); reader.onloadend = () => { if (isEditing) setEditingTask({...editingTask, imageUrl: reader.result}); else setNewTask({...newTask, imageUrl: reader.result}); }; reader.readAsDataURL(file); } };
 
       const duplicateTask = (task) => {
-          setNewTask({
-              gradeLevel: task.gradeLevel,
-              area: task.area,
-              title: task.title + ' (Copia)',
-              description: task.description,
-              date: task.date, 
-              targetStudent: task.targetStudent || '',
-              videoLink: task.videoLink || '',
-              pdfLink: task.pdfLink || '',
-              imageUrl: task.imageUrl || '',
-              publishAt: task.publishAt || '',
-              excludedStudents: task.excludedStudents || []
-          });
-          if(task.targetStudent) {
-              setAssignmentType('individual');
-          } else {
-              setAssignmentType('group');
-              setSelectedGrades([task.gradeLevel]);
-          }
-          const mainContainer = document.querySelector('main');
-          if(mainContainer) mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
+          setNewTask({ gradeLevel: task.gradeLevel, area: task.area, title: task.title + ' (Copia)', description: task.description, date: task.date, targetStudent: task.targetStudent || '', videoLink: task.videoLink || '', pdfLink: task.pdfLink || '', imageUrl: task.imageUrl || '', publishAt: task.publishAt || '', excludedStudents: task.excludedStudents || [] });
+          if(task.targetStudent) { setAssignmentType('individual'); } else { setAssignmentType('group'); setSelectedGrades([task.gradeLevel]); }
+          const mainContainer = document.querySelector('main'); if(mainContainer) mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
           Swal.fire({ icon: 'info', title: 'Tarea Copiada', text: 'Modifica los datos y dale a Publicar.', timer: 3000, toast: true, position: 'top-end' });
       };
 
@@ -345,14 +234,7 @@
               const batch = db.batch(); const finalAmt = isPositive ? amt : -amt;
               let conceptName = xpConcept; if (xpConcept === '✏️ Personalizado...') { if(!xpCustomConcept.trim()) return Swal.fire('Error', 'Escribe el motivo', 'warning'); conceptName = xpCustomConcept.trim(); } else { conceptName = xpConcept.split(' ').slice(1).join(' '); }
               const expDate = new Date(); expDate.setHours(expDate.getHours() + 12); 
-              
-              let targets = [];
-              if (xpStudent === 'TODOS') {
-                  targets = (studentLists[xpGrade] || []).map(s => { const p = s.split(' - '); return p.length > 1 ? p[1].trim() : ''; }).filter(Boolean);
-              } else {
-                  targets = [xpStudent];
-              }
-
+              let targets = xpStudent === 'TODOS' ? (studentLists[xpGrade] || []).map(s => { const p = s.split(' - '); return p.length > 1 ? p[1].trim() : ''; }).filter(Boolean) : [xpStudent];
               targets.forEach(docId => {
                   batch.set(db.collection("logrosEstudiantes").doc(docId), { xp: firebase.firestore.FieldValue.increment(finalAmt), documentoEstudiante: docId }, {merge: true});
                   batch.set(db.collection("historialXP").doc(), { documentoEstudiante: docId, motivo: conceptName, cantidad: finalAmt, timestamp: Date.now() });
@@ -370,8 +252,7 @@
               const dateStr = new Date(attendanceDate + "T12:00:00").toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' });
               let count = 0;
               Object.values(studentLists).flat().forEach(studentStr => {
-                  const parts = studentStr.split(' - ');
-                  const docId = parts.length > 1 ? parts[1].trim() : '';
+                  const parts = studentStr.split(' - '); const docId = parts.length > 1 ? parts[1].trim() : '';
                   if (docId && isPresent(docId)) {
                       count++;
                       batch.set(db.collection("logrosEstudiantes").doc(docId), { xp: firebase.firestore.FieldValue.increment(5), documentoEstudiante: docId }, {merge: true});
@@ -388,12 +269,7 @@
           if(!(await Swal.fire({title: '¡Peligro!', text: 'Se borrará progreso.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33'})).isConfirmed) return;
           setIsSaving(true);
           try {
-              let targets = [];
-              if (xpStudent === 'TODOS') {
-                  targets = (studentLists[xpGrade] || []).map(s => { const p = s.split(' - '); return p.length > 1 ? p[1].trim() : ''; }).filter(Boolean);
-              } else {
-                  targets = [xpStudent];
-              }
+              let targets = xpStudent === 'TODOS' ? (studentLists[xpGrade] || []).map(s => { const p = s.split(' - '); return p.length > 1 ? p[1].trim() : ''; }).filter(Boolean) : [xpStudent];
               const batch = db.batch();
               for (const docId of targets) {
                   const logRef = db.collection("logrosEstudiantes").doc(docId); const dSnap = await logRef.get();
@@ -423,13 +299,9 @@
       const isExpired = (dateStr) => { if(!dateStr) return false; try { const now = new Date(); const due = new Date(dateStr + 'T23:59:59'); return !isNaN(due) && now > due; } catch(e) { return false; } };
       const handlePreviewAgenda = (taskData) => { setPreviewAgendaData(taskData); setIsPreviewAgendaOpen(true); };
 
-      // ==========================================
-      // FUNCION REPARADA: handleAddTask
-      // ==========================================
       const handleAddTask = async (status = 'published') => {
         if(isSaving) return;
         const isPublished = status === 'published';
-
         if (assignmentType === 'group' && selectedGrades.length === 0) return Swal.fire('Error','Debes seleccionar al menos un grado','warning');
         if (assignmentType === 'individual' && (!newTask.gradeLevel || !newTask.targetStudent)) return Swal.fire('Error','Selecciona el grado y un estudiante de la lista.','warning');
         
@@ -438,25 +310,9 @@
             const batch = db.batch();
             const finalTarget = assignmentType === 'individual' ? newTask.targetStudent.trim() : null;
 
-            const baseTask = { 
-                ...newTask, 
-                targetStudent: finalTarget,
-                status, 
-                publico: isPublished, 
-                archived: false, 
-                createdAt: Date.now(), 
-                periodo: periodoActual || 1, 
-                publishAt: newTask.publishAt || null 
-            };
-            
-            if(assignmentType === 'group') {
-                selectedGrades.forEach(g => {
-                    const ref = db.collection("agendaEscolar").doc();
-                    batch.set(ref, { ...baseTask, gradeLevel: g });
-                });
-            } else {
-                batch.set(db.collection("agendaEscolar").doc(), baseTask);
-            }
+            const baseTask = { ...newTask, targetStudent: finalTarget, status, publico: isPublished, archived: false, createdAt: Date.now(), periodo: periodoActual || 1, publishAt: newTask.publishAt || null };
+            if(assignmentType === 'group') { selectedGrades.forEach(g => { batch.set(db.collection("agendaEscolar").doc(), { ...baseTask, gradeLevel: g }); }); } 
+            else { batch.set(db.collection("agendaEscolar").doc(), baseTask); }
 
             if (isPublished) {
                 const noticeRef = db.collection("tableroAvisos").doc();
@@ -464,108 +320,42 @@
                 let autoNoticeTargets = assignmentType === 'group' ? selectedGrades : [];
                 let autoNoticeStudent = finalTarget;
                 
-                const pubDate = newTask.publishAt ? new Date(newTask.publishAt) : new Date();
-                const expDate = new Date(pubDate);
-                expDate.setHours(expDate.getHours() + 24); 
-                
-                const autoNoticeData = {
-                    mensaje: `👨‍👩‍👧‍👦 Atención, familia:\nEl estudiante tiene una nueva actividad asignada.\n📍 Área: ${newTask.area || 'General'}\n📝 Trabajo: ${newTask.title}\n⏳ Fecha de entrega:\n🗓️ ${newTask.date || 'Ver Agenda'}`,
-                    color: 'white', imageUrl: newTask.imageUrl || '', videoUrl: newTask.videoLink || '', docUrl: newTask.pdfLink || '',
-                    scope: autoNoticeScope, targetGrades: autoNoticeTargets, targetStudentDoc: autoNoticeStudent,
-                    excludedStudents: newTask.excludedStudents || [],
-                    fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
-                    timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: true, isXpNotice: false,
-                    publishAt: pubDate.toISOString(), expiresAt: expDate.toISOString()
-                };
-                batch.set(noticeRef, autoNoticeData);
+                const pubDate = newTask.publishAt ? new Date(newTask.publishAt) : new Date(); const expDate = new Date(pubDate); expDate.setHours(expDate.getHours() + 24); 
+                batch.set(noticeRef, { mensaje: `👨‍👩‍👧‍👦 Atención, familia:\nEl estudiante tiene una nueva actividad asignada.\n📍 Área: ${newTask.area || 'General'}\n📝 Trabajo: ${newTask.title}\n⏳ Fecha de entrega:\n🗓️ ${newTask.date || 'Ver Agenda'}`, color: 'white', imageUrl: newTask.imageUrl || '', videoUrl: newTask.videoLink || '', docUrl: newTask.pdfLink || '', scope: autoNoticeScope, targetGrades: autoNoticeTargets, targetStudentDoc: autoNoticeStudent, excludedStudents: newTask.excludedStudents || [], fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }), timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: true, isXpNotice: false, publishAt: pubDate.toISOString(), expiresAt: expDate.toISOString() });
             }
-            await batch.commit();
-            setNewTask({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', imageUrl: '', publishAt: '', excludedStudents: [] });
-            setSelectedGrades([]);
-            Swal.fire({icon:'success', title: isPublished ? (newTask.publishAt ? 'Programada' : 'Publicada') : 'Guardada'});
-        } catch (error) { Swal.fire('Error', 'Intenta de nuevo.', 'error'); } 
-        finally { setIsSaving(false); }
+            await batch.commit(); setNewTask({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', imageUrl: '', publishAt: '', excludedStudents: [] }); setSelectedGrades([]); Swal.fire({icon:'success', title: isPublished ? (newTask.publishAt ? 'Programada' : 'Publicada') : 'Guardada'});
+        } catch (error) { Swal.fire('Error', 'Intenta de nuevo.', 'error'); } finally { setIsSaving(false); }
       };
 
-      // ==========================================
-      // FUNCION REPARADA: handleSaveEditTask
-      // ==========================================
       const handleSaveEditTask = async () => {
           if(isSaving) return;
           if (editAssignmentType === 'individual' && !editingTask.targetStudent) return Swal.fire('Error','Selecciona un estudiante.','warning');
-
           setIsSaving(true);
           try {
-              const batch = db.batch();
-              const baseTask = { ...editingTask };
-              const originalId = baseTask.id;
-              delete baseTask.id;
-
-              if (editAssignmentType === 'individual') {
-                  baseTask.targetStudent = editingTask.targetStudent.trim();
-                  batch.update(db.collection("agendaEscolar").doc(originalId), baseTask);
-              } else {
-                  baseTask.targetStudent = null; // LIMPIEZA OBLIGATORIA
+              const batch = db.batch(); const baseTask = { ...editingTask }; const originalId = baseTask.id; delete baseTask.id;
+              if (editAssignmentType === 'individual') { baseTask.targetStudent = editingTask.targetStudent.trim(); batch.update(db.collection("agendaEscolar").doc(originalId), baseTask); } 
+              else {
+                  baseTask.targetStudent = null; 
                   if (editSelectedGrades.length === 0) { Swal.fire('Error', 'Selecciona un grado.', 'warning'); setIsSaving(false); return; }
-                  
-                  let gradeForCurrentDoc = editingTask.gradeLevel;
-                  if (!editSelectedGrades.includes(gradeForCurrentDoc)) gradeForCurrentDoc = editSelectedGrades[0];
-                  
-                  baseTask.gradeLevel = gradeForCurrentDoc;
-                  batch.update(db.collection("agendaEscolar").doc(originalId), baseTask);
-                  
-                  editSelectedGrades.filter(g => g !== gradeForCurrentDoc).forEach(g => {
-                      const ref = db.collection("agendaEscolar").doc();
-                      batch.set(ref, { ...baseTask, gradeLevel: g, createdAt: Date.now() });
-                  });
+                  let gradeForCurrentDoc = editingTask.gradeLevel; if (!editSelectedGrades.includes(gradeForCurrentDoc)) gradeForCurrentDoc = editSelectedGrades[0];
+                  baseTask.gradeLevel = gradeForCurrentDoc; batch.update(db.collection("agendaEscolar").doc(originalId), baseTask);
+                  editSelectedGrades.filter(g => g !== gradeForCurrentDoc).forEach(g => { batch.set(db.collection("agendaEscolar").doc(), { ...baseTask, gradeLevel: g, createdAt: Date.now() }); });
               }
-              
-              await batch.commit();
-              setEditingTask(null);
-              Swal.fire({ icon: 'success', title: 'Actualizada', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
-          } catch(e) { Swal.fire('Error', 'Falló la actualización', 'error'); } 
-          finally { setIsSaving(false); }
+              await batch.commit(); setEditingTask(null); Swal.fire({ icon: 'success', title: 'Actualizada', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+          } catch(e) { Swal.fire('Error', 'Falló la actualización', 'error'); } finally { setIsSaving(false); }
       };
 
       const publishDraft = async (task) => {
-         if(isSaving) return;
-         setIsSaving(true);
+         if(isSaving) return; setIsSaving(true);
          try {
-            const batch = db.batch();
-            batch.update(db.collection("agendaEscolar").doc(task.id), { status: 'published', publico: true, archived: false });
-
-            const noticeRef = db.collection("tableroAvisos").doc();
-            let autoNoticeScope = task.targetStudent ? 'Individual' : 'Grado'; 
-            let autoNoticeTargets = task.gradeLevel && !task.targetStudent ? [task.gradeLevel] : []; 
-            let autoNoticeStudent = task.targetStudent ? task.targetStudent.trim() : null;
-            
-            const pubDate = new Date();
-            const expDate = new Date();
-            expDate.setHours(expDate.getHours() + 24); 
-
-            const autoNoticeData = {
-                mensaje: `👨‍👩‍👧‍👦 Atención, familia:\nEl estudiante tiene una nueva actividad asignada.\n📍 Área: ${task.area || 'General'}\n📝 Trabajo: ${task.title}\n⏳ Fecha de entrega:\n🗓️ ${task.date}`,
-                color: 'white', imageUrl: task.imageUrl || '', videoUrl: task.videoLink || '', docUrl: task.pdfLink || '',
-                scope: autoNoticeScope, targetGrades: autoNoticeTargets, targetStudentDoc: autoNoticeStudent,
-                excludedStudents: task.excludedStudents || [], 
-                fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
-                timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: true, isXpNotice: false,
-                publishAt: pubDate.toISOString(), expiresAt: expDate.toISOString()
-            };
-            batch.set(noticeRef, autoNoticeData);
-
-            await batch.commit();
-            Swal.fire({icon:'success', title: 'Borrador Publicado', toast: true, position:'top-end', timer: 1500});
-         } catch (error) { Swal.fire('Error', 'Falló la publicación', 'error'); } 
-         finally { setIsSaving(false); }
+            const batch = db.batch(); batch.update(db.collection("agendaEscolar").doc(task.id), { status: 'published', publico: true, archived: false });
+            const pubDate = new Date(); const expDate = new Date(); expDate.setHours(expDate.getHours() + 24); 
+            batch.set(db.collection("tableroAvisos").doc(), { mensaje: `👨‍👩‍👧‍👦 Atención, familia:\nEl estudiante tiene una nueva actividad asignada.\n📍 Área: ${task.area || 'General'}\n📝 Trabajo: ${task.title}\n⏳ Fecha de entrega:\n🗓️ ${task.date}`, color: 'white', imageUrl: task.imageUrl || '', videoUrl: task.videoLink || '', docUrl: task.pdfLink || '', scope: task.targetStudent ? 'Individual' : 'Grado', targetGrades: task.gradeLevel && !task.targetStudent ? [task.gradeLevel] : [], targetStudentDoc: task.targetStudent ? task.targetStudent.trim() : null, excludedStudents: task.excludedStudents || [], fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }), timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: true, isXpNotice: false, publishAt: pubDate.toISOString(), expiresAt: expDate.toISOString() });
+            await batch.commit(); Swal.fire({icon:'success', title: 'Publicado', toast: true, position:'top-end', timer: 1500});
+         } catch (error) { Swal.fire('Error', 'Falló la publicación', 'error'); } finally { setIsSaving(false); }
       };
 
-      const deleteSingleGrade = async (id) => {
-        if((await Swal.fire({title:'¿Eliminar?', text: 'Se eliminará solo este registro.', icon:'warning', showCancelButton:true})).isConfirmed){
-            await db.collection("notasAcademicas").doc(id).delete();
-            Swal.fire({icon:'success', title:'Eliminado', timer:1500, showConfirmButton:false, toast:true, position:'top-end'});
-        }
-      };
+      const deleteSingleGrade = async (id) => { if((await Swal.fire({title:'¿Eliminar?', text: 'Se eliminará solo este registro.', icon:'warning', showCancelButton:true})).isConfirmed){ await db.collection("notasAcademicas").doc(id).delete(); Swal.fire({icon:'success', title:'Eliminado', timer:1500, showConfirmButton:false, toast:true, position:'top-end'}); } };
 
       const saveIndividualGrade = async (en, idx) => {
         if(isSaving) return;
@@ -608,7 +398,6 @@
       const saveGrades = async () => {
         if(isSaving) return;
         if (!batchData.area || !batchData.actividad) return Swal.fire('Error', 'Área y Actividad obligatorias', 'warning');
-
         setIsSaving(true);
         try {
             const valid = batchData.entries.filter(e => e.score !== '');
@@ -697,18 +486,59 @@
 
       return (
         <div className="flex flex-col h-[100dvh]">
-          <header className="px-6 pt-12 pb-6 bg-[#064e3b] sticky top-0 z-40 shadow-xl">
-            <div className="flex justify-between items-center text-white">
-              <div><h1 className="text-2xl font-black uppercase tracking-tighter">Docente <span className="text-[#facc15]">2026</span></h1><p className="text-[10px] font-bold text-emerald-200 uppercase">P{periodoVisualizacion} · Tierra</p></div>
-              <div className="flex gap-2">
-                <button onClick={() => setIsXpModalOpen(true)} disabled={isSaving} className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20 active:scale-90 text-[#facc15]"><StarIcon size={22} /></button>
-                <button onClick={() => setIsBoardOpen(true)} disabled={isSaving} className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20 active:scale-90 text-[#facc15]"><BoardIcon size={22} /></button>
-                <button onClick={() => setIsConfigOpen(true)} disabled={isSaving} className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20 active:scale-90 text-[#facc15]"><Settings size={22} /></button>
+         <header className="px-4 pt-10 pb-4 bg-[#064e3b] sticky top-0 z-40 shadow-xl">
+            <div className="flex justify-between items-center text-white gap-1">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl font-black uppercase tracking-tighter truncate">Docente <span className="text-[#facc15]">2026</span></h1>
+                <p className="text-[9px] font-bold text-emerald-200 uppercase">P{periodoVisualizacion} · Tierra</p>
+              </div>
+              <div className="flex gap-1.5 shrink-0">
+                <button onClick={() => setView('audit')} disabled={isSaving} className={`h-10 w-10 rounded-xl flex items-center justify-center border active:scale-90 transition-all ${view==='audit'?'bg-[#facc15] text-[#064e3b] border-[#facc15]':'bg-white/10 border-white/20 text-[#facc15]'}`} title="Auditoría"><ActivityIcon size={18} /></button>
+                <button onClick={() => setIsXpModalOpen(true)} disabled={isSaving} className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 active:scale-90 text-[#facc15]" title="Gestión XP"><StarIcon size={18} /></button>
+                <button onClick={() => setIsBoardOpen(true)} disabled={isSaving} className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 active:scale-90 text-[#facc15]" title="Periódico"><BoardIcon size={18} /></button>
+                <button onClick={() => setIsConfigOpen(true)} disabled={isSaving} className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center border border-white/20 active:scale-90 text-[#facc15]" title="Configuración"><Settings size={18} /></button>
               </div>
             </div>
           </header>
 
           <main className="flex-1 overflow-y-auto p-4 pb-40 no-scrollbar">
+            {view === 'audit' && (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center mb-2 px-1">
+                    <h2 className="text-[11px] font-black text-stone-600 uppercase">Auditoría de Actividad</h2>
+                    <button onClick={async ()=>{ if((await Swal.fire({title:'¿Limpiar Historial?', icon:'warning', showCancelButton:true})).isConfirmed){ const b=db.batch(); const s=await db.collection("auditoriaAccesos").get(); s.forEach(d=>b.delete(d.ref)); await b.commit(); } }} className="text-[9px] font-black bg-red-100 text-red-700 px-3 py-1.5 rounded-lg active:scale-95">Limpiar Todo</button>
+                </div>
+                <div className="earth-card overflow-hidden">
+                    {auditLogs.length === 0 ? (
+                        <div className="p-8 text-center text-stone-400 text-xs font-bold uppercase">Sin registros recientes</div>
+                    ) : (
+                        <div className="divide-y divide-stone-100">
+                            {auditLogs.map(log => {
+                                const dStr = new Date(log.timestamp).toLocaleString('es-CO', {day:'numeric', month:'short', hour:'numeric', minute:'2-digit', hour12:true});
+                                let color = "text-stone-600 bg-stone-100 border-transparent";
+                                if(log.accion === 'LOGIN') color = "text-emerald-700 bg-emerald-100 border-emerald-200";
+                                else if(log.accion === 'AGENDA') color = "text-purple-700 bg-purple-100 border-purple-200";
+                                else if(log.accion === 'INTERACTIVA') color = "text-sky-700 bg-sky-100 border-sky-200";
+                                else if(log.accion === 'OBSERVADOR') color = "text-orange-700 bg-orange-100 border-orange-200";
+                                
+                                return (
+                                    <div key={log.id} className="p-4 flex items-center justify-between hover:bg-stone-50">
+                                        <div className="min-w-0 pr-2">
+                                            <p className="text-[11px] font-black text-stone-800 uppercase truncate">{log.nombreEstudiante}</p>
+                                            <p className="text-[9px] font-bold text-stone-400 mt-1">{dStr}</p>
+                                        </div>
+                                        <div className={`border text-[9px] font-black px-2 py-1 rounded-md uppercase shrink-0 ${color}`}>
+                                            {log.detalle}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+              </div>
+            )}
+
             {view === 'recent' && (
               <div className="space-y-4">
                 <h2 className="text-[11px] font-black text-stone-600 uppercase px-1">Registros Recientes</h2>
