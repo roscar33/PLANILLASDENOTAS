@@ -17,6 +17,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&display=swap" rel="stylesheet">
+
   <style>
     :root { --dark-green: #064e3b; --dark-brown: #451a03; --vibrant-yellow: #facc15; --cream-white: #fafaf9; }
     body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--cream-white); color: var(--dark-brown); margin: 0; padding: 0; }
@@ -29,16 +31,24 @@
     .table-earth tr { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .table-earth td, .table-earth th { padding: 12px; text-align: left; }
     .table-earth th { font-size: 10px; text-transform: uppercase; font-weight: 900; color: #78716c; }
+    .chat-bubble { max-width: 85%; padding: 10px; border-radius: 14px; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+    .chat-bubble.user { background: #f3f4f6; color: #1f2937; border: 1px solid #e5e7eb; border-bottom-left-radius: 2px; }
+    .chat-bubble.docente { background: var(--dark-green); color: var(--vibrant-yellow); align-self: flex-end; border-bottom-right-radius: 2px; }
     button:disabled { opacity: 0.6; cursor: progress; }
   </style>
 </head>
+
 <body class="antialiased overflow-hidden">
   <div id="root"></div>
 
   <script type="text/babel">
     const { useState, useEffect, useMemo } = React;
 
-    const firebaseConfig = { apiKey: "AIzaSyB2MJ-jdwQeT6sOfZ21tCrFYzGiuTNOAJ8", authDomain: "diariodeprocesos-6f78d.firebaseapp.com", projectId: "diariodeprocesos-6f78d" };
+    const firebaseConfig = {
+      apiKey: "AIzaSyB2MJ-jdwQeT6sOfZ21tCrFYzGiuTNOAJ8",
+      authDomain: "diariodeprocesos-6f78d.firebaseapp.com",
+      projectId: "diariodeprocesos-6f78d"
+    };
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
@@ -68,31 +78,77 @@
     const areasList = ['INGLES', 'CIENCIAS NATURALES', 'CIENCIAS SOCIALES', 'ARTISTICA', 'EDUCACION FISICA', 'ETICA Y VALORES', 'RELIGION', 'ESPAÑOL (LENGUAJE)', 'MATEMATICAS', 'TECNOLOGIA E INFORMATICA'];
     const conceptosXP = ['🙋‍♂️ Participación en clase','😇 Comportamiento','🤝 Colaboración','✍️ Trabajo en clase','⏰ Puntualidad','🕊️ Respeto y convivencia','📚 Responsabilidad','✏️ Personalizado...'];
 
-    const getNoticeColorStyle=(c)=>({pink:{backgroundColor:'#fbcfe8',color:'#831843'},blue:{backgroundColor:'#bae6fd',color:'#0c4a6e'},green:{backgroundColor:'#bbf7d0',color:'#14532d'},orange:{backgroundColor:'#ffcc80',color:'#fff'},red:{backgroundColor:'#ffcdd2',color:'#b71c1c'},purple:{backgroundColor:'#e9d5ff',color:'#581c87'},teal:{backgroundColor:'#99f6e4',color:'#115e59'},lime:{backgroundColor:'#d9f99d',color:'#365314'},white:{backgroundColor:'#ffffff',color:'#1e293b',border:'1px solid #cbd5e1'},brown:{backgroundColor:'#d7ccc8',color:'#3e2723'}}[c]||{backgroundColor:'#fef08a',color:'#1e3a8a'});
+    const getNoticeColorStyle = (color) => {
+        switch(color) {
+            case 'pink': return { backgroundColor: '#fbcfe8', color: '#831843' };
+            case 'blue': return { backgroundColor: '#bae6fd', color: '#0c4a6e' };
+            case 'green': return { backgroundColor: '#bbf7d0', color: '#14532d' };
+            case 'orange': return { backgroundColor: '#ffcc80', color: '#fff' };
+            case 'red': return { backgroundColor: '#ffcdd2', color: '#b71c1c' };
+            case 'purple': return { backgroundColor: '#e9d5ff', color: '#581c87' };
+            case 'teal': return { backgroundColor: '#99f6e4', color: '#115e59' };
+            case 'lime': return { backgroundColor: '#d9f99d', color: '#365314' };
+            case 'white': return { backgroundColor: '#ffffff', color: '#1e293b', border: '1px solid #cbd5e1' };
+            case 'brown': return { backgroundColor: '#d7ccc8', color: '#3e2723' };
+            default: return { backgroundColor: '#fef08a', color: '#1e3a8a' }; 
+        }
+    };
 
-    const getYouTubeId=(u)=>{if(!u)return null;const m=u.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);return(m&&m[2].length===11)?m[2]:null;};
-    const getTikTokId=(u)=>{if(!u)return null;const m=u.match(/video\/(\d+)/);return m?m[1]:null;};
-    const isTikTok=(u)=>u&&u.toLowerCase().includes('tiktok.com');
-    const getDriveId=(u)=>{if(!u)return null;const m=u.match(/\/d\/([a-zA-Z0-9_-]+)/);return m?m[1]:null;};
-    const getAreaStyle=(a)=>{const ar=(a||'').toUpperCase();if(ar.includes('MATEMATICAS'))return{border:'#0284c7',badge:'#0284c7',text:'#ffffff',bg:'#f0f9ff'};if(ar.includes('ESPAÑOL')||ar.includes('LENGUAJE'))return{border:'#0891b2',badge:'#0891b2',text:'#ffffff',bg:'#ecfeff'};if(ar.includes('NATURALES'))return{border:'#059669',badge:'#059669',text:'#ffffff',bg:'#ecfdf5'};if(ar.includes('SOCIALES'))return{border:'#d97706',badge:'#d97706',text:'#ffffff',bg:'#fffbeb'};if(ar.includes('INGLES'))return{border:'#7c3aed',badge:'#7c3aed',text:'#ffffff',bg:'#f5f3ff'};if(ar.includes('ARTISTICA'))return{border:'#ca8a04',badge:'#ca8a04',text:'#ffffff',bg:'#fefce8'};if(ar.includes('EDUCACION FISICA'))return{border:'#65a30d',badge:'#65a30d',text:'#ffffff',bg:'#f7fee7'};if(ar.includes('ETICA')||ar.includes('RELIGION'))return{border:'#0d9488',badge:'#0d9488',text:'#ffffff',bg:'#f0fdf4'};if(ar.includes('TECNOLOGIA')||ar.includes('INFORMATICA'))return{border:'#4f46e5',badge:'#4f46e5',text:'#ffffff',bg:'#eef2ff'};return{border:'#475569',badge:'#475569',text:'#ffffff',bg:'#f8fafc'};};
+    const getYouTubeId = (url) => { if(!url) return null; const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/; const match = url.match(regExp); return (match && match[2].length === 11) ? match[2] : null; };
+    const getTikTokId = (url) => { if(!url) return null; const match = url.match(/video\/(\d+)/); return match ? match[1] : null; };
+    const isTikTok = (url) => { return url && url.toLowerCase().includes('tiktok.com'); };
+    const getDriveId = (url) => { if(!url) return null; const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/); return match ? match[1] : null; };
+
+    const getAreaStyle = (a) => { 
+        const area = (a || '').toUpperCase(); 
+        if(area.includes('MATEMATICAS')) return { border: '#0284c7', badge: '#0284c7', text: '#ffffff', bg: '#f0f9ff' }; 
+        if(area.includes('ESPAÑOL') || area.includes('LENGUAJE')) return { border: '#0891b2', badge: '#0891b2', text: '#ffffff', bg: '#ecfeff' }; 
+        if(area.includes('NATURALES')) return { border: '#059669', badge: '#059669', text: '#ffffff', bg: '#ecfdf5' }; 
+        if(area.includes('SOCIALES')) return { border: '#d97706', badge: '#d97706', text: '#ffffff', bg: '#fffbeb' }; 
+        if(area.includes('INGLES')) return { border: '#7c3aed', badge: '#7c3aed', text: '#ffffff', bg: '#f5f3ff' }; 
+        if(area.includes('ARTISTICA')) return { border: '#ca8a04', badge: '#ca8a04', text: '#ffffff', bg: '#fefce8' }; 
+        if(area.includes('EDUCACION FISICA')) return { border: '#65a30d', badge: '#65a30d', text: '#ffffff', bg: '#f7fee7' }; 
+        if(area.includes('ETICA') || area.includes('RELIGION')) return { border: '#0d9488', badge: '#0d9488', text: '#ffffff', bg: '#f0fdf4' }; 
+        if(area.includes('TECNOLOGIA') || area.includes('INFORMATICA')) return { border: '#4f46e5', badge: '#4f46e5', text: '#ffffff', bg: '#eef2ff' }; 
+        return { border: '#475569', badge: '#475569', text: '#ffffff', bg: '#f8fafc' }; 
+    };
 
     const formatTaskDescription = (text) => {
         if (!text) return <span className="italic text-stone-400">Sin descripción...</span>;
-        return text.split('\n').map((line, idx) => {
+        const lines = text.split('\n');
+        return lines.map((line, idx) => {
             let trimmedLine = line.trim();
             if (!trimmedLine) return <div key={idx} className="h-3"></div>;
             const bulletMatch = trimmedLine.match(/^[-*•]\s*(.*)/);
             if (bulletMatch) {
-                const parts = bulletMatch[1].split(/(\b[A-ZÁÉÍÓÚÑ\s]{4,}\b)/g);
-                return <div key={idx} className="flex gap-2 my-1 pl-1"><span className="text-[#2e7d32] font-black text-lg leading-none">●</span><span>{parts.map((p, i) => /^[A-ZÁÉÍÓÚÑ\s]{4,}$/.test(p) ? <span key={i} className="text-[#d32f2f] font-black">{p}</span> : p)}</span></div>;
+                let content = bulletMatch[1];
+                const parts = content.split(/(\b[A-ZÁÉÍÓÚÑ\s]{4,}\b)/g);
+                return (
+                    <div key={idx} className="flex gap-2 my-1 pl-1">
+                        <span className="text-[#2e7d32] font-black text-lg leading-none">●</span>
+                        <span>{parts.map((p, i) => /^[A-ZÁÉÍÓÚÑ\s]{4,}$/.test(p) ? <span key={i} className="text-[#d32f2f] font-black">{p}</span> : p)}</span>
+                    </div>
+                );
+            } else {
+                const parts = trimmedLine.split(/(\b[A-ZÁÉÍÓÚÑ\s]{4,}\b)/g);
+                return <div key={idx}>{parts.map((p, i) => /^[A-ZÁÉÍÓÚÑ\s]{4,}$/.test(p) ? <span key={i} className="text-[#d32f2f] font-black">{p}</span> : p)}</div>;
             }
-            const parts = trimmedLine.split(/(\b[A-ZÁÉÍÓÚÑ\s]{4,}\b)/g);
-            return <div key={idx}>{parts.map((p, i) => /^[A-ZÁÉÍÓÚÑ\s]{4,}$/.test(p) ? <span key={i} className="text-[#d32f2f] font-black">{p}</span> : p)}</div>;
         });
+    };
+
+    const formatForInput = (val) => {
+        if(!val) return '';
+        if(typeof val === 'number') {
+            const d = new Date(val);
+            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+            return d.toISOString().slice(0, 16);
+        }
+        return val;
     };
 
     const App = () => {
       const URL_IMAGEN_ALERTA = "https://cdn-icons-png.flaticon.com/512/564/564619.png"; 
+
       const [view, setView] = useState('recent');
       const [studentsData, setStudentsData] = useState([]);
       const [studentLists, setStudentLists] = useState({});
@@ -109,16 +165,21 @@
       const [previewAgendaData, setPreviewAgendaData] = useState(null);
 
       const [massiveAwardXp, setMassiveAwardXp] = useState(true);
+
       const [batchData, setBatchData] = useState({ gradeLevel: '', area: '', actividad: '', entries: [] });
       const [agendaItems, setAgendaItems] = useState([]);
       const [assignmentType, setAssignmentType] = useState('group');
       const [selectedGrades, setSelectedGrades] = useState([]);
+      
       const [newTask, setNewTask] = useState({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', imageUrl: '', publishAt: '', excludedStudents: [] });
+      
       const [editingTask, setEditingTask] = useState(null);
       const [editAssignmentType, setEditAssignmentType] = useState('group');
       const [editSelectedGrades, setEditSelectedGrades] = useState([]);
+
       const [inboxMessages, setInboxMessages] = useState([]);
       const [agendaTab, setAgendaTab] = useState('published');
+      
       const [noticeText, setNoticeText] = useState('');
       const [noticeColor, setNoticeColor] = useState('yellow');
       const [noticeImage, setNoticeImage] = useState('');
@@ -128,19 +189,24 @@
       const [noticeTargets, setNoticeTargets] = useState(['Todos']); 
       const [targetStudentDoc, setTargetStudentDoc] = useState('');
       const [noticeExcluded, setNoticeExcluded] = useState([]); 
+
       const [noticesList, setNoticesList] = useState([]);
       const [editingNoticeId, setEditingNoticeId] = useState(null);
       const [noticeTab, setNoticeTab] = useState('active');
+
       const [noticePublishAt, setNoticePublishAt] = useState('');
       const [noticeExpiresAt, setNoticeExpiresAt] = useState('');
+
       const [filterGrade, setFilterGrade] = useState('Quinto');
       const [filterArea, setFilterArea] = useState('MATEMATICAS');
       const [filterActivity, setFilterActivity] = useState('');
       const [filterStudent, setFilterStudent] = useState('');
       const [editingGradeEntry, setEditingGradeEntry] = useState(null);
+
       const [agendaFilterGrade, setAgendaFilterGrade] = useState('');
       const [agendaFilterArea, setAgendaFilterArea] = useState('');
       const [agendaFilterDate, setAgendaFilterDate] = useState('');
+
       const [xpTab, setXpTab] = useState('manual');
       const [xpGrade, setXpGrade] = useState('Quinto');
       const [xpStudent, setXpStudent] = useState('');
@@ -148,30 +214,48 @@
       const [xpCustomConcept, setXpCustomConcept] = useState('');
       const [xpAmount, setXpAmount] = useState(20);
       const [attendanceMap, setAttendanceMap] = useState({});
+      
       const [studentsGlobalXp, setStudentsGlobalXp] = useState({}); 
       const [expandedStudentXp, setExpandedStudentXp] = useState(null);
       const [expandedStudentHistory, setExpandedStudentHistory] = useState(null);
       
-      const [auditLogs, setAuditLogs] = useState([]); // ESTADO DE AUDITORIA
+      const [auditLogs, setAuditLogs] = useState([]); 
 
-      const [attendanceDate, setAttendanceDate] = useState(() => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0'); });
+      const [attendanceDate, setAttendanceDate] = useState(() => {
+          const d = new Date();
+          return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
+      });
 
       useEffect(() => {
         db.collection("configuracionGlobal").doc("notas").onSnapshot(s => {
           const p = s.exists ? s.data().periodoActual || 1 : 1;
-          setPeriodoActual(p); setPeriodoVisualizacion(p);
+          setPeriodoActual(p);
+          setPeriodoVisualizacion(p);
         });
         db.collection("configuracionGlobal").doc("listasEstudiantes").onSnapshot(s => setStudentLists(s.exists ? s.data() : {}));
       }, []);
 
       useEffect(() => {
-        const unsubNotes = db.collection("notasAcademicas").onSnapshot(s => { const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); setStudentsData(a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0))); });
-        const unsubAgenda = db.collection("agendaEscolar").onSnapshot(s => { const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); setAgendaItems(a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0))); });
-        const unsubMessages = db.collection("mensajesAgenda").onSnapshot(s => { const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); setInboxMessages(a.sort((x,y)=>(y.lastUpdate||'').localeCompare(x.lastUpdate||''))); });
-        const unsubNotices = db.collection("tableroAvisos").orderBy("timestamp", "desc").onSnapshot(s => { setNoticesList(s.docs.map(d => ({id:d.id, ...d.data()}))); });
-        const unsubXp = db.collection("logrosEstudiantes").onSnapshot(s => { const xpData = {}; s.forEach(d => { xpData[d.id] = d.data(); }); setStudentsGlobalXp(xpData); });
-        
-        // SUSCRIPCION A LA AUDITORIA
+        const unsubNotes = db.collection("notasAcademicas").onSnapshot(s => {
+          const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); 
+          setStudentsData(a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0)));
+        });
+        const unsubAgenda = db.collection("agendaEscolar").onSnapshot(s => {
+          const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); 
+          setAgendaItems(a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0)));
+        });
+        const unsubMessages = db.collection("mensajesAgenda").onSnapshot(s => {
+          const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); 
+          setInboxMessages(a.sort((x,y)=>(y.lastUpdate||'').localeCompare(x.lastUpdate||'')));
+        });
+        const unsubNotices = db.collection("tableroAvisos").orderBy("timestamp", "desc").onSnapshot(s => {
+            setNoticesList(s.docs.map(d => ({id:d.id, ...d.data()})));
+        });
+        const unsubXp = db.collection("logrosEstudiantes").onSnapshot(s => {
+            const xpData = {};
+            s.forEach(d => { xpData[d.id] = d.data(); });
+            setStudentsGlobalXp(xpData);
+        });
         const unsubAudit = db.collection("auditoriaAccesos").orderBy("timestamp", "desc").limit(100).onSnapshot(s => {
             const logs = [];
             s.forEach(d => logs.push({ id: d.id, ...d.data() }));
@@ -181,127 +265,417 @@
         return () => { unsubNotes(); unsubAgenda(); unsubMessages(); unsubNotices(); unsubXp(); unsubAudit(); };
       }, [periodoVisualizacion]);
 
-      const updateGlobalPeriod = async (p) => { await db.collection("configuracionGlobal").doc("notas").set({ periodoActual: p }, { merge: true }); setPeriodoActual(p); setPeriodoVisualizacion(p); Swal.fire({ icon: 'success', title: `Periodo ${p} Activo`, toast: true, position: 'top-end', timer: 2000, showConfirmButton: false }); };
-      const handleBatchConfigChange = (e) => { const { name, value } = e.target; setBatchData(prev => { const newData = { ...prev, [name]: value }; if (name === 'gradeLevel') { const list = value ? (studentLists[value] || []) : []; newData.entries = list.map(n => ({ name: n, score: '', observation: '' })); } return newData; }); };
-      const handleFileChange = (e) => { const file = e.target.files[0]; if (file) { if (file.size > 800000) return Swal.fire('Foto muy pesada', 'Máx 800kb', 'error'); const reader = new FileReader(); reader.onloadend = () => setNoticeImage(reader.result); reader.readAsDataURL(file); } };
-      const handleTaskImageUpload = (e, isEditing) => { const file = e.target.files[0]; if (file) { if (file.size > 800000) return Swal.fire('Foto muy pesada', 'Máx 800kb', 'error'); const reader = new FileReader(); reader.onloadend = () => { if (isEditing) setEditingTask({...editingTask, imageUrl: reader.result}); else setNewTask({...newTask, imageUrl: reader.result}); }; reader.readAsDataURL(file); } };
+      const updateGlobalPeriod = async (p) => {
+        await db.collection("configuracionGlobal").doc("notas").set({ periodoActual: p }, { merge: true });
+        setPeriodoActual(p);
+        setPeriodoVisualizacion(p);
+        Swal.fire({ icon: 'success', title: `Periodo ${p} Activo`, toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+      };
+
+      const handleBatchConfigChange = (e) => {
+        const { name, value } = e.target;
+        setBatchData(prev => {
+          const newData = { ...prev, [name]: value };
+          if (name === 'gradeLevel') {
+            const list = value ? (studentLists[value] || []) : [];
+            newData.entries = list.map(n => ({ name: n, score: '', observation: '' }));
+          }
+          return newData;
+        });
+      };
+      
+      const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          if (file.size > 800000) return Swal.fire('Foto muy pesada', 'Máx 800kb', 'error');
+          const reader = new FileReader();
+          reader.onloadend = () => setNoticeImage(reader.result);
+          reader.readAsDataURL(file);
+        }
+      };
+
+      const handleTaskImageUpload = (e, isEditing) => {
+        const file = e.target.files[0];
+        if (file) {
+          if (file.size > 800000) return Swal.fire('Foto muy pesada', 'Máx 800kb', 'error');
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            if (isEditing) setEditingTask({...editingTask, imageUrl: reader.result});
+            else setNewTask({...newTask, imageUrl: reader.result});
+          };
+          reader.readAsDataURL(file);
+        }
+      };
 
       const duplicateTask = (task) => {
-          setNewTask({ gradeLevel: task.gradeLevel, area: task.area, title: task.title + ' (Copia)', description: task.description, date: task.date, targetStudent: task.targetStudent || '', videoLink: task.videoLink || '', pdfLink: task.pdfLink || '', imageUrl: task.imageUrl || '', publishAt: task.publishAt || '', excludedStudents: task.excludedStudents || [] });
-          if(task.targetStudent) { setAssignmentType('individual'); } else { setAssignmentType('group'); setSelectedGrades([task.gradeLevel]); }
-          const mainContainer = document.querySelector('main'); if(mainContainer) mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
-          Swal.fire({ icon: 'info', title: 'Tarea Copiada', text: 'Modifica los datos y dale a Publicar.', timer: 3000, toast: true, position: 'top-end' });
+          setNewTask({
+              gradeLevel: task.gradeLevel,
+              area: task.area,
+              title: task.title + ' (Copia)',
+              description: task.description,
+              date: task.date, 
+              targetStudent: task.targetStudent || '',
+              videoLink: task.videoLink || '',
+              pdfLink: task.pdfLink || '',
+              imageUrl: task.imageUrl || '',
+              publishAt: '',
+              excludedStudents: task.excludedStudents || []
+          });
+
+          if(task.targetStudent) {
+              setAssignmentType('individual');
+          } else {
+              setAssignmentType('group');
+              setSelectedGrades([task.gradeLevel]);
+          }
+
+          const mainContainer = document.querySelector('main');
+          if(mainContainer) {
+              mainContainer.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+          
+          Swal.fire({ icon: 'info', title: 'Tarea Copiada', text: 'Modifica el grado/estudiante, la fecha o el texto y dale a Publicar.', timer: 3000, toast: true, position: 'top-end' });
       };
 
       const getNivelData = (xp) => {
           if (xp < 0) xp = 0;
           const scale = [
-              { lvl: 1,  min: 0,     max: 999,   rango: "🌱 Novato" }, { lvl: 2,  min: 1000,  max: 1999,  rango: "🌱 Novato" },
-              { lvl: 3,  min: 2000,  max: 3199,  rango: "🧭 Explorador" }, { lvl: 4,  min: 3200,  max: 4499,  rango: "🧭 Explorador" },
-              { lvl: 5,  min: 4500,  max: 5899,  rango: "⚔️ Aventurero" }, { lvl: 6,  min: 5900,  max: 7399,  rango: "⚔️ Aventurero" },
-              { lvl: 7,  min: 7400,  max: 8999,  rango: "🦉 Sabio" }, { lvl: 8,  min: 9000,  max: 10799, rango: "🦉 Sabio" },
-              { lvl: 9,  min: 10800, max: 12799, rango: "👑 Maestro" }, { lvl: 10, min: 12800, max: Infinity, rango: "👑 Maestro Santa Juana" }
+              { lvl: 1,  min: 0,     max: 999,   rango: "🌱 Novato" },
+              { lvl: 2,  min: 1000,  max: 1999,  rango: "🌱 Novato" },
+              { lvl: 3,  min: 2000,  max: 3199,  rango: "🧭 Explorador" },
+              { lvl: 4,  min: 3200,  max: 4499,  rango: "🧭 Explorador" },
+              { lvl: 5,  min: 4500,  max: 5899,  rango: "⚔️ Aventurero" },
+              { lvl: 6,  min: 5900,  max: 7399,  rango: "⚔️ Aventurero" },
+              { lvl: 7,  min: 7400,  max: 8999,  rango: "🦉 Sabio" },
+              { lvl: 8,  min: 9000,  max: 10799, rango: "🦉 Sabio" },
+              { lvl: 9,  min: 10800, max: 12799, rango: "👑 Maestro" },
+              { lvl: 10, min: 12800, max: Infinity, rango: "👑 Maestro Santa Juana" }
           ];
           let data = scale[0];
-          for (let i = 0; i < scale.length; i++) { if (xp >= scale[i].min && xp <= scale[i].max) { data = scale[i]; break; } }
-          let xpInLevel = xp - data.min; let xpRequired = data.max === Infinity ? 0 : (data.max - data.min + 1);
-          let percent = data.max === Infinity ? 100 : (xpInLevel / xpRequired) * 100; let faltan = data.max === Infinity ? 0 : (data.max - xp + 1);
+          for (let i = 0; i < scale.length; i++) {
+              if (xp >= scale[i].min && xp <= scale[i].max) {
+                  data = scale[i];
+                  break;
+              }
+          }
+          let xpInLevel = xp - data.min;
+          let xpRequired = data.max === Infinity ? 0 : (data.max - data.min + 1);
+          let percent = data.max === Infinity ? 100 : (xpInLevel / xpRequired) * 100;
+          let faltan = data.max === Infinity ? 0 : (data.max - xp + 1);
           return { ...data, xpRequired, percent, faltan };
       };
 
       const handleExpandStudent = async (docId) => {
-          if (expandedStudentXp === docId) { setExpandedStudentXp(null); return; }
-          setExpandedStudentXp(docId); setExpandedStudentHistory(null);
-          try { const snap = await db.collection("historialXP").where("documentoEstudiante", "==", docId).get(); let hist = []; snap.forEach(d => hist.push({ id: d.id, ...d.data() })); hist.sort((a,b) => b.timestamp - a.timestamp); setExpandedStudentHistory(hist); } catch(e) { console.error(e); }
+          if (expandedStudentXp === docId) {
+              setExpandedStudentXp(null);
+              return;
+          }
+          setExpandedStudentXp(docId);
+          setExpandedStudentHistory(null);
+          try {
+              const snap = await db.collection("historialXP").where("documentoEstudiante", "==", docId).get();
+              let hist = [];
+              snap.forEach(d => hist.push({ id: d.id, ...d.data() }));
+              hist.sort((a,b) => b.timestamp - a.timestamp);
+              setExpandedStudentHistory(hist);
+          } catch(e) {
+              console.error(e);
+          }
       };
 
       const handleDeleteXpRecord = async (record, docId) => {
-          if (!(await Swal.fire({title: '¿Eliminar este registro?', text: `Se descontarán/ajustarán ${record.cantidad} XP.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Sí, descontar'})).isConfirmed) return;
+          if (!(await Swal.fire({title: '¿Eliminar este registro?', text: `Se descontarán/ajustarán ${record.cantidad} XP del estudiante.`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Sí, descontar'})).isConfirmed) return;
+          
           setIsSaving(true);
-          try { const batch = db.batch(); batch.delete(db.collection("historialXP").doc(record.id)); batch.set(db.collection("logrosEstudiantes").doc(docId), { xp: firebase.firestore.FieldValue.increment(-record.cantidad) }, { merge: true }); await batch.commit(); setExpandedStudentHistory(prev => prev.filter(h => h.id !== record.id)); Swal.fire({icon: 'success', title: 'Registro eliminado', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false}); } 
-          catch (e) { Swal.fire('Error', 'No se pudo eliminar el registro', 'error'); } finally { setIsSaving(false); }
+          try {
+              const batch = db.batch();
+              batch.delete(db.collection("historialXP").doc(record.id));
+              
+              const logRef = db.collection("logrosEstudiantes").doc(docId);
+              batch.set(logRef, {
+                  xp: firebase.firestore.FieldValue.increment(-record.cantidad)
+              }, { merge: true });
+              
+              await batch.commit();
+              
+              setExpandedStudentHistory(prev => prev.filter(h => h.id !== record.id));
+              Swal.fire({icon: 'success', title: 'Registro eliminado y XP ajustado', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false});
+          } catch (e) {
+              console.error(e);
+              Swal.fire('Error', 'No se pudo eliminar el registro', 'error');
+          } finally {
+              setIsSaving(false);
+          }
       };
 
-      const handleXPConceptChange = (e) => { const val = e.target.value; setXpConcept(val); if (val === '📚 Responsabilidad') { setXpAmount(50); } else { setXpAmount(20); } };
-      const toggleAttendance = (docId) => { setAttendanceMap(prev => ({ ...prev, [docId]: prev[docId] === undefined ? false : !prev[docId] })); };
+      const handleXPConceptChange = (e) => {
+          const val = e.target.value;
+          setXpConcept(val);
+          if (val === '📚 Responsabilidad') {
+              setXpAmount(50);
+          } else {
+              setXpAmount(20);
+          }
+      };
+
+      const toggleAttendance = (docId) => {
+          setAttendanceMap(prev => ({
+              ...prev,
+              [docId]: prev[docId] === undefined ? false : !prev[docId]
+          }));
+      };
+
       const isPresent = (docId) => attendanceMap[docId] !== false;
 
       const submitXp = async (isPositive) => {
-          if(!xpStudent) return Swal.fire('Error', 'Selecciona un estudiante', 'warning');
-          const amt = parseInt(xpAmount); if(isNaN(amt) || amt <= 0) return Swal.fire('Error', 'Cantidad inválida', 'warning');
+          if(!xpStudent) return Swal.fire('Error', 'Selecciona un estudiante o Todos', 'warning');
+          const amt = parseInt(xpAmount);
+          if(isNaN(amt) || amt <= 0) return Swal.fire('Error', 'Cantidad inválida', 'warning');
+
           setIsSaving(true);
           try {
-              const batch = db.batch(); const finalAmt = isPositive ? amt : -amt;
-              let conceptName = xpConcept; if (xpConcept === '✏️ Personalizado...') { if(!xpCustomConcept.trim()) return Swal.fire('Error', 'Escribe el motivo', 'warning'); conceptName = xpCustomConcept.trim(); } else { conceptName = xpConcept.split(' ').slice(1).join(' '); }
-              const expDate = new Date(); expDate.setHours(expDate.getHours() + 12); 
-              let targets = xpStudent === 'TODOS' ? (studentLists[xpGrade] || []).map(s => { const p = s.split(' - '); return p.length > 1 ? p[1].trim() : ''; }).filter(Boolean) : [xpStudent];
+              const batch = db.batch();
+              const finalAmt = isPositive ? amt : -amt;
+              
+              let conceptName = xpConcept;
+              if (xpConcept === '✏️ Personalizado...') {
+                  if(!xpCustomConcept.trim()) return Swal.fire('Error', 'Escribe el motivo personalizado', 'warning');
+                  conceptName = xpCustomConcept.trim();
+              } else {
+                  conceptName = xpConcept.split(' ').slice(1).join(' '); 
+              }
+              
+              const expDate = new Date();
+              expDate.setHours(expDate.getHours() + 12); 
+
+              let targets = [];
+              if (xpStudent === 'TODOS') {
+                  targets = (studentLists[xpGrade] || []).map(s => {
+                      const p = s.split(' - ');
+                      return p.length > 1 ? p[1].trim() : '';
+                  }).filter(Boolean);
+              } else {
+                  targets = [xpStudent];
+              }
+
               targets.forEach(docId => {
-                  batch.set(db.collection("logrosEstudiantes").doc(docId), { xp: firebase.firestore.FieldValue.increment(finalAmt), documentoEstudiante: docId }, {merge: true});
-                  batch.set(db.collection("historialXP").doc(), { documentoEstudiante: docId, motivo: conceptName, cantidad: finalAmt, timestamp: Date.now() });
-                  batch.set(db.collection("tableroAvisos").doc(), { mensaje: isPositive ? `🌟 ¡Felicidades! Has ganado +${amt} XP por: ${conceptName}.` : `⚠️ Atención: Has perdido ${amt} XP por debilidades en: ${conceptName}.`, color: isPositive ? 'green' : 'red', imageUrl: '', videoUrl: '', docUrl: '', scope: 'Individual', targetGrades: [], targetStudentDoc: docId, fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }), timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: true, publishAt: new Date().toISOString(), expiresAt: expDate.toISOString() });
+                  const logRef = db.collection("logrosEstudiantes").doc(docId);
+                  batch.set(logRef, {
+                      xp: firebase.firestore.FieldValue.increment(finalAmt),
+                      documentoEstudiante: docId
+                  }, {merge: true});
+
+                  const histRef = db.collection("historialXP").doc();
+                  batch.set(histRef, {
+                      documentoEstudiante: docId,
+                      motivo: conceptName,
+                      cantidad: finalAmt,
+                      timestamp: Date.now()
+                  });
+
+                  const noticeRef = db.collection("tableroAvisos").doc();
+                  batch.set(noticeRef, {
+                      mensaje: isPositive 
+                          ? `🌟 ¡Felicidades! Has ganado +${amt} XP por: ${conceptName}.`
+                          : `⚠️ Atención: Has perdido ${amt} XP por debilidades en: ${conceptName}.`,
+                      color: isPositive ? 'green' : 'red',
+                      imageUrl: '', videoUrl: '', docUrl: '',
+                      scope: 'Individual',
+                      targetGrades: [], targetStudentDoc: docId,
+                      fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
+                      timestamp: new Date().toISOString(), archived: false, likes: [], 
+                      isSystemNotice: false,
+                      isXpNotice: true, 
+                      publishAt: new Date().toISOString(),
+                      expiresAt: expDate.toISOString() 
+                  });
               });
-              await batch.commit(); Swal.fire({icon:'success', title: 'XP Actualizado', toast: true, position:'top-end', timer: 1500}); setXpStudent(''); setXpCustomConcept('');
-          } catch(e) { Swal.fire('Error', 'No se pudo actualizar XP', 'error'); } finally { setIsSaving(false); }
+
+              await batch.commit();
+              Swal.fire({icon:'success', title: 'XP Actualizado', toast: true, position:'top-end', timer: 1500});
+              setXpStudent('');
+              setXpCustomConcept('');
+          } catch(e) { Swal.fire('Error', 'No se pudo actualizar XP', 'error'); }
+          finally { setIsSaving(false); }
       };
 
       const submitAttendanceXp = async () => {
-          if(!attendanceDate) return Swal.fire('Error', 'Selecciona fecha', 'warning');
+          if(!attendanceDate) return Swal.fire('Error', 'Selecciona la fecha de la asistencia', 'warning');
+          
           setIsSaving(true);
           try {
-              const batch = db.batch(); const expDate = new Date(); expDate.setHours(expDate.getHours() + 12);
-              const dateStr = new Date(attendanceDate + "T12:00:00").toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' });
+              const batch = db.batch();
+              const expDate = new Date();
+              expDate.setHours(expDate.getHours() + 12);
+              
+              const dateObj = new Date(attendanceDate + "T12:00:00");
+              const dateStr = dateObj.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' });
+
+              const students = Object.values(studentLists).flat();
+              
               let count = 0;
-              Object.values(studentLists).flat().forEach(studentStr => {
-                  const parts = studentStr.split(' - '); const docId = parts.length > 1 ? parts[1].trim() : '';
+              students.forEach(studentStr => {
+                  const parts = studentStr.split(' - ');
+                  const docId = parts.length > 1 ? parts[1].trim() : '';
                   if (docId && isPresent(docId)) {
                       count++;
-                      batch.set(db.collection("logrosEstudiantes").doc(docId), { xp: firebase.firestore.FieldValue.increment(5), documentoEstudiante: docId }, {merge: true});
-                      batch.set(db.collection("historialXP").doc(), { documentoEstudiante: docId, motivo: `Asistencia a clase (${dateStr})`, cantidad: 5, timestamp: Date.now() });
-                      batch.set(db.collection("tableroAvisos").doc(), { mensaje: `🌟 ¡+5 XP por tu Asistencia a clase el día ${dateStr}!`, color: 'blue', imageUrl: '', videoUrl: '', docUrl: '', scope: 'Individual', targetGrades: [], targetStudentDoc: docId, fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }), timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: true, publishAt: new Date().toISOString(), expiresAt: expDate.toISOString() });
+                      const logRef = db.collection("logrosEstudiantes").doc(docId);
+                      batch.set(logRef, {
+                          xp: firebase.firestore.FieldValue.increment(5),
+                          documentoEstudiante: docId
+                      }, {merge: true});
+
+                      const histRef = db.collection("historialXP").doc();
+                      batch.set(histRef, {
+                          documentoEstudiante: docId,
+                          motivo: `Asistencia a clase (${dateStr})`,
+                          cantidad: 5,
+                          timestamp: Date.now()
+                      });
+
+                      const noticeRef = db.collection("tableroAvisos").doc();
+                      batch.set(noticeRef, {
+                          mensaje: `🌟 ¡+5 XP por tu Asistencia a clase el día ${dateStr}!`,
+                          color: 'blue',
+                          imageUrl: '', videoUrl: '', docUrl: '', scope: 'Individual', targetGrades: [], targetStudentDoc: docId,
+                          fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
+                          timestamp: new Date().toISOString(), archived: false, likes: [], 
+                          isSystemNotice: false, isXpNotice: true, publishAt: new Date().toISOString(), expiresAt: expDate.toISOString()
+                      });
                   }
               });
-              await batch.commit(); Swal.fire({icon:'success', title: `Asistencia guardada. +5 XP a ${count} estudiantes.`, toast: true, position:'top-end', timer: 2000});
-          } catch(e) { Swal.fire('Error', 'Error al guardar', 'error'); } finally { setIsSaving(false); }
+              await batch.commit();
+              Swal.fire({icon:'success', title: `Asistencia guardada. +5 XP a ${count} estudiantes.`, toast: true, position:'top-end', timer: 2000});
+          } catch(e) { Swal.fire('Error', 'Error al guardar', 'error'); }
+          finally { setIsSaving(false); }
       };
 
       const handleResetXp = async () => {
-          if(!xpStudent) return Swal.fire('Error', 'Selecciona estudiante', 'warning');
-          if(!(await Swal.fire({title: '¡Peligro!', text: 'Se borrará progreso.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33'})).isConfirmed) return;
+          if(!xpStudent) return Swal.fire('Error', 'Selecciona estudiante o TODOS', 'warning');
+          if(!(await Swal.fire({title: '¡Peligro!', text: 'Esto borrará todos los XP, medallas y el historial. Es irreversible.', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33'})).isConfirmed) return;
+          
           setIsSaving(true);
           try {
-              let targets = xpStudent === 'TODOS' ? (studentLists[xpGrade] || []).map(s => { const p = s.split(' - '); return p.length > 1 ? p[1].trim() : ''; }).filter(Boolean) : [xpStudent];
+              let targets = [];
+              if (xpStudent === 'TODOS') {
+                  targets = (studentLists[xpGrade] || []).map(s => {
+                      const p = s.split(' - ');
+                      return p.length > 1 ? p[1].trim() : '';
+                  }).filter(Boolean);
+              } else {
+                  targets = [xpStudent];
+              }
+              
               const batch = db.batch();
               for (const docId of targets) {
-                  const logRef = db.collection("logrosEstudiantes").doc(docId); const dSnap = await logRef.get();
-                  if (dSnap.exists) { await logRef.update({ xp: 0, logros: [], medallas: {} }); } else { await logRef.set({ xp: 0, logros: [], medallas: {}, documentoEstudiante: docId }); }
+                  if(!docId) continue;
+                  const logRef = db.collection("logrosEstudiantes").doc(docId);
+                  const dSnap = await logRef.get();
+                  if (dSnap.exists) {
+                      await logRef.update({ xp: 0, logros: [], medallas: {} });
+                  } else {
+                      await logRef.set({ xp: 0, logros: [], medallas: {}, documentoEstudiante: docId });
+                  }
               }
-              targets.forEach(async docId => { const snap = await db.collection("historialXP").where("documentoEstudiante", "==", docId).get(); snap.forEach(d => batch.delete(d.ref)); });
-              await batch.commit(); Swal.fire('Reseteado', 'Progreso en cero.', 'success'); setXpStudent('');
-          } catch(e) { console.error(e); } finally { setIsSaving(false); }
+
+              targets.forEach(async docId => {
+                  if(!docId) return;
+                  const snap = await db.collection("historialXP").where("documentoEstudiante", "==", docId).get();
+                  snap.forEach(d => batch.delete(d.ref));
+              });
+              await batch.commit();
+
+              Swal.fire('Reseteado', 'El progreso y las medallas han vuelto a cero.', 'success');
+              setXpStudent('');
+          } catch(e) { console.error(e); }
+          finally { setIsSaving(false); }
       };
 
-      const toggleNoticeTarget = (target) => { if (target === 'Todos') { setNoticeTargets(['Todos']); } else { let newTargets = noticeTargets.filter(t => t !== 'Todos'); if (newTargets.includes(target)) newTargets = newTargets.filter(t => t !== target); else newTargets.push(target); if (newTargets.length === 0) newTargets = ['Todos']; setNoticeTargets(newTargets); } };
+      const toggleNoticeTarget = (target) => {
+        if (target === 'Todos') { setNoticeTargets(['Todos']); } else {
+            let newTargets = noticeTargets.filter(t => t !== 'Todos');
+            if (newTargets.includes(target)) newTargets = newTargets.filter(t => t !== target);
+            else newTargets.push(target);
+            if (newTargets.length === 0) newTargets = ['Todos'];
+            setNoticeTargets(newTargets);
+        }
+      };
 
       const handlePublishNotice = async () => {
         if(isSaving) return;
-        if(!noticeText.trim() && !noticeImage && !noticeVideo && !noticeDoc) return Swal.fire('Error', 'Agrega contenido', 'warning');
+        if(!noticeText.trim() && !noticeImage && !noticeVideo && !noticeDoc) return Swal.fire('Error', 'Agrega contenido, imagen, video o documento', 'warning');
         if(noticeScope === 'Individual' && !targetStudentDoc) return Swal.fire('Error', 'Selecciona un estudiante', 'warning');
+        
         setIsSaving(true);
-        const payload = { mensaje: noticeText, color: noticeColor, imageUrl: noticeImage, videoUrl: noticeVideo, docUrl: noticeDoc, scope: noticeScope, targetGrades: noticeScope === 'Grado' ? noticeTargets : (noticeScope === 'General' ? ['Todos'] : []), targetStudentDoc: noticeScope === 'Individual' ? targetStudentDoc : null, excludedStudents: noticeExcluded, fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }), timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: false, publishAt: noticePublishAt || null, expiresAt: noticeExpiresAt || null };
-        try { if(editingNoticeId) { await db.collection("tableroAvisos").doc(editingNoticeId).update(payload); setEditingNoticeId(null); } else { await db.collection("tableroAvisos").add(payload); } Swal.fire({ icon: 'success', title: 'Guardado', toast: true, position: 'top-end', timer: 1500 }); setNoticeText(''); setNoticeImage(''); setNoticeVideo(''); setNoticeDoc(''); setNoticeTargets(['Todos']); setTargetStudentDoc(''); setNoticeScope('General'); setNoticePublishAt(''); setNoticeExpiresAt(''); setNoticeExcluded([]); } 
-        catch (e) { Swal.fire('Error', 'Error al guardar', 'error'); } finally { setIsSaving(false); }
+        const payload = {
+            mensaje: noticeText, color: noticeColor, imageUrl: noticeImage, videoUrl: noticeVideo, docUrl: noticeDoc,
+            scope: noticeScope,
+            targetGrades: noticeScope === 'Grado' ? noticeTargets : (noticeScope === 'General' ? ['Todos'] : []),
+            targetStudentDoc: noticeScope === 'Individual' ? targetStudentDoc : null,
+            excludedStudents: noticeExcluded, 
+            fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
+            timestamp: new Date().toISOString(),
+            archived: false,
+            likes: [],
+            isSystemNotice: false,
+            isXpNotice: false,
+            publishAt: noticePublishAt || null,
+            expiresAt: noticeExpiresAt || null
+        };
+
+        try {
+            if(editingNoticeId) {
+                await db.collection("tableroAvisos").doc(editingNoticeId).update(payload);
+                setEditingNoticeId(null);
+            } else {
+                await db.collection("tableroAvisos").add(payload);
+            }
+            Swal.fire({ icon: 'success', title: 'Guardado', toast: true, position: 'top-end', timer: 1500 });
+            setNoticeText(''); setNoticeImage(''); setNoticeVideo(''); setNoticeDoc(''); setNoticeTargets(['Todos']); setTargetStudentDoc(''); setNoticeScope('General');
+            setNoticePublishAt(''); setNoticeExpiresAt(''); setNoticeExcluded([]);
+        } catch (e) { Swal.fire('Error', 'Error al guardar', 'error'); }
+        finally { setIsSaving(false); }
       };
 
-      const prepareEditNotice = (n) => { setNoticeText(n.mensaje); setNoticeColor(n.color); setNoticeImage(n.imageUrl || ''); setNoticeVideo(n.videoUrl || ''); setNoticeDoc(n.docUrl || ''); setNoticeScope(n.scope || 'General'); setNoticeTargets(n.targetGrades || ['Todos']); setTargetStudentDoc(n.targetStudentDoc || ''); setNoticePublishAt(n.publishAt || ''); setNoticeExpiresAt(n.expiresAt || ''); setNoticeExcluded(n.excludedStudents || []); setEditingNoticeId(n.id); const modalScroll = document.getElementById('board-scroll-container'); if(modalScroll) modalScroll.scrollTop = 0; };
-      const archiveNotice = async (n) => { await db.collection("tableroAvisos").doc(n.id).update({ archived: !n.archived }); };
-      const deleteNotice = async (id) => { if((await Swal.fire({title:'¿Eliminar?', icon:'warning', showCancelButton:true})).isConfirmed){ await db.collection("tableroAvisos").doc(id).delete(); } };
-      
-      const isExpired = (dateStr) => { if(!dateStr) return false; try { const now = new Date(); const due = new Date(dateStr + 'T23:59:59'); return !isNaN(due) && now > due; } catch(e) { return false; } };
-      const handlePreviewAgenda = (taskData) => { setPreviewAgendaData(taskData); setIsPreviewAgendaOpen(true); };
+      const prepareEditNotice = (n) => {
+        setNoticeText(n.mensaje); setNoticeColor(n.color); setNoticeImage(n.imageUrl || ''); setNoticeVideo(n.videoUrl || ''); setNoticeDoc(n.docUrl || '');
+        setNoticeScope(n.scope || 'General'); setNoticeTargets(n.targetGrades || ['Todos']); setTargetStudentDoc(n.targetStudentDoc || '');
+        setNoticePublishAt(n.publishAt || ''); setNoticeExpiresAt(n.expiresAt || '');
+        setNoticeExcluded(n.excludedStudents || []);
+        setEditingNoticeId(n.id);
+        const modalScroll = document.getElementById('board-scroll-container');
+        if(modalScroll) modalScroll.scrollTop = 0;
+      };
 
+      const archiveNotice = async (n) => {
+        await db.collection("tableroAvisos").doc(n.id).update({ archived: !n.archived });
+      };
+
+      const deleteNotice = async (id) => {
+        if((await Swal.fire({title:'¿Eliminar?', icon:'warning', showCancelButton:true})).isConfirmed){
+            await db.collection("tableroAvisos").doc(id).delete();
+        }
+      };
+
+      const isExpired = (dateStr) => { 
+        if(!dateStr) return false; 
+        try {
+            const now = new Date(); 
+            const due = new Date(dateStr + 'T23:59:59'); 
+            return !isNaN(due) && now > due; 
+        } catch(e) { return false; }
+      };
+
+      const handlePreviewAgenda = (taskData) => {
+          setPreviewAgendaData(taskData);
+          setIsPreviewAgendaOpen(true);
+      };
+
+      // --- CORRECCIÓN QUIRÚRGICA: TIEMPO EN MILISEGUNDOS ---
       const handleAddTask = async (status = 'published') => {
         if(isSaving) return;
         const isPublished = status === 'published';
+        
         if (assignmentType === 'group' && selectedGrades.length === 0) return Swal.fire('Error','Debes seleccionar al menos un grado','warning');
         if (assignmentType === 'individual' && (!newTask.gradeLevel || !newTask.targetStudent)) return Swal.fire('Error','Selecciona el grado y un estudiante de la lista.','warning');
         
@@ -310,9 +684,30 @@
             const batch = db.batch();
             const finalTarget = assignmentType === 'individual' ? newTask.targetStudent.trim() : null;
 
-            const baseTask = { ...newTask, targetStudent: finalTarget, status, publico: isPublished, archived: false, createdAt: Date.now(), periodo: periodoActual || 1, publishAt: newTask.publishAt || null };
-            if(assignmentType === 'group') { selectedGrades.forEach(g => { batch.set(db.collection("agendaEscolar").doc(), { ...baseTask, gradeLevel: g }); }); } 
-            else { batch.set(db.collection("agendaEscolar").doc(), baseTask); }
+            let publishMs = null;
+            if (newTask.publishAt) {
+                publishMs = new Date(newTask.publishAt).getTime();
+            }
+
+            const baseTask = { 
+                ...newTask, 
+                targetStudent: finalTarget,
+                status, 
+                publico: isPublished, 
+                archived: false, 
+                createdAt: Date.now(), 
+                periodo: periodoActual || 1, 
+                publishAt: publishMs 
+            };
+            
+            if(assignmentType === 'group') {
+                selectedGrades.forEach(g => {
+                    const ref = db.collection("agendaEscolar").doc();
+                    batch.set(ref, { ...baseTask, gradeLevel: g });
+                });
+            } else {
+                batch.set(db.collection("agendaEscolar").doc(), baseTask);
+            }
 
             if (isPublished) {
                 const noticeRef = db.collection("tableroAvisos").doc();
@@ -320,42 +715,114 @@
                 let autoNoticeTargets = assignmentType === 'group' ? selectedGrades : [];
                 let autoNoticeStudent = finalTarget;
                 
-                const pubDate = newTask.publishAt ? new Date(newTask.publishAt) : new Date(); const expDate = new Date(pubDate); expDate.setHours(expDate.getHours() + 24); 
-                batch.set(noticeRef, { mensaje: `👨‍👩‍👧‍👦 Atención, familia:\nEl estudiante tiene una nueva actividad asignada.\n📍 Área: ${newTask.area || 'General'}\n📝 Trabajo: ${newTask.title}\n⏳ Fecha de entrega:\n🗓️ ${newTask.date || 'Ver Agenda'}`, color: 'white', imageUrl: newTask.imageUrl || '', videoUrl: newTask.videoLink || '', docUrl: newTask.pdfLink || '', scope: autoNoticeScope, targetGrades: autoNoticeTargets, targetStudentDoc: autoNoticeStudent, excludedStudents: newTask.excludedStudents || [], fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }), timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: true, isXpNotice: false, publishAt: pubDate.toISOString(), expiresAt: expDate.toISOString() });
+                let noticePublishMs = publishMs || Date.now();
+                const pubDate = new Date(noticePublishMs);
+                const expDate = new Date(noticePublishMs + 24 * 60 * 60 * 1000);
+                
+                const autoNoticeData = {
+                    mensaje: `👨‍👩‍👧‍👦 Atención, familia:\nEl estudiante tiene una nueva actividad asignada.\n📍 Área: ${newTask.area || 'General'}\n📝 Trabajo: ${newTask.title}\n⏳ Fecha de entrega:\n🗓️ ${newTask.date || 'Ver Agenda'}`,
+                    color: 'white', imageUrl: newTask.imageUrl || '', videoUrl: newTask.videoLink || '', docUrl: newTask.pdfLink || '',
+                    scope: autoNoticeScope, targetGrades: autoNoticeTargets, targetStudentDoc: autoNoticeStudent,
+                    excludedStudents: newTask.excludedStudents || [],
+                    fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
+                    timestamp: pubDate.toISOString(), 
+                    archived: false, likes: [], isSystemNotice: true, isXpNotice: false,
+                    publishAt: pubDate.toISOString(), expiresAt: expDate.toISOString()
+                };
+                batch.set(noticeRef, autoNoticeData);
             }
-            await batch.commit(); setNewTask({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', imageUrl: '', publishAt: '', excludedStudents: [] }); setSelectedGrades([]); Swal.fire({icon:'success', title: isPublished ? (newTask.publishAt ? 'Programada' : 'Publicada') : 'Guardada'});
-        } catch (error) { Swal.fire('Error', 'Intenta de nuevo.', 'error'); } finally { setIsSaving(false); }
+            await batch.commit();
+            setNewTask({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', imageUrl: '', publishAt: '', excludedStudents: [] });
+            setSelectedGrades([]);
+            Swal.fire({icon:'success', title: isPublished ? (newTask.publishAt ? 'Programada' : 'Publicada y Aviso Creado') : 'Guardada'});
+        } catch (error) { Swal.fire('Error', 'Intenta de nuevo.', 'error'); } 
+        finally { setIsSaving(false); }
       };
 
       const handleSaveEditTask = async () => {
           if(isSaving) return;
           if (editAssignmentType === 'individual' && !editingTask.targetStudent) return Swal.fire('Error','Selecciona un estudiante.','warning');
+
           setIsSaving(true);
           try {
-              const batch = db.batch(); const baseTask = { ...editingTask }; const originalId = baseTask.id; delete baseTask.id;
-              if (editAssignmentType === 'individual') { baseTask.targetStudent = editingTask.targetStudent.trim(); batch.update(db.collection("agendaEscolar").doc(originalId), baseTask); } 
-              else {
+              const batch = db.batch();
+              const baseTask = { ...editingTask };
+              const originalId = baseTask.id;
+              delete baseTask.id;
+
+              let publishMs = null;
+              if (editingTask.publishAt) {
+                  publishMs = new Date(editingTask.publishAt).getTime();
+              }
+              baseTask.publishAt = publishMs;
+
+              if (editAssignmentType === 'individual') {
+                  baseTask.targetStudent = editingTask.targetStudent.trim();
+                  batch.update(db.collection("agendaEscolar").doc(originalId), baseTask);
+              } else {
                   baseTask.targetStudent = null; 
                   if (editSelectedGrades.length === 0) { Swal.fire('Error', 'Selecciona un grado.', 'warning'); setIsSaving(false); return; }
-                  let gradeForCurrentDoc = editingTask.gradeLevel; if (!editSelectedGrades.includes(gradeForCurrentDoc)) gradeForCurrentDoc = editSelectedGrades[0];
-                  baseTask.gradeLevel = gradeForCurrentDoc; batch.update(db.collection("agendaEscolar").doc(originalId), baseTask);
-                  editSelectedGrades.filter(g => g !== gradeForCurrentDoc).forEach(g => { batch.set(db.collection("agendaEscolar").doc(), { ...baseTask, gradeLevel: g, createdAt: Date.now() }); });
+                  
+                  let gradeForCurrentDoc = editingTask.gradeLevel;
+                  if (!editSelectedGrades.includes(gradeForCurrentDoc)) gradeForCurrentDoc = editSelectedGrades[0];
+                  
+                  baseTask.gradeLevel = gradeForCurrentDoc;
+                  batch.update(db.collection("agendaEscolar").doc(originalId), baseTask);
+                  
+                  editSelectedGrades.filter(g => g !== gradeForCurrentDoc).forEach(g => {
+                      const ref = db.collection("agendaEscolar").doc();
+                      batch.set(ref, { ...baseTask, gradeLevel: g, createdAt: Date.now() });
+                  });
               }
-              await batch.commit(); setEditingTask(null); Swal.fire({ icon: 'success', title: 'Actualizada', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
-          } catch(e) { Swal.fire('Error', 'Falló la actualización', 'error'); } finally { setIsSaving(false); }
+              
+              await batch.commit();
+              setEditingTask(null);
+              Swal.fire({ icon: 'success', title: 'Actualizada', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+          } catch(e) { Swal.fire('Error', 'Falló la actualización', 'error'); } 
+          finally { setIsSaving(false); }
       };
 
       const publishDraft = async (task) => {
-         if(isSaving) return; setIsSaving(true);
+         if(isSaving) return;
+         setIsSaving(true);
          try {
-            const batch = db.batch(); batch.update(db.collection("agendaEscolar").doc(task.id), { status: 'published', publico: true, archived: false });
-            const pubDate = new Date(); const expDate = new Date(); expDate.setHours(expDate.getHours() + 24); 
-            batch.set(db.collection("tableroAvisos").doc(), { mensaje: `👨‍👩‍👧‍👦 Atención, familia:\nEl estudiante tiene una nueva actividad asignada.\n📍 Área: ${task.area || 'General'}\n📝 Trabajo: ${task.title}\n⏳ Fecha de entrega:\n🗓️ ${task.date}`, color: 'white', imageUrl: task.imageUrl || '', videoUrl: task.videoLink || '', docUrl: task.pdfLink || '', scope: task.targetStudent ? 'Individual' : 'Grado', targetGrades: task.gradeLevel && !task.targetStudent ? [task.gradeLevel] : [], targetStudentDoc: task.targetStudent ? task.targetStudent.trim() : null, excludedStudents: task.excludedStudents || [], fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }), timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: true, isXpNotice: false, publishAt: pubDate.toISOString(), expiresAt: expDate.toISOString() });
-            await batch.commit(); Swal.fire({icon:'success', title: 'Publicado', toast: true, position:'top-end', timer: 1500});
-         } catch (error) { Swal.fire('Error', 'Falló la publicación', 'error'); } finally { setIsSaving(false); }
+            const batch = db.batch();
+            const taskRef = db.collection("agendaEscolar").doc(task.id);
+            batch.update(taskRef, { status: 'published', publico: true, archived: false });
+
+            const noticeRef = db.collection("tableroAvisos").doc();
+            let autoNoticeScope = task.targetStudent ? 'Individual' : 'Grado'; 
+            let autoNoticeTargets = task.gradeLevel && !task.targetStudent ? [task.gradeLevel] : []; 
+            let autoNoticeStudent = task.targetStudent ? task.targetStudent.trim() : null;
+            
+            let noticePublishMs = task.publishAt || Date.now();
+            const pubDate = new Date(noticePublishMs);
+            const expDate = new Date(noticePublishMs + 24 * 60 * 60 * 1000);
+            
+            const autoNoticeData = {
+                mensaje: `👨‍👩‍👧‍👦 Atención, familia:\nEl estudiante tiene una nueva actividad asignada.\n📍 Área: ${task.area || 'General'}\n📝 Trabajo: ${task.title}\n⏳ Fecha de entrega:\n🗓️ ${task.date}`,
+                color: 'white', imageUrl: task.imageUrl || '', videoUrl: task.videoLink || '', docUrl: task.pdfLink || '',
+                scope: autoNoticeScope, targetGrades: autoNoticeTargets, targetStudentDoc: autoNoticeStudent,
+                excludedStudents: task.excludedStudents || [], 
+                fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }),
+                timestamp: pubDate.toISOString(), 
+                archived: false, likes: [], isSystemNotice: true, isXpNotice: false,
+                publishAt: pubDate.toISOString(), expiresAt: expDate.toISOString()
+            };
+            batch.set(noticeRef, autoNoticeData);
+
+            await batch.commit();
+            Swal.fire({icon:'success', title: 'Borrador Publicado', toast: true, position:'top-end', timer: 1500});
+         } catch (error) { Swal.fire('Error', 'Falló la publicación', 'error'); } 
+         finally { setIsSaving(false); }
       };
 
-      const deleteSingleGrade = async (id) => { if((await Swal.fire({title:'¿Eliminar?', text: 'Se eliminará solo este registro.', icon:'warning', showCancelButton:true})).isConfirmed){ await db.collection("notasAcademicas").doc(id).delete(); Swal.fire({icon:'success', title:'Eliminado', timer:1500, showConfirmButton:false, toast:true, position:'top-end'}); } };
+      const deleteSingleGrade = async (id) => {
+        if((await Swal.fire({title:'¿Eliminar?', text: 'Se eliminará solo este registro.', icon:'warning', showCancelButton:true})).isConfirmed){
+            await db.collection("notasAcademicas").doc(id).delete();
+            Swal.fire({icon:'success', title:'Eliminado', timer:1500, showConfirmButton:false, toast:true, position:'top-end'});
+        }
+      };
 
       const saveIndividualGrade = async (en, idx) => {
         if(isSaving) return;
@@ -381,7 +848,7 @@
                 const logData = {}; if (xpToAward > 0) { logData.xp = firebase.firestore.FieldValue.increment(xpToAward); logData.documentoEstudiante = docEstudiante; logData.nombreEstudiante = nombreEstudiante; }
                 if (medalMod !== 0) { logData.medallas = { [actualArea]: firebase.firestore.FieldValue.increment(medalMod) }; }
                 if(Object.keys(logData).length > 0) batch.set(db.collection("logrosEstudiantes").doc(docEstudiante), logData, {merge: true});
-                if (xpToAward > 0) batch.set(db.collection("historialXP").doc(), { documentoEstudiante: docEstudiante, motivo: `Calificación: ${finalActividad}`, cantidad: xpToAward, timestamp: Date.now() });
+                if (xpToAward > 0) batch.set(db.collection("historialXP").doc(), { documentoEstudiante: docEstudiante, motivo: `Calificación en clase: ${finalActividad}`, cantidad: xpToAward, timestamp: Date.now() });
             }
 
             if (finalNota < 3.0) {
@@ -421,7 +888,7 @@
 
                 if (finalNota < 3.0) {
                     const alertExpDate = new Date(); alertExpDate.setHours(alertExpDate.getHours() + 24);
-                    batch.set(db.collection("tableroAvisos").doc(), { mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${batchData.area}\n📝 ACTIVIDAD: ${batchData.actividad}\n📉 NOTA: ${finalNota}\n\nRevisar Alertas.`, color: 'red', imageUrl: URL_IMAGEN_ALERTA, videoUrl: "", docUrl: "", scope: 'Individual', targetGrades: [], targetStudentDoc: docEstudiante, fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }), timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: false, publishAt: new Date().toISOString(), expiresAt: alertExpDate.toISOString() });
+                    batch.set(db.collection("tableroAvisos").doc(), { mensaje: `⚠️ ALERTA ACADÉMICA\nEl estudiante presenta desempeño bajo.\n\n📚 ÁREA: ${batchData.area}\n📝 ACTIVIDAD: ${batchData.actividad}\n📉 NOTA: ${finalNota}\n\nPor favor revisar la sección de Alertas.`, color: 'red', imageUrl: URL_IMAGEN_ALERTA, videoUrl: "", docUrl: "", scope: 'Individual', targetGrades: [], targetStudentDoc: docEstudiante, fecha: new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' }), timestamp: new Date().toISOString(), archived: false, likes: [], isSystemNotice: false, isXpNotice: false, publishAt: new Date().toISOString(), expiresAt: alertExpDate.toISOString() });
                 }
             });
             await batch.commit(); setIsFormOpen(false); setBatchData({ gradeLevel: '', area: '', actividad: '', entries: [] });
@@ -486,7 +953,7 @@
 
       return (
         <div className="flex flex-col h-[100dvh]">
-         <header className="px-4 pt-10 pb-4 bg-[#064e3b] sticky top-0 z-40 shadow-xl">
+          <header className="px-4 pt-10 pb-4 bg-[#064e3b] sticky top-0 z-40 shadow-xl">
             <div className="flex justify-between items-center text-white gap-1">
               <div className="flex-1 min-w-0">
                 <h1 className="text-xl font-black uppercase tracking-tighter truncate">Docente <span className="text-[#facc15]">2026</span></h1>
@@ -615,7 +1082,7 @@
 
                   <div className="bg-stone-50 p-3 rounded-xl border border-stone-200">
                     <label className="block text-[9px] font-black text-stone-500 uppercase mb-2">Programar Publicación (Opcional)</label>
-                    <input type="datetime-local" value={newTask.publishAt} onChange={e=>setNewTask({...newTask, publishAt:e.target.value})} className="w-full p-3 text-[10px] font-black bg-white rounded-lg border border-stone-300"/>
+                    <input type="datetime-local" value={formatForInput(newTask.publishAt)} onChange={e=>setNewTask({...newTask, publishAt: e.target.value})} className="w-full p-3 text-[10px] font-black bg-white rounded-lg border border-stone-300"/>
                   </div>
                   <div className="flex gap-2">
                       <button onClick={() => handlePreviewAgenda(newTask)} disabled={isSaving} className="flex-[1] py-4 bg-sky-100 text-sky-700 border border-sky-200 font-black rounded-2xl text-[10px] uppercase shadow-sm">👁️ Previa</button>
@@ -662,7 +1129,7 @@
                         <span className="text-[10px] font-black text-[#064e3b]">{item.date}</span>
                       </div>
                       
-                      {item.publishAt && new Date(item.publishAt) > new Date() && (
+                      {item.publishAt && typeof item.publishAt === 'number' && item.publishAt > Date.now() && (
                           <div className="bg-blue-50 text-blue-700 text-[9px] font-black px-2 py-1 rounded-lg mb-2 inline-flex items-center gap-1 border border-blue-200">
                               <span>⏳ PROGRAMADA PARA: {new Date(item.publishAt).toLocaleString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</span>
                           </div>
@@ -1047,7 +1514,7 @@
 
                     <div className="bg-stone-50 p-3 rounded-xl border border-stone-200">
                       <label className="block text-[9px] font-black text-stone-500 uppercase mb-2">Programar Publicación (Opcional)</label>
-                      <input type="datetime-local" value={editingTask.publishAt || ''} onChange={e=>setEditingTask({...editingTask, publishAt:e.target.value})} className="w-full p-3 text-[10px] font-black bg-white rounded-lg border border-stone-300"/>
+                      <input type="datetime-local" value={formatForInput(editingTask.publishAt)} onChange={e=>setEditingTask({...editingTask, publishAt: e.target.value})} className="w-full p-3 text-[10px] font-black bg-white rounded-lg border border-stone-300"/>
                     </div>
 
                 </div>
