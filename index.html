@@ -660,9 +660,11 @@
       const isExpired = (dateStr) => { 
         if(!dateStr) return false; 
         try {
+            const parts = dateStr.split('-');
+            if(parts.length !== 3) return false;
             const now = new Date(); 
-            const due = new Date(dateStr + 'T23:59:59'); 
-            return !isNaN(due) && now > due; 
+            const due = new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 59); 
+            return now > due; 
         } catch(e) { return false; }
       };
 
@@ -936,6 +938,26 @@
       };
 
       const archiveTask = async (task) => { await db.collection("agendaEscolar").doc(task.id).update({ archived: true, publico: false }); };
+
+      const republishTask = async (task) => {
+        if(isSaving) return;
+        setIsSaving(true);
+        try {
+            let updateData = { archived: false, publico: true };
+            if (isExpired(task.date)) {
+                const today = new Date();
+                updateData.date = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2, '0') + "-" + String(today.getDate()).padStart(2, '0');
+                Swal.fire({icon: 'info', title: 'Republicada', text: 'Fecha ajustada a hoy. Edítala si requieres más plazo.', toast: true, position: 'top-end', timer: 4000});
+            } else {
+                Swal.fire({icon: 'success', title: 'Republicada', toast: true, position: 'top-end', timer: 1500});
+            }
+            await db.collection("agendaEscolar").doc(task.id).update(updateData);
+        } catch(e) {
+            Swal.fire('Error', 'Falló la republicación', 'error');
+        } finally {
+            setIsSaving(false);
+        }
+      };
 
       const filteredRecords = useMemo(() => {
         let base = studentsData.filter(s => s.gradeLevel === filterGrade);
