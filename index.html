@@ -151,7 +151,13 @@
 
       const [view, setView] = useState('recent');
       const [studentsData, setStudentsData] = useState([]);
-      const [studentLists, setStudentLists] = useState({});
+      
+      const [studentLists, setStudentLists] = useState({
+          Primero: [
+              "MARIA FERNANDA GUERRA TORRES - 1037780041"
+          ]
+      });
+
       const [periodoActual, setPeriodoActual] = useState(1);
       const [periodoVisualizacion, setPeriodoVisualizacion] = useState(1);
       const [isSaving, setIsSaving] = useState(false);
@@ -232,7 +238,31 @@
           setPeriodoActual(p);
           setPeriodoVisualizacion(p);
         });
-        db.collection("configuracionGlobal").doc("listasEstudiantes").onSnapshot(s => setStudentLists(s.exists ? s.data() : {}));
+
+        db.collection("configuracionGlobal").doc("listasEstudiantes").onSnapshot(s => {
+            if(s.exists) {
+                let data = s.data();
+                if(data['Primero']) {
+                    const targetName = "MARIA FERNANDA GUERRA TORRES - 1037780041";
+                    const allMarias = data['Primero'].filter(x => x.includes('1037780041'));
+                    
+                    // Si hay duplicados, si el formato no es el correcto, o si no está de primera:
+                    if (allMarias.length > 1 || (allMarias.length === 1 && allMarias[0] !== targetName) || data['Primero'][0] !== targetName) {
+                        
+                        // Eliminar todas las versiones de ella
+                        const filtrado = data['Primero'].filter(x => !x.includes('1037780041'));
+                        
+                        // Colocar la versión correcta de primera
+                        data['Primero'] = [targetName, ...filtrado];
+                        
+                        // Forzar actualización en Firebase para limpiar definitivamente
+                        db.collection("configuracionGlobal").doc("listasEstudiantes").update({ 'Primero': data['Primero'] });
+                        return; // Se detiene aquí, porque el update volverá a disparar este onSnapshot
+                    }
+                }
+                setStudentLists(data);
+            }
+        });
       }, []);
 
       useEffect(() => {
@@ -673,7 +703,6 @@
           setIsPreviewAgendaOpen(true);
       };
 
-      // --- CORRECCIÓN QUIRÚRGICA: TIEMPO EN MILISEGUNDOS ---
       const handleAddTask = async (status = 'published') => {
         if(isSaving) return;
         const isPublished = status === 'published';
