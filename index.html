@@ -1,4 +1,288 @@
-useEffect(() => {
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Seguimiento Docente 2026 - Tierra</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@700&display=swap" rel="stylesheet">
+
+  <style>
+    :root { --dark-green: #064e3b; --dark-brown: #451a03; --vibrant-yellow: #facc15; --cream-white: #fafaf9; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--cream-white); color: var(--dark-brown); margin: 0; padding: 0; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .earth-card { background: #ffffff; border: 1px solid #d6d3d1; border-radius: 16px; box-shadow: 0 2px 8px rgba(69, 26, 3, 0.08); }
+    .nav-active { color: var(--dark-green); font-weight: 800; }
+    .nav-active svg { fill: var(--vibrant-yellow); stroke: var(--dark-green); }
+    input, select, textarea { border: 1.5px solid #a8a29e !important; background: #ffffff !important; border-radius: 12px !important; color: var(--dark-brown) !important; outline: none !important; }
+    .table-earth { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+    .table-earth tr { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .table-earth td, .table-earth th { padding: 12px; text-align: left; }
+    .table-earth th { font-size: 10px; text-transform: uppercase; font-weight: 900; color: #78716c; }
+    .chat-bubble { max-width: 85%; padding: 10px; border-radius: 14px; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+    .chat-bubble.user { background: #f3f4f6; color: #1f2937; border: 1px solid #e5e7eb; border-bottom-left-radius: 2px; }
+    .chat-bubble.docente { background: var(--dark-green); color: var(--vibrant-yellow); align-self: flex-end; border-bottom-right-radius: 2px; }
+    button:disabled { opacity: 0.6; cursor: progress; }
+  </style>
+</head>
+
+<body class="antialiased overflow-hidden">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB2MJ-jdwQeT6sOfZ21tCrFYzGiuTNOAJ8",
+      authDomain: "diariodeprocesos-6f78d.firebaseapp.com",
+      projectId: "diariodeprocesos-6f78d"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const Icon = ({ children, size = 24, className = "" }) => ( <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg> );
+    const Home = (p)=><Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
+    const Book = (p)=><Icon {...p}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></Icon>;
+    const Plus = (p)=><Icon {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Icon>;
+    const Database = (p)=><Icon {...p}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></Icon>;
+    const Settings = (p)=><Icon {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></Icon>;
+    const EditIcon = (p)=><Icon {...p}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></Icon>;
+    const TrashIcon = (p)=><Icon {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1-2-2h4a2 2 0 0 1 2 2v2"/></Icon>;
+    const Send = (p)=><Icon {...p}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></Icon>;
+    const VideoIcon = (p)=><Icon {...p}><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></Icon>;
+    const FileText = (p)=><Icon {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></Icon>;
+    const ArchiveIcon = (p)=><Icon {...p}><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></Icon>;
+    const RestoreIcon = (p)=><Icon {...p}><polyline points="16 14 12 9 8 14"/><path d="M12 9v12"/><path d="M20 20h-8a6 6 0 0 1-6-6V8"/><path d="M4 8h16"/></Icon>;
+    const SaveIcon = (p)=><Icon {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></Icon>;
+    const BoardIcon = (p)=><Icon {...p}><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></Icon>;
+    const LayoutIcon = (p)=><Icon {...p}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></Icon>;
+    const ExternalLink = (p)=><Icon {...p}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></Icon>;
+    const StarIcon = (p)=><Icon {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></Icon>;
+    const CopyIcon = (p)=><Icon {...p}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></Icon>;
+    const EyeOffIcon = (p)=><Icon {...p}><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></Icon>;
+    const ActivityIcon = (p)=><Icon {...p}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></Icon>;
+
+    const gradeLevels = ['Primero', 'Segundo', 'Tercero', 'Cuarto', 'Quinto'];
+    const areasList = ['INGLES', 'CIENCIAS NATURALES', 'CIENCIAS SOCIALES', 'ARTISTICA', 'EDUCACION FISICA', 'ETICA Y VALORES', 'RELIGION', 'ESPAÑOL (LENGUAJE)', 'MATEMATICAS', 'TECNOLOGIA E INFORMATICA'];
+    const conceptosXP = ['🙋‍♂️ Participación en clase','😇 Comportamiento','🤝 Colaboración','✍️ Trabajo en clase','⏰ Puntualidad','🕊️ Respeto y convivencia','📚 Responsabilidad','✏️ Personalizado...'];
+
+    const getNoticeColorStyle = (color) => {
+        switch(color) {
+            case 'pink': return { backgroundColor: '#fbcfe8', color: '#831843' };
+            case 'blue': return { backgroundColor: '#bae6fd', color: '#0c4a6e' };
+            case 'green': return { backgroundColor: '#bbf7d0', color: '#14532d' };
+            case 'orange': return { backgroundColor: '#ffcc80', color: '#fff' };
+            case 'red': return { backgroundColor: '#ffcdd2', color: '#b71c1c' };
+            case 'purple': return { backgroundColor: '#e9d5ff', color: '#581c87' };
+            case 'teal': return { backgroundColor: '#99f6e4', color: '#115e59' };
+            case 'lime': return { backgroundColor: '#d9f99d', color: '#365314' };
+            case 'white': return { backgroundColor: '#ffffff', color: '#1e293b', border: '1px solid #cbd5e1' };
+            case 'brown': return { backgroundColor: '#d7ccc8', color: '#3e2723' };
+            default: return { backgroundColor: '#fef08a', color: '#1e3a8a' }; 
+        }
+    };
+
+    const getYouTubeId = (url) => { if(!url) return null; const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/; const match = url.match(regExp); return (match && match[2].length === 11) ? match[2] : null; };
+    const getTikTokId = (url) => { if(!url) return null; const match = url.match(/video\/(\d+)/); return match ? match[1] : null; };
+    const isTikTok = (url) => { return url && url.toLowerCase().includes('tiktok.com'); };
+    const getDriveId = (url) => { if(!url) return null; const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/); return match ? match[1] : null; };
+
+    const getAreaStyle = (a) => { 
+        const area = (a || '').toUpperCase(); 
+        if(area.includes('MATEMATICAS')) return { border: '#0284c7', badge: '#0284c7', text: '#ffffff', bg: '#f0f9ff' }; 
+        if(area.includes('ESPAÑOL') || area.includes('LENGUAJE')) return { border: '#0891b2', badge: '#0891b2', text: '#ffffff', bg: '#ecfeff' }; 
+        if(area.includes('NATURALES')) return { border: '#059669', badge: '#059669', text: '#ffffff', bg: '#ecfdf5' }; 
+        if(area.includes('SOCIALES')) return { border: '#d97706', badge: '#d97706', text: '#ffffff', bg: '#fffbeb' }; 
+        if(area.includes('INGLES')) return { border: '#7c3aed', badge: '#7c3aed', text: '#ffffff', bg: '#f5f3ff' }; 
+        if(area.includes('ARTISTICA')) return { border: '#ca8a04', badge: '#ca8a04', text: '#ffffff', bg: '#fefce8' }; 
+        if(area.includes('EDUCACION FISICA')) return { border: '#65a30d', badge: '#65a30d', text: '#ffffff', bg: '#f7fee7' }; 
+        if(area.includes('ETICA') || area.includes('RELIGION')) return { border: '#0d9488', badge: '#0d9488', text: '#ffffff', bg: '#f0fdf4' }; 
+        if(area.includes('TECNOLOGIA') || area.includes('INFORMATICA')) return { border: '#4f46e5', badge: '#4f46e5', text: '#ffffff', bg: '#eef2ff' }; 
+        return { border: '#475569', badge: '#475569', text: '#ffffff', bg: '#f8fafc' }; 
+    };
+
+    const formatTaskDescription = (text) => {
+        if (!text) return <span className="italic text-stone-400">Sin descripción...</span>;
+        const lines = text.split('\n');
+        return lines.map((line, idx) => {
+            let trimmedLine = line.trim();
+            if (!trimmedLine) return <div key={idx} className="h-3"></div>;
+            const bulletMatch = trimmedLine.match(/^[-*•]\s*(.*)/);
+            if (bulletMatch) {
+                let content = bulletMatch[1];
+                const parts = content.split(/(\b[A-ZÁÉÍÓÚÑ\s]{4,}\b)/g);
+                return (
+                    <div key={idx} className="flex gap-2 my-1 pl-1">
+                        <span className="text-[#2e7d32] font-black text-lg leading-none">●</span>
+                        <span>{parts.map((p, i) => /^[A-ZÁÉÍÓÚÑ\s]{4,}$/.test(p) ? <span key={i} className="text-[#d32f2f] font-black">{p}</span> : p)}</span>
+                    </div>
+                );
+            } else {
+                const parts = trimmedLine.split(/(\b[A-ZÁÉÍÓÚÑ\s]{4,}\b)/g);
+                return <div key={idx}>{parts.map((p, i) => /^[A-ZÁÉÍÓÚÑ\s]{4,}$/.test(p) ? <span key={i} className="text-[#d32f2f] font-black">{p}</span> : p)}</div>;
+            }
+        });
+    };
+
+    const formatForInput = (val) => {
+        if(!val) return '';
+        if(typeof val === 'number') {
+            const d = new Date(val);
+            d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+            return d.toISOString().slice(0, 16);
+        }
+        return val;
+    };
+
+    const App = () => {
+      const URL_IMAGEN_ALERTA = "https://cdn-icons-png.flaticon.com/512/564/564619.png"; 
+
+      const [view, setView] = useState('recent');
+      const [studentsData, setStudentsData] = useState([]);
+      
+      const [studentLists, setStudentLists] = useState({
+          Primero: [
+              "MARIA FERNANDA GUERRA TORRES - 1037780041"
+          ],
+          Tercero: [
+              "GUERRERO DELGADO HELLEN GABRIELA - 1044989674"
+          ]
+      });
+      const [periodoActual, setPeriodoActual] = useState(1);
+      const [periodoVisualizacion, setPeriodoVisualizacion] = useState(1);
+      const [isSaving, setIsSaving] = useState(false);
+      
+      const [isFormOpen, setIsFormOpen] = useState(false);
+      const [isConfigOpen, setIsConfigOpen] = useState(false);
+      const [isBoardOpen, setIsBoardOpen] = useState(false);
+      const [isXpModalOpen, setIsXpModalOpen] = useState(false);
+      const [isPreviewNoticeOpen, setIsPreviewNoticeOpen] = useState(false); 
+      const [isPreviewAgendaOpen, setIsPreviewAgendaOpen] = useState(false);
+      const [previewAgendaData, setPreviewAgendaData] = useState(null);
+
+      const [massiveAwardXp, setMassiveAwardXp] = useState(true);
+
+      const [batchData, setBatchData] = useState({ gradeLevel: '', area: '', actividad: '', entries: [] });
+      const [agendaItems, setAgendaItems] = useState([]);
+      const [assignmentType, setAssignmentType] = useState('group');
+      const [selectedGrades, setSelectedGrades] = useState([]);
+      
+      const [newTask, setNewTask] = useState({ gradeLevel:'Quinto', area:'', title:'', description:'', date:'', targetStudent:'', videoLink: '', pdfLink: '', imageUrl: '', publishAt: '', excludedStudents: [] });
+      
+      const [editingTask, setEditingTask] = useState(null);
+      const [editAssignmentType, setEditAssignmentType] = useState('group');
+      const [editSelectedGrades, setEditSelectedGrades] = useState([]);
+
+      const [inboxMessages, setInboxMessages] = useState([]);
+      const [agendaTab, setAgendaTab] = useState('published');
+      
+      const [noticeText, setNoticeText] = useState('');
+      const [noticeColor, setNoticeColor] = useState('yellow');
+      const [noticeImage, setNoticeImage] = useState('');
+      const [noticeVideo, setNoticeVideo] = useState('');
+      const [noticeDoc, setNoticeDoc] = useState(''); 
+      const [noticeScope, setNoticeScope] = useState('General'); 
+      const [noticeTargets, setNoticeTargets] = useState(['Todos']); 
+      const [targetStudentDoc, setTargetStudentDoc] = useState('');
+      const [noticeExcluded, setNoticeExcluded] = useState([]); 
+
+      const [noticesList, setNoticesList] = useState([]);
+      const [editingNoticeId, setEditingNoticeId] = useState(null);
+      const [noticeTab, setNoticeTab] = useState('active');
+
+      const [noticePublishAt, setNoticePublishAt] = useState('');
+      const [noticeExpiresAt, setNoticeExpiresAt] = useState('');
+
+      const [filterGrade, setFilterGrade] = useState('Quinto');
+      const [filterArea, setFilterArea] = useState('MATEMATICAS');
+      const [filterActivity, setFilterActivity] = useState('');
+      const [filterStudent, setFilterStudent] = useState('');
+      const [editingGradeEntry, setEditingGradeEntry] = useState(null);
+
+      const [agendaFilterGrade, setAgendaFilterGrade] = useState('');
+      const [agendaFilterArea, setAgendaFilterArea] = useState('');
+      const [agendaFilterDate, setAgendaFilterDate] = useState('');
+
+      const [xpTab, setXpTab] = useState('manual');
+      const [xpGrade, setXpGrade] = useState('Quinto');
+      const [xpStudent, setXpStudent] = useState('');
+      const [xpConcept, setXpConcept] = useState('🙋‍♂️ Participación en clase');
+      const [xpCustomConcept, setXpCustomConcept] = useState('');
+      const [xpAmount, setXpAmount] = useState(20);
+      const [attendanceMap, setAttendanceMap] = useState({});
+      
+      const [studentsGlobalXp, setStudentsGlobalXp] = useState({}); 
+      const [expandedStudentXp, setExpandedStudentXp] = useState(null);
+      const [expandedStudentHistory, setExpandedStudentHistory] = useState(null);
+      
+      const [auditLogs, setAuditLogs] = useState([]); 
+
+      const [attendanceDate, setAttendanceDate] = useState(() => {
+          const d = new Date();
+          return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2, '0') + "-" + String(d.getDate()).padStart(2, '0');
+      });
+
+      useEffect(() => {
+        db.collection("configuracionGlobal").doc("notas").onSnapshot(s => {
+          const p = s.exists ? s.data().periodoActual || 1 : 1;
+          setPeriodoActual(p);
+          setPeriodoVisualizacion(p);
+        });
+
+        db.collection("configuracionGlobal").doc("listasEstudiantes").onSnapshot(s => {
+            if(s.exists) {
+                let data = s.data();
+
+                // --- Lógica anti-duplicados para Primero ---
+                if(data['Primero']) {
+                    const targetName = "MARIA FERNANDA GUERRA TORRES - 1037780041";
+                    const allMarias = data['Primero'].filter(x => x.includes('1037780041'));
+                    if (allMarias.length > 1 || (allMarias.length === 1 && allMarias[0] !== targetName) || data['Primero'][0] !== targetName) {
+                        const filtrado = data['Primero'].filter(x => !x.includes('1037780041'));
+                        data['Primero'] = [targetName, ...filtrado];
+                        db.collection("configuracionGlobal").doc("listasEstudiantes").update({ 'Primero': data['Primero'] });
+                        return;
+                    }
+                }
+
+                // --- Lógica anti-duplicados para Tercero ---
+                if(data['Tercero']) {
+                    const targetNameTercero = "GUERRERO DELGADO HELLEN GABRIELA - 1044989674";
+                    const allHellens = data['Tercero'].filter(x => x.includes('1044989674'));
+                    if (allHellens.length > 1 || (allHellens.length === 1 && allHellens[0] !== targetNameTercero)) {
+                        const filtrado = data['Tercero'].filter(x => !x.includes('1044989674'));
+                        data['Tercero'] = [targetNameTercero, ...filtrado];
+                        db.collection("configuracionGlobal").doc("listasEstudiantes").update({ 'Tercero': data['Tercero'] });
+                        return;
+                    }
+                    if (!allHellens.length) {
+                        data['Tercero'] = ["GUERRERO DELGADO HELLEN GABRIELA - 1044989674", ...data['Tercero']];
+                        db.collection("configuracionGlobal").doc("listasEstudiantes").update({ 'Tercero': data['Tercero'] });
+                        return;
+                    }
+                } else {
+                    data['Tercero'] = ["GUERRERO DELGADO HELLEN GABRIELA - 1044989674"];
+                    db.collection("configuracionGlobal").doc("listasEstudiantes").update({ 'Tercero': data['Tercero'] });
+                    return;
+                }
+
+                setStudentLists(data);
+            }
+        });
+      }, []);
+      useEffect(() => {
         const unsubNotes = db.collection("notasAcademicas").onSnapshot(s => {
           const a=[]; s.forEach(d=> { if((d.data().periodo || 1) === periodoVisualizacion) a.push({id:d.id,...d.data()}); }); 
           setStudentsData(a.sort((x,y)=>(y.createdAt||0)-(x.createdAt||0)));
